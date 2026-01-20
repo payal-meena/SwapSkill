@@ -1,11 +1,17 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/public/Home";
 import Dashboard from "../pages/dashboard/Dashboard";
 import MySkills from "../pages/skills/MySkills";
 import UserLayout from "../layouts/UserLayout";
 import Requests from "../pages/requests/Requests";
 import MessagesPage from "../pages/messages/MessagesPage";
+<<<<<<< HEAD
 import Auth from "../pages/public/Auth";
+=======
+import SettingsLayout from "../pages/settings/SettingLayout";
+import Account from "../pages/settings/Account";
+import Security from "../pages/settings/Security";
+>>>>>>> 49241a79a9017a507872e48e9848940556cde217
 
 function AppRoutes() {
   return (
@@ -17,13 +23,17 @@ function AppRoutes() {
       <Route element={<UserLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-skills" element={<MySkills />} />
-        <Route path="/requests" element={<Requests/>} />
-        <Route path="/messages" element={< MessagesPage/>} />
-        
+        <Route path="/requests" element={<Requests />} />
+        <Route path="/messages" element={<MessagesPage />} />
       </Route>
 
-      <Route path="/admin" element={<div>Admin Layout Loading...</div>}>
+      <Route path="/settings" element={<SettingsLayout />}>
+        <Route index element={<Navigate to="/settings/account" replace />} />
+        <Route path="account" element={<Account />} />
+        <Route path="security" element={<Security />} />
       </Route>
+
+      <Route path="/admin" element={<div>Admin Layout Loading...</div>} />
     </Routes>
   );
 }
