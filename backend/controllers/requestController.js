@@ -1,9 +1,12 @@
 const Request = require("../models/Request");
 
+
 const sendRequest = async (req, res) => {
+  console.log("REQ.USER =", req.user);
+
   try {
     const { receiver, offeredSkill, requestedSkill } = req.body;
-    const requester = req.user.id; 
+    const requester = req.user; 
 
    
     if (requester === receiver) {
@@ -52,7 +55,7 @@ const sendRequest = async (req, res) => {
 
  const getMyRequests = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user;
 
     const requests = await Request.find({
       $or: [{ requester: userId }, { receiver: userId }],
@@ -87,7 +90,7 @@ const sendRequest = async (req, res) => {
     }
 
   
-    if (request.receiver.toString() !== req.user.id) {
+    if (request.receiver.toString() !== req.user) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to accept this request",
@@ -124,7 +127,7 @@ const sendRequest = async (req, res) => {
       });
     }
 
-    if (request.receiver.toString() !== req.user.id) {
+    if (request.receiver.toString() !== req.user) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to reject this request",
@@ -158,7 +161,7 @@ const sendRequest = async (req, res) => {
       });
     }
 
-    const userId = req.user.id;
+    const userId = req.user;
 
     if (request.requester.toString() === userId) {
       request.requesterCompleted = true;
