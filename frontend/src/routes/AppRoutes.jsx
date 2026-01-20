@@ -5,13 +5,10 @@ import MySkills from "../pages/skills/MySkills";
 import UserLayout from "../layouts/UserLayout";
 import Requests from "../pages/requests/Requests";
 import MessagesPage from "../pages/messages/MessagesPage";
-<<<<<<< HEAD
 import Auth from "../pages/public/Auth";
-=======
 import SettingsLayout from "../pages/settings/SettingLayout";
 import Account from "../pages/settings/Account";
 import Security from "../pages/settings/Security";
->>>>>>> 49241a79a9017a507872e48e9848940556cde217
 
 function AppRoutes() {
   return (
