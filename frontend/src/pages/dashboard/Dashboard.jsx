@@ -27,7 +27,6 @@ const StatCard = ({ label, value, trend, icon }) => {
 const Dashboard = () => {
  return (
     <div className="flex h-screen overflow-hidden">
-      <UserSidebar />
 
       <main className="flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark">
         
