@@ -10,9 +10,9 @@ const Account = () => {
   const [saveStatus, setSaveStatus] = useState('');
 
   // Password Validation Logic
-  const canSavePassword = 
-    passwords.next.length >= 8 && 
-    passwords.next === passwords.confirm && 
+  const canSavePassword =
+    passwords.next.length >= 8 &&
+    passwords.next === passwords.confirm &&
     passwords.current.length > 0;
 
   const handleUpdateEmail = () => {
@@ -40,15 +40,15 @@ const Account = () => {
        - mx-0: ensures it starts from the left
     */
     <div className="w-full max-w-none px-4 md:px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Lexend'] mx-0">
-      
+
       {/* 1. PROFILE PICTURE SECTION */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="relative group">
             <div className="h-24 w-24 rounded-full border-4 border-[#13ec5b] overflow-hidden bg-slate-100">
-              <img 
-                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" 
-                alt="Avatar" 
+              <img
+                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
+                alt="Avatar"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -85,7 +85,7 @@ const Account = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[#13ec5b]/50 outline-none transition-all"
               />
-              <button 
+              <button
                 onClick={handleUpdateEmail}
                 disabled={isUpdating}
                 className="px-6 py-2 bg-[#13ec5b] text-[#102216] text-xs font-bold rounded-xl hover:bg-[#13ec5b]/90 transition-colors disabled:opacity-50"
@@ -100,8 +100,12 @@ const Account = () => {
               <p className="text-sm font-bold dark:text-white text-slate-900">Profile Visibility</p>
               <p className="text-xs text-slate-500 dark:text-[#92c9a4]">Allow others to find you in search results</p>
             </div>
-            <Toggle checked={profileVisible} onChange={() => setProfileVisible(!profileVisible)} />
-          </div>
+            <button
+              onClick={() => setProfileVisible(!profileVisible)}
+              className={`w-12 h-6 rounded-full transition-colors duration-200 flex items-center px-1 ${profileVisible ? 'bg-[#13ec5b]' : 'bg-slate-400'}`}
+            >
+              <div className={`bg-white w-4 h-4 rounded-full transition-transform duration-200 transform ${profileVisible ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>          </div>
         </div>
       </section>
 
@@ -111,7 +115,7 @@ const Account = () => {
           <Lock className="text-[#13ec5b]" size={22} />
           <span className="dark:text-white text-slate-900">Security</span>
         </h3>
-        
+
         <div className="grid grid-cols-1 gap-4">
           <div className="grid grid-cols-1 gap-2">
             <label className="text-xs font-medium text-slate-500 dark:text-[#92c9a4]">Current Password</label>
@@ -119,7 +123,7 @@ const Account = () => {
               type="password"
               placeholder="••••••••"
               value={passwords.current}
-              onChange={(e) => setPasswords({...passwords, current: e.target.value})}
+              onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
               className="w-full px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[#13ec5b]/50 outline-none"
             />
           </div>
@@ -131,7 +135,7 @@ const Account = () => {
                 type="password"
                 placeholder="Min 8 characters"
                 value={passwords.next}
-                onChange={(e) => setPasswords({...passwords, next: e.target.value})}
+                onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
                 className={`w-full px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 outline-none ${passwords.next.length > 0 && passwords.next.length < 8 ? 'ring-2 ring-red-500' : 'focus:ring-[#13ec5b]/50'}`}
               />
             </div>
@@ -141,7 +145,7 @@ const Account = () => {
                 type="password"
                 placeholder="Repeat password"
                 value={passwords.confirm}
-                onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
+                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                 className={`w-full px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 outline-none ${passwords.confirm && passwords.next !== passwords.confirm ? 'ring-2 ring-red-500' : 'focus:ring-[#13ec5b]/50'}`}
               />
             </div>
@@ -149,7 +153,7 @@ const Account = () => {
 
           <div className="flex items-center justify-between mt-2">
             <p className="text-[10px] text-slate-400">Passwords must match and be at least 8 characters.</p>
-            <button 
+            <button
               disabled={!canSavePassword || saveStatus !== ''}
               onClick={handleSavePassword}
               className="px-6 py-2.5 bg-[#13ec5b] text-[#102216] text-sm font-bold rounded-xl hover:bg-[#13ec5b]/90 transition-all disabled:opacity-30 active:scale-95"
@@ -208,14 +212,12 @@ const Toggle = ({ checked, onChange }) => (
     className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in cursor-pointer"
   >
     <div
-      className={`block w-12 h-6 rounded-full shadow-inner transition-colors duration-300 ${
-        checked ? 'bg-[#13ec5b]' : 'bg-slate-300 dark:bg-[#23482f]'
-      }`}
+      className={`block w-12 h-6 rounded-full shadow-inner transition-colors duration-300 ${checked ? 'bg-[#13ec5b]' : 'bg-slate-300 dark:bg-[#23482f]'
+        }`}
     ></div>
     <div
-      className={`absolute block w-4 h-4 mt-1 ml-1 rounded-full bg-white shadow transform transition-transform duration-300 ${
-        checked ? 'translate-x-6' : 'translate-x-0'
-      }`}
+      className={`absolute block w-4 h-4 mt-1 ml-1 rounded-full bg-white shadow transform transition-transform duration-300 ${checked ? 'translate-x-6' : 'translate-x-0'
+        }`}
     ></div>
   </div>
 );
