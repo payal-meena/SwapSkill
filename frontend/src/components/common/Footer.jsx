@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const Footer = () => {
   return (
@@ -10,9 +11,9 @@ const Footer = () => {
         <h3 className="text-background-dark text-3xl font-black mb-2">Ready to share your talent?</h3>
         <p className="text-background-dark/80 text-lg max-w-md">Join 50,000+ members exchanging knowledge across 500+ different skills.</p>
       </div>
-      <button className="relative z-10 bg-background-dark text-white px-8 py-4 rounded-xl font-bold shadow-xl hover:scale-105 transition-transform">
-        Create Your Profile
-      </button>
+      <Link to="/auth" className="relative z-10 bg-background-dark text-white px-8 py-4 rounded-xl font-bold shadow-xl hover:scale-105 transition-transform">
+        Get Started
+      </Link>
     </div>
     <div className="flex flex-col md:flex-row items-center justify-between mt-12 gap-6 text-slate-500 text-sm">
       <div className="flex items-center gap-2">
