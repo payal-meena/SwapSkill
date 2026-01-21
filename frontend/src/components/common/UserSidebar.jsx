@@ -43,6 +43,7 @@ const UserSidebar = () => {
         {/* Dynamic Nav Links */}
         <nav className="flex flex-col gap-2">
           <NavItem to="/dashboard" icon="dashboard" label="Dashboard" />
+          <NavItem to="/explore" icon="Explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
           <NavItem to="/requests" icon="handshake" label="Requests" badge />
           <NavItem to="/messages" icon="chat_bubble" label="Messages" />

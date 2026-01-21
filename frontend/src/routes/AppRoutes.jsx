@@ -11,6 +11,7 @@ import Account from "../pages/settings/Account";
 import Security from "../pages/settings/Security";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import Explore from "../pages/explore/Explore";
 
 function AppRoutes() {
   return (
@@ -24,6 +25,7 @@ function AppRoutes() {
         <Route path="/my-skills" element={<MySkills />} />
         <Route path="/requests" element={<Requests />} />
         <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/explore" element={<Explore />} />
       </Route>
 
       <Route path="/settings" element={<SettingsLayout />}>
