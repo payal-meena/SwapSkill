@@ -1,6 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
 
 const UserNavbar = ({ userName = "Alex" }) => {
+
+  const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 dark:border-[#23482f] bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md px-8 py-4">
       <div className="flex items-center gap-4">
@@ -33,6 +37,7 @@ const UserNavbar = ({ userName = "Alex" }) => {
                 className="w-full h-full object-cover" 
                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" 
                 alt="User profile" 
+                onClick={()=> navigate("/my-profile")}
               />
             </div>
           </div>
