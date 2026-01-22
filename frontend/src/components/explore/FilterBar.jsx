@@ -12,7 +12,6 @@ const FilterBar = ({ activeCategory, setActiveCategory }) => {
 
   return (
     <div className="w-full flex flex-col gap-6 mb-10">
-      {/* Search and Main Actions */}
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#13ec5b] transition-colors">
@@ -36,7 +35,6 @@ const FilterBar = ({ activeCategory, setActiveCategory }) => {
         </div>
       </div>
 
-      {/* Category Pills */}
       <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
         {categories.map((cat) => (
           <button

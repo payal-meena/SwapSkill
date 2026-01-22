@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, CheckCircle2, PlusCircle } from 'lucide-react'; // Icons for the modal
+import { Search, X, CheckCircle2, PlusCircle } from 'lucide-react'; 
 import UserNavbar from '../../components/common/UserNavbar'; 
 import MySkillCard from '../../components/skills/MySkillCard'; 
 import EditSkillModal from '../../components/modals/EditSkillModal'; 
@@ -14,7 +14,7 @@ const MySkills = () => {
   
   const [isEditCurriculumOpen, setIsEditCurriculumOpen] = useState(false);
   const [activeSkillTitle, setActiveSkillTitle] = useState("");
-  const [isWantedModalOpen, setIsWantedModalOpen] = useState(false); // New state for Wanted Skill Modal
+  const [isWantedModalOpen, setIsWantedModalOpen] = useState(false); 
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [targetProficiency, setTargetProficiency] = useState('beginner');
 
@@ -40,8 +40,8 @@ const MySkills = () => {
   };
 
   const handleOpenEditCurriculum = () => {
-    setIsCurriculumOpen(false); // Pehle purana band karo
-    setIsEditCurriculumOpen(true); // Naya kholo
+    setIsCurriculumOpen(false); 
+    setIsEditCurriculumOpen(true); 
   };
 
   return (
@@ -50,7 +50,6 @@ const MySkills = () => {
         <UserNavbar userName="Alex" />
 
         <div className="p-8 max-w-[1200px] mx-auto w-full">
-          {/* Section: Skills I Offer */}
           <section className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -108,7 +107,6 @@ const MySkills = () => {
                 />
               ))}
               
-              {/* Trigger Wanted Skill Modal */}
               <button 
                 className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-2xl flex flex-col items-center justify-center p-8 text-slate-400 hover:border-primary hover:text-primary transition-all group cursor-pointer"
                 onClick={() => setIsWantedModalOpen(true)}
@@ -121,7 +119,6 @@ const MySkills = () => {
         </div>
       </main>
 
-      {/* Existing Modals */}
       <EditSkillModal 
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)} 
@@ -148,12 +145,10 @@ const MySkills = () => {
         onClose={() => setIsEditCurriculumOpen(false)} 
         skillTitle={activeSkillTitle}
       />
-      {/* --- ADD WANTED SKILL MODAL (Integrated from your code) --- */}
       {isWantedModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#102216]/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-[#102216]/85 backdrop-blur-xl w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-[#13ec5b]/20">
             
-            {/* Modal Header */}
             <div className="flex justify-between items-center px-8 py-6 border-b border-[#23482f]">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-[#13ec5b]/10 flex items-center justify-center">
@@ -166,7 +161,6 @@ const MySkills = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-8 space-y-6">
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-[#92c9a4]">What do you want to learn?</label>
@@ -218,7 +212,6 @@ const MySkills = () => {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-8 pt-0 flex gap-4">
               <button 
                 onClick={() => setIsWantedModalOpen(false)}

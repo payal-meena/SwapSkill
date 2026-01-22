@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const NotificationModal = ({ isOpen, onClose }) => {
-  // --- 1. State Management for Notifications ---
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -35,7 +34,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // --- 2. Action Handlers ---
   const markAllRead = () => {
     setNotifications(notifications.map(n => ({ ...n, isUnread: false })));
   };
@@ -52,18 +50,15 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
   const handleAction = (id, action) => {
     console.log(`Notification ${id}: ${action}`);
-    // Here you would typically call an API, then remove the notification
     removeNotification(id);
   };
 
   return (
     <>
-      {/* Click outside to close */}
       <div className="fixed inset-0 z-40" onClick={onClose}></div>
       
       <div className="absolute right-0 mt-3 w-96 bg-[#1a1c1ae6] backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden border border-[#13ec5b33] font-['Lexend'] animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
         
-        {/* Header */}
         <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-2">
             <h3 className="text-white font-bold text-base">Notifications</h3>
@@ -81,7 +76,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* List */}
         <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
           {notifications.length === 0 ? (
             <div className="p-10 text-center text-white/40 text-sm">
@@ -95,7 +89,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
                 onClick={() => markSingleRead(notif.id)}
                 className={`px-5 py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${notif.isUnread ? 'bg-[#13ec5b]/5' : ''}`}
               >
-                {/* Unread Dot */}
                 {notif.isUnread && (
                   <div className="absolute right-5 top-5 h-2 w-2 rounded-full bg-[#13ec5b] shadow-[0_0_8px_rgba(19,236,91,0.6)]"></div>
                 )}
@@ -129,7 +122,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       <span className="text-white/60 font-normal">{notif.text}</span>
                     </p>
                     
-                    {/* Conditional Action Buttons */}
                     {notif.hasActions && (
                       <div className="flex gap-2 mt-3">
                         <button 

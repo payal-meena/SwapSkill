@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-// Sahi (Corrected)
 import { Lock, Eye, Database, Download, Trash2, Info } from 'lucide-react';
 const Privacy = () => {
-  // Toggle States
   const [showRating, setShowRating] = useState(true);
   const [allowIndexing, setAllowIndexing] = useState(false);
 
-  // Blocked Users Mock Data
   const blockedUsers = [
     { id: 1, name: 'Jordan Doe', initials: 'JD' },
     { id: 2, name: 'Sarah Miller', initials: 'SM' },
@@ -15,7 +12,6 @@ const Privacy = () => {
   return (
     <div className="flex-1 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Privacy Settings Section */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
           <Lock className="text-[#13ec5b]" size={22} />
@@ -23,7 +19,6 @@ const Privacy = () => {
         </h3>
 
         <div className="space-y-6">
-          {/* Rating Toggle */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold dark:text-white text-slate-900">Show my rating to public</p>
@@ -32,7 +27,6 @@ const Privacy = () => {
             <Toggle checked={showRating} onChange={() => setShowRating(!showRating)} />
           </div>
 
-          {/* Search Engine Toggle */}
           <div className="pt-6 border-t border-slate-100 dark:border-[#23482f] flex items-center justify-between">
             <div>
               <p className="text-sm font-bold dark:text-white text-slate-900">Allow search engines to index my profile</p>
@@ -41,7 +35,6 @@ const Privacy = () => {
             <Toggle checked={allowIndexing} onChange={() => setAllowIndexing(!allowIndexing)} />
           </div>
 
-          {/* Blocked Users Section */}
           <div className="pt-6 border-t border-slate-100 dark:border-[#23482f]">
             <h4 className="text-sm font-bold mb-4 dark:text-white text-slate-900">Blocked Users</h4>
             <div className="space-y-3">
@@ -64,7 +57,6 @@ const Privacy = () => {
         </div>
       </section>
 
-      {/* Data Export Section */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
           <Database className="text-[#13ec5b]" size={22} />
@@ -84,7 +76,6 @@ const Privacy = () => {
         </div>
       </section>
 
-      {/* Final Action */}
       <div className="pt-4 flex justify-center">
         <button className="flex items-center gap-2 px-6 py-3 rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all text-sm font-semibold group">
           <Trash2 size={18} className="group-hover:rotate-12 transition-transform" />
@@ -95,7 +86,6 @@ const Privacy = () => {
   );
 };
 
-// Custom Toggle Component to match your specific HTML UI
 const Toggle = ({ checked, onChange }) => (
   <div 
     onClick={onChange}

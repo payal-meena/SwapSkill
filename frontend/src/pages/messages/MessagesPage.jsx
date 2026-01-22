@@ -22,7 +22,6 @@ const MessagesPage = () => {
   return (
     <div className="flex h-screen bg-[#102216] text-white font-sans overflow-hidden">
 
-      {/* --- CHAT LIST SIDEBAR --- */}
       <div className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
         <div className="p-6 border-b border-[#23482f]">
           <h2 className="text-xl font-bold text-white mb-4">Messages</h2>
@@ -63,9 +62,7 @@ const MessagesPage = () => {
         </div>
       </div>
 
-      {/* --- MAIN CHAT WINDOW --- */}
       <main className="flex-1 flex flex-col bg-[#102216]">
-        {/* Chat Header */}
         <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -91,7 +88,6 @@ const MessagesPage = () => {
           </div>
         </header>
 
-        {/* Message Area */}
         <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
           <div className="flex justify-center">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#92c9a4] bg-[#112217]/80 backdrop-blur px-4 py-1.5 rounded-full border border-[#23482f]">Today</span>
@@ -118,7 +114,6 @@ const MessagesPage = () => {
           />
         </div>
 
-        {/* Input Area */}
         <div className="p-6 bg-[#112217] border-t border-[#23482f]">
           <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] focus-within:border-[#13ec5b]/50 transition-all">
             <button className="text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
@@ -144,7 +139,6 @@ const MessagesPage = () => {
   );
 };
 
-// --- Helper Components ---
 
 const NavItem = ({ icon, label, active = false, badge = null, color = "text-white", to = "/" }) => (
   <Link to={to} className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all ${

@@ -4,7 +4,7 @@ import {
   AccountBalanceWallet, Add, Close, ExpandMore, AddPhotoAlternate,
   ChildCare, Psychology, FormatBold, FormatItalic, FormatListBulleted,
   Link, Info, RocketLaunch
-} from '@mui/icons-material'; // Optional: Use Lucide or Material Icons
+} from '@mui/icons-material'; 
 
 const ExpertisePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,7 +13,6 @@ const ExpertisePage = () => {
   return (
     <div className="bg-[#f5f8f5] dark:bg-[#102210] font-['Lexend'] text-white min-h-screen transition-colors duration-300">
       
-      {/* --- HEADER --- */}
       <header className="flex items-center justify-between border-b border-white/10 bg-[#102210]/80 backdrop-blur-md px-6 md:px-10 py-3 sticky top-0 z-40">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-4 text-white">
@@ -47,7 +46,6 @@ const ExpertisePage = () => {
       </header>
 
       <div className="flex">
-        {/* --- SIDEBAR --- */}
         <aside className="hidden md:flex flex-col w-64 bg-[#102210] border-r border-white/5 p-6 gap-8 h-[calc(100vh-64px)] sticky top-16">
           <div className="flex gap-3 items-center">
             <div className="size-12 rounded-full border-2 border-[#25f425] bg-cover" style={{backgroundImage: 'url("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex")'}}></div>
@@ -64,7 +62,6 @@ const ExpertisePage = () => {
           </nav>
         </aside>
 
-        {/* --- MAIN CONTENT --- */}
         <main className="flex-1 p-10">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -88,7 +85,6 @@ const ExpertisePage = () => {
         </main>
       </div>
 
-      {/* --- ADD EXPERTISE MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#102210]/60 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-[#102210]/80 border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[2.5rem] flex flex-col relative shadow-2xl">
@@ -101,7 +97,6 @@ const ExpertisePage = () => {
             </button>
 
             <div className="p-8 md:p-12 overflow-y-auto">
-              {/* Stepper */}
               <div className="flex items-center justify-between mb-12 relative max-w-2xl mx-auto">
                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -translate-y-1/2 z-0"></div>
                 <div className="absolute top-1/2 left-0 w-1/3 h-0.5 bg-[#25f425] -translate-y-1/2 z-0"></div>
@@ -179,7 +174,6 @@ const ExpertisePage = () => {
   );
 };
 
-// --- HELPER COMPONENTS ---
 
 const SidebarLink = ({ icon, label, active = false }) => (
   <a className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'bg-[#25f425]/10 text-[#25f425]' : 'text-white/70 hover:bg-white/5 hover:text-white'}`} href="#">

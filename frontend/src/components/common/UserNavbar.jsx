@@ -41,7 +41,6 @@ const UserNavbar = ({ userName }) => {
     className="w-full h-full object-cover cursor-pointer" 
     src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" 
     alt="Profile"
-    /* Wrap the navigate call in an arrow function */
     onClick={() => navigate('/my-profile')} 
   />
 </div>

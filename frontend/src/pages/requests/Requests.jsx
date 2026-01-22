@@ -16,7 +16,6 @@ const Requests = () => {
           <p className="text-[#92c9a4] text-xs">Manage your incoming and outgoing skill swaps</p>
         </header>
 
-        {/* Tab Switcher */}
         <div className="flex items-center gap-8 border-b border-[#23482f] mb-8">
           <button 
             onClick={() => setActiveTab('received')}
@@ -32,7 +31,6 @@ const Requests = () => {
           </button>
         </div>
 
-        {/* Conditional Content Rendering */}
         {activeTab === 'received' ? (
           <div className="grid grid-cols-1 gap-6">
             <IncomingRequestCard 
@@ -44,7 +42,6 @@ const Requests = () => {
               wants="React Architecture"
               message="Hey Alex! I've been looking for someone with your React expertise to help me refactor a project..."
             />
-            {/* Add more IncomingRequestCards here */}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">

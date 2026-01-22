@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe } from 'lucide-react';
 
 const Account = () => {
-  // Form States
   const [email, setEmail] = useState('alex.johnson@example.com');
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [profileVisible, setProfileVisible] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
 
-  // Password Validation Logic
   const canSavePassword = 
     passwords.next.length >= 8 && 
     passwords.next === passwords.confirm && 
@@ -52,7 +50,6 @@ const Account = () => {
    
     <div className="w-full max-w-none px-4 md:px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Lexend'] mx-0">
       
-      {/* 1. PROFILE PICTURE SECTION */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="relative group">
@@ -78,7 +75,6 @@ const Account = () => {
         </div>
       </section>
 
-      {/* 2. ACCOUNT SETTINGS SECTION */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
           <UserCog className="text-[#13ec5b]" size={24} />
@@ -116,7 +112,6 @@ const Account = () => {
         </div>
       </section>
 
-      {/* 3. PASSWORD SECTION */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
           <Lock className="text-[#13ec5b]" size={22} />
@@ -171,7 +166,6 @@ const Account = () => {
         </div>
       </section>
 
-      {/* 4. LINKED ACCOUNTS */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
           <ShieldCheck className="text-[#13ec5b]" size={22} />
@@ -201,7 +195,6 @@ const Account = () => {
         </div>
       </section>
 
-      {/* 5. DANGER ZONE */}
       <div className="pt-4 flex flex-col items-start gap-4">
         <button className="flex items-center gap-2 px-6 py-3 rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all text-sm font-semibold group active:scale-95">
           <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
@@ -212,7 +205,6 @@ const Account = () => {
   );
 };
 
-// Reusable Toggle Component
 const Toggle = ({ checked, onChange }) => (
   <div
     onClick={onChange}

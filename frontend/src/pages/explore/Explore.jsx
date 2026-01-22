@@ -30,14 +30,12 @@ const Explore = () => {
       <ExploreNavbar />
       
       <div className="p-8 max-w-[1200px] mx-auto w-full">
-        {/* Responsive Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {mentors.map((mentor, index) => (
             <SkillCard key={index} {...mentor} />
           ))}
         </div>
 
-        {/* Footer/Load More */}
         <div className="mt-12 flex flex-col items-center gap-4">
           <button className="px-8 py-3 rounded-xl border border-slate-200 dark:border-[#326744] text-slate-900 dark:text-white font-bold hover:bg-white dark:hover:bg-[#112217] transition-all">
             Load More Results

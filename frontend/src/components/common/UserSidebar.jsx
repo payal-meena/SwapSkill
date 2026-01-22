@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 
 const NavItem = ({ icon, label, to, badge = false }) => {
   const location = useLocation();
-  // Check if the current URL matches the 'to' path
   const isActive = location.pathname === to;
 
   return (
@@ -29,7 +28,6 @@ const UserSidebar = () => {
   return (
     <aside className="w-64 hidden lg:flex flex-col bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-6 justify-between h-screen sticky top-0">
       <div className="flex flex-col gap-8">
-        {/* Logo */}
         <Link to="/" className="flex gap-3 items-center px-2 cursor-pointer">
           <div className="bg-[#13ec5b] rounded-lg p-2 flex items-center justify-center">
             <span className="material-symbols-outlined text-[#102216] font-bold">swap_horiz</span>
@@ -40,7 +38,6 @@ const UserSidebar = () => {
           </div>
         </Link>
 
-        {/* Dynamic Nav Links */}
         <nav className="flex flex-col gap-2">
           <NavItem to="/dashboard" icon="dashboard" label="Dashboard" />
           <NavItem to="/explore" icon="Explore" label="Explore" />

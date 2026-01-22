@@ -13,9 +13,7 @@ const Security = () => {
   return (
     <div className="flex h-screen bg-[#102216] text-white font-sans overflow-hidden">
       
-      {/* --- MAIN CONTENT --- */}
       <main className="flex-1 flex flex-col overflow-y-auto bg-[#102216]">
-        {/* Header */}
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[#23482f] bg-[#102216]/80 backdrop-blur-md px-8 py-4">
           <h2 className="text-white text-xl font-bold tracking-tight">Account and App Settings</h2>
           <div className="flex items-center gap-3">
@@ -32,12 +30,8 @@ const Security = () => {
         <div className="p-8  w-full mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
             
-           
-
-            {/* Content Area */}
-            <div className="flex-1 space-y-8">
+                <div className="flex-1 space-y-8">
               
-              {/* Two-Factor Authentication Section */}
               <section className="bg-[#112217] rounded-2xl border border-[#23482f] p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold flex items-center gap-2">
@@ -62,7 +56,6 @@ const Security = () => {
                 </div>
               </section>
 
-              {/* Login History Section */}
               <section className="bg-[#112217] rounded-2xl border border-[#23482f] p-8 shadow-sm">
                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                   <History className="text-[#13ec5b]" size={22} />
@@ -70,7 +63,6 @@ const Security = () => {
                 </h3>
                 
                 <div className="space-y-4">
-                  {/* Device 1 */}
                   <div className="flex items-center justify-between p-4 rounded-xl border border-[#23482f] hover:bg-[#162d1d] transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-[#13ec5b]/10 flex items-center justify-center text-[#13ec5b]">
@@ -84,7 +76,6 @@ const Security = () => {
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-[#13ec5b]/20 text-[#13ec5b] rounded-full">Active</span>
                   </div>
 
-                  {/* Device 2 */}
                   <div className="flex items-center justify-between p-4 rounded-xl border border-[#23482f] hover:bg-[#162d1d] transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-[#23482f] flex items-center justify-center text-[#92c9a4]">
@@ -98,7 +89,6 @@ const Security = () => {
                     <button className="px-4 py-2 border border-red-500/30 text-red-500 text-xs font-bold rounded-xl hover:bg-red-500/10 transition-colors">Sign Out</button>
                   </div>
 
-                  {/* Device 3 */}
                   <div className="flex items-center justify-between p-4 rounded-xl border border-[#23482f] hover:bg-[#162d1d] transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-[#23482f] flex items-center justify-center text-[#92c9a4]">
@@ -127,7 +117,6 @@ const Security = () => {
   );
 };
 
-// --- Helper Components ---
 
 const NavItem = ({ icon, label, active = false, color = "text-white" }) => (
   <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { BellRing, Info, Save } from 'lucide-react';
 
 const Notifications = () => {
-  // Notification States
   const [prefs, setPrefs] = useState({
     match: { email: true, push: true, inapp: true },
     request: { email: true, push: true, inapp: true },
@@ -10,7 +9,6 @@ const Notifications = () => {
     news: { email: true, push: false, inapp: true },
   });
 
-  // Toggle Function
   const handleToggle = (category, type) => {
     setPrefs((prev) => ({
       ...prev,
@@ -31,7 +29,6 @@ const Notifications = () => {
   return (
     <div className="flex-1 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
       
-      {/* Table Section */}
       <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-xl font-bold flex items-center gap-3">
@@ -77,7 +74,6 @@ const Notifications = () => {
         </div>
       </section>
 
-      {/* Info Card */}
       <div className="p-6 bg-[#13ec5b]/5 rounded-2xl border border-[#13ec5b]/20 flex items-start gap-4">
         <Info className="text-[#13ec5b] shrink-0" size={20} />
         <div>
@@ -91,7 +87,6 @@ const Notifications = () => {
   );
 };
 
-// Reusable Custom Toggle Component (Matches your HTML design)
 const Toggle = ({ checked, onChange }) => (
   <div 
     onClick={onChange}

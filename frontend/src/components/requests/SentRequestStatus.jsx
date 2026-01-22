@@ -16,7 +16,6 @@ const SentRequestStatus = ({ title, status, img, progressStep }) => {
             </span>
           </div>
           
-          {/* Progress Stepper */}
           <div className={`flex items-center w-full max-w-2xl px-4 ${!isActive && 'opacity-60'}`}>
             {steps.map((step, idx) => (
               <div key={step} className={`flex flex-col items-center flex-1 relative ${idx < steps.length - 1 ? 'after:content-[""] after:absolute after:top-2 after:left-1/2 after:w-full after:h-[2px]' : ''} ${idx <= progressStep ? 'after:bg-[#13ec5b]' : 'after:bg-[#23482f]'}`}>

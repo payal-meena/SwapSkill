@@ -11,7 +11,6 @@ const AddWantedSkillModel = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-[#f6f8f6] dark:bg-[#102216] font-['Lexend'] text-slate-900 dark:text-white relative">
       
-      {/* SIDEBAR */}
       <aside className="w-64 flex flex-col bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-6 justify-between">
         <div className="flex flex-col gap-8">
           <div className="flex gap-3 items-center px-2 cursor-pointer">
@@ -36,7 +35,6 @@ const AddWantedSkillModel = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT (Opacity reduced when modal is open) */}
       <main className={`flex-1 flex flex-col overflow-y-auto transition-opacity duration-300 ${isModalOpen ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 dark:border-[#23482f] bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md px-8 py-4">
           <h2 className="text-xl font-bold tracking-tight">My Skills</h2>
@@ -63,12 +61,10 @@ const AddWantedSkillModel = () => {
         </div>
       </main>
 
-      {/* ADD WANTED SKILL MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#102216]/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-[#102216]/85 backdrop-blur-xl w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-[#13ec5b]/20">
             
-            {/* Modal Header */}
             <div className="flex justify-between items-center px-8 py-6 border-b border-[#23482f]">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-[#13ec5b]/10 flex items-center justify-center">
@@ -81,9 +77,7 @@ const AddWantedSkillModel = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-8 space-y-6">
-              {/* Search Input */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-[#92c9a4]">What do you want to learn?</label>
                 <div className="relative">
@@ -104,7 +98,6 @@ const AddWantedSkillModel = () => {
                 </div>
               </div>
 
-              {/* Target Proficiency Radio Buttons */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-[#92c9a4]">Target Proficiency</label>
                 <div className="grid grid-cols-3 gap-3">
@@ -125,7 +118,6 @@ const AddWantedSkillModel = () => {
                 </div>
               </div>
 
-              {/* Note Textarea */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-[#92c9a4]">Add a note to potential mentors</label>
                 <textarea 
@@ -136,7 +128,6 @@ const AddWantedSkillModel = () => {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-8 pt-0 flex gap-4">
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -156,7 +147,6 @@ const AddWantedSkillModel = () => {
   );
 };
 
-// Sub-component for Sidebar Items
 const NavItem = ({ icon, label, active, badge, color }) => (
   <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors cursor-pointer relative ${
     active ? 'bg-[#13ec5b]/10 text-[#13ec5b]' : color || 'text-slate-600 dark:text-white hover:bg-slate-100 dark:hover:bg-[#23482f]'

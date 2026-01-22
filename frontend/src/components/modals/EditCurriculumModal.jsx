@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
-  // --- logic: State for Curriculum Data ---
   const [chapters, setChapters] = useState([
     {
       id: Date.now(),
@@ -13,7 +12,6 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
 
   if (!isOpen) return null;
 
-  // --- logic: Handlers ---
   const addChapter = () => {
     const newChapter = {
       id: Date.now(),
@@ -21,7 +19,7 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
       lessons: ["New Lesson"]
     };
     setChapters([...chapters, newChapter]);
-    setOpenSection(newChapter.id); // Naye chapter ko auto-expand karein
+    setOpenSection(newChapter.id);
   };
 
   const addLesson = (chapterId) => {
@@ -53,7 +51,6 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm font-['Lexend']">
       <div className="bg-white dark:bg-[#112217] w-full max-w-2xl max-h-[90vh] rounded-3xl border border-slate-200 dark:border-[#23482f] shadow-2xl flex flex-col overflow-hidden relative">
         
-        {/* Header */}
         <div className="p-6 border-b border-slate-100 dark:border-[#23482f] flex items-center justify-between bg-white dark:bg-[#193322]">
           <div className="flex items-center gap-4">
             <div className="bg-primary/10 p-2.5 rounded-xl">
@@ -69,11 +66,9 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
           </button>
         </div>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
           {chapters.map((chapter, index) => (
             <div key={chapter.id} className={`border border-slate-200 dark:border-[#23482f] rounded-2xl bg-slate-50/50 dark:bg-transparent overflow-hidden transition-all ${openSection === chapter.id ? 'border-primary/30' : ''}`}>
-              {/* Chapter Header */}
               <div className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#193322]/30">
                 <div className="flex items-center gap-3 flex-1">
                   <span className="text-primary font-bold text-sm">0{index + 1}.</span>
@@ -96,7 +91,6 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
                 </div>
               </div>
 
-              {/* Lessons List */}
               <div className={`px-11 pb-5 pt-2 space-y-3 ${openSection === chapter.id ? 'block' : 'hidden'}`}>
                 {chapter.lessons.map((lesson, lIdx) => (
                   <div key={lIdx} className="flex items-center gap-3">
@@ -119,7 +113,6 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
             </div>
           ))}
           
-          {/* Add Chapter Button */}
           <button 
             onClick={addChapter}
             className="w-full py-4 border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-2xl text-slate-500 dark:text-[#92c9a4] font-bold hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -129,7 +122,7 @@ const EditCurriculumModal = ({ isOpen, onClose, skillTitle }) => {
           </button>
         </div>
 
-        {/* Footer */}
+       
         <div className="p-6 border-t border-slate-100 dark:border-[#23482f] flex justify-end gap-3 bg-white dark:bg-[#193322]">
           <button onClick={onClose} className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-[#23482f] text-slate-600 dark:text-white font-semibold hover:bg-slate-50 dark:hover:bg-[#23482f] cursor-pointer">
             Discard

@@ -5,12 +5,10 @@ import {
     X, Camera, ChevronRight, Rocket, Star
 } from 'lucide-react';
 
-// --- 1. MODAL COMPONENT ---
 const AddExpertiseModal = ({ isOpen, onClose }) => {
     const [step, setStep] = useState(1);
     const [proficiency, setProficiency] = useState('Intermediate');
     
-    // --- IMAGE UPLOAD LOGIC ---
     const fileInputRef = useRef(null);
     const [selectedImage, setSelectedImage] = useState(null);
 
@@ -37,7 +35,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#102210]/60 backdrop-blur-xl animate-in fade-in duration-300">
             <div className="bg-[#102210] border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[2.5rem] flex flex-col relative shadow-2xl text-white font-['Lexend']">
                 
-                {/* Close Button */}
                 <button 
                     onClick={onClose}
                     className="absolute top-8 right-8 size-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors z-50"
@@ -46,7 +43,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                 </button>
 
                 <div className="p-8 md:p-12 overflow-y-auto">
-                    {/* Stepper Visual */}
                     <div className="flex items-center justify-between mb-12 relative max-w-2xl mx-auto">
                         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -translate-y-1/2 z-0"></div>
                         <div 
@@ -72,7 +68,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                         <p className="text-white/50">Define the core details of what you want to teach.</p>
                     </div>
 
-                    {/* Step 1 Content */}
                     {step === 1 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 animate-in slide-in-from-right-4 duration-300">
                             <div className="space-y-8 text-left">
@@ -90,7 +85,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                                 </div>
                             </div>
                             
-                            {/* --- UPDATED THUMBNAIL SECTION --- */}
                             <div className="flex flex-col gap-3 text-left">
                                 <label className="text-white/80 text-xs font-bold uppercase tracking-widest ml-1">Thumbnail</label>
                                 <input 
@@ -123,7 +117,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                         </div>
                     )}
 
-                    {/* Step 2 Content */}
                     {step === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -146,7 +139,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                         </div>
                     )}
 
-                    {/* Step 3 Content */}
                     {step === 3 && (
                         <div className="space-y-4 text-left animate-in slide-in-from-right-4 duration-300">
                              <label className="text-white/80 text-xs font-bold uppercase tracking-widest ml-1">Description</label>
@@ -157,7 +149,6 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                         </div>
                     )}
 
-                    {/* Footer Actions */}
                     <div className="flex items-center justify-between pt-10 mt-10 border-t border-white/5">
                         <button 
                             onClick={() => step > 1 && setStep(step - 1)}
@@ -206,7 +197,6 @@ const ProficiencyCard = ({ level, desc, active, onClick }) => (
     </button>
 );
 
-// --- 2. MAIN PROFILE COMPONENT ---
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('teaching');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -240,7 +230,6 @@ const Profile = () => {
 
     return (
         <div className="min-h-screen bg-[#f6f8f6] dark:bg-[#102216] text-slate-900 dark:text-white font-['Lexend']">
-            {/* Header */}
             <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
                     <div className="flex items-center gap-3 text-[#13ec5b]">
@@ -262,7 +251,6 @@ const Profile = () => {
 
             <main className="max-w-7xl mx-auto px-6 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Sidebar */}
                     <aside className="w-full lg:w-80 flex-shrink-0">
                         <div className="sticky top-24 flex flex-col gap-6">
                             <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
@@ -292,7 +280,6 @@ const Profile = () => {
                         </div>
                     </aside>
 
-                    {/* Content Section */}
                     <section className="flex-1">
                         <div className="mb-8 border-b border-slate-200 dark:border-white/10">
                             <div className="flex gap-10">

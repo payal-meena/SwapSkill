@@ -15,7 +15,6 @@ const ExchangeCard = ({
 }) => {
   return (
     <div className="group flex flex-col md:flex-row rounded-2xl bg-white dark:bg-[#193322] border border-slate-100 dark:border-[#23482f] overflow-hidden shadow-sm hover:shadow-md transition-all">
-      {/* Skill Image */}
       <div className="w-full md:w-48 h-48 md:h-auto overflow-hidden">
         <img 
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
@@ -24,7 +23,6 @@ const ExchangeCard = ({
         />
       </div>
 
-      {/* Content */}
       <div className="flex-1 p-6 flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-start mb-2">
@@ -48,7 +46,6 @@ const ExchangeCard = ({
           <p className="text-slate-400 dark:text-[#92c9a4] text-xs font-medium">{progressText}</p>
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center justify-between mt-6">
           <div className="flex -space-x-3">
             <img 
