@@ -1,16 +1,15 @@
+
 const mongoose = require("mongoose");
 
 const chatSchema = new mongoose.Schema(
   {
-  
     request: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Request",
       required: true,
-      unique: true, 
+      unique: true,
     },
 
-    
     participants: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -19,14 +18,8 @@ const chatSchema = new mongoose.Schema(
       },
     ],
 
-   
-    lastMessage: {
-      type: String,
-    },
-
-    lastMessageAt: {
-      type: Date,
-    },
+    lastMessage: String,
+    lastMessageAt: Date,
   },
   { timestamps: true }
 );

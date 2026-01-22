@@ -2,5 +2,5 @@
 .env.local
 .env.development
 .env.production
-node_modules/
-.env
+.env.sever
+.env.test

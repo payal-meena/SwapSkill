@@ -1,90 +1,46 @@
+
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
-const mongoose = require("mongoose");
 
-const socketHandler = (io) => {
+module.exports = (io) => {
   io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id);
+    console.log("User connected:", socket.id);
 
-    // Join user room
-    socket.on("joinUser", (userId) => {
-      if (!mongoose.Types.ObjectId.isValid(userId)) return;
-      socket.join(userId);
-      console.log(`User joined user-room: ${userId}`);
-    });
+    socket.on("joinChat", async ({ chatId, userId }) => {
+      const chat = await Chat.findById(chatId);
+      if (!chat) return;
 
-    // Join chat room
-    socket.on("joinChat", (chatId) => {
-      if (!mongoose.Types.ObjectId.isValid(chatId)) return;
+      if (!chat.participants.includes(userId)) return;
+
       socket.join(chatId);
-      console.log(`User joined chat-room: ${chatId}`);
+      console.log(`${userId} joined chat ${chatId}`);
     });
 
-    // Send message
-    socket.on("sendMessage", async (data) => {
-      try {
-        let { chatId, senderId, receiverId, text, request } = data;
+    socket.on("sendMessage", async ({ chatId, senderId, text }) => {
+      const chat = await Chat.findById(chatId);
+      if (!chat) return;
 
-        // Validate essential fields
-        if (
-          !senderId ||
-          !receiverId ||
-          !text ||
-          !mongoose.Types.ObjectId.isValid(senderId) ||
-          !mongoose.Types.ObjectId.isValid(receiverId)
-        ) {
-          return console.log("Invalid message data", data);
-        }
+      if (!chat.participants.includes(senderId)) return;
 
-        // Create new chat if chatId missing/invalid
-        // if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)) {
-        //   const newChat = await Chat.create({
-        //     request: request
-        //       ? mongoose.Types.ObjectId(request)
-        //       : mongoose.Types.ObjectId(), // auto-generate if missing
-        //     participants: [senderId, receiverId],
-        //     lastMessage: text,
-        //     lastMessageAt: new Date(),
-        //   });
-        //   chatId = newChat._id.toString();
-        // }
-        if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)) {
-  const newChat = await Chat.create({
-    request: request
-      ? new mongoose.Types.ObjectId(request)  // ✅ use new
-      : new mongoose.Types.ObjectId(),       // ✅ use new
-    participants: [senderId, receiverId],
-    lastMessage: text,
-    lastMessageAt: new Date(),
-  });
-  chatId = newChat._id.toString();
-}
+      // ✅ Save message separately
+      const message = await Message.create({
+        chat: chatId,
+        sender: senderId,
+        text,
+      });
 
+      // ✅ Update chat metadata
+      chat.lastMessage = text;
+      chat.lastMessageAt = new Date();
+      await chat.save();
 
-        // Save message
-        const message = await Message.create({
-          chat: chatId,
-          sender: senderId,
-          text,
-        });
-
-        // Update chat
-        await Chat.findByIdAndUpdate(chatId, {
-          lastMessage: text,
-          lastMessageAt: new Date(),
-        });
-
-        // Emit message to chat room
-        io.to(chatId).emit("newMessage", message);
-      } catch (error) {
-        console.error("Socket message error:", error.message);
-      }
+      // ✅ Emit message
+      io.to(chatId).emit("receiveMessage", message);
     });
 
     socket.on("disconnect", () => {
-      console.log("Socket disconnected:", socket.id);
+      console.log("User disconnected:", socket.id);
     });
   });
 };
 
-module.exports = socketHandler;
