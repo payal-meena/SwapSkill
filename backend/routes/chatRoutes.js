@@ -1,15 +1,21 @@
+
 const express = require("express");
 const router = express.Router();
-const protect = require("../middleware/authMiddleware.js");
+const protect = require("../middleware/authMiddleware");
 
 const {
-  getHistory,
-  getStatus,
+  createOrGetChat,
+  getChatHistory,
+  getChatStatus,
+  getMyChats,
 } = require("../controllers/chatController");
 
+router.post("/create", protect, createOrGetChat);
 
-router.get("/:chatId/messages", protect, getHistory);
+router.get("/:chatId/messages", protect, getChatHistory);
 
-router.get("/:chatId", protect, getStatus);
+router.get("/:chatId", protect, getChatStatus);
+
+router.get("/", protect, getMyChats);
 
 module.exports = router;

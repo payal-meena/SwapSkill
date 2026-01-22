@@ -14,11 +14,11 @@ const getMyProfile = async (req, res) => {
 /* UPDATE PROFILE */
 const updateProfile = async (req, res) => {
   try {
-    const { bio, location, profileImage } = req.body;
+    const { bio, location, } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.user,
-      { bio, location, profileImage },
+      { bio, location},
       { new: true }
     ).select("-password");
 
@@ -28,10 +28,33 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const updateProfileImage = async (req, res) => {
+  try {
+    const userId = req.user;
 
+    if (!req.file) {
+      return res.status(400).json({ message: "Image required" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: req.file.path },
+      { new: true }
+    ).select("-password");
+
+    res.json({
+      success: true,
+      message: "Profile image updated",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 module.exports = {
   getMyProfile,
   updateProfile,
+  updateProfileImage
  
 };

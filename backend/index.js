@@ -1,20 +1,3 @@
-// const dotenv = require("dotenv");
-// const connectDB = require("./config/db");
-// const app = require("./app");
-
-// // Load env
-// dotenv.config();
-
-// // Connect database
-// connectDB();
-
-// // Port
-// const PORT = process.env.PORT || 3000;
-
-// // Start server
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const app = require("./app");
@@ -37,6 +20,7 @@ const io = new Server(server, {
   cors: {
     origin: "*",
   },
+  transports: ["websocket", "polling"],
 });
 
 // init socket

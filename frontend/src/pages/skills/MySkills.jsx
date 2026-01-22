@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import { Search, X, CheckCircle2, PlusCircle } from 'lucide-react'; // Icons for the modal
-import MySkillCard from '../../components/skills/MySkillCard'; 
 import UserNavbar from '../../components/common/UserNavbar'; 
-import EditSkillModal from '../../components/modal/EditSkillModal'; 
-import AddSkillModal from '../../components/modal/AddSkillModal'; 
+import MySkillCard from '../../components/skills/MySkillCard'; 
+import EditSkillModal from '../../components/modals/EditSkillModal'; 
+import AddSkillModal from '../../components/modals/AddSkillModal'; 
+import CurriculumModal from '../../components/modals/CurriculumModal';
+import EditCurriculumModal from '../../components/modals/EditCurriculumModal';
 
 const MySkills = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isCurriculumOpen, setIsCurriculumOpen] = useState(false);
+  
+  const [isEditCurriculumOpen, setIsEditCurriculumOpen] = useState(false);
+  const [activeSkillTitle, setActiveSkillTitle] = useState("");
   const [isWantedModalOpen, setIsWantedModalOpen] = useState(false); // New state for Wanted Skill Modal
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [targetProficiency, setTargetProficiency] = useState('beginner');
 
   const offeredSkills = [
-    { title: "UI/UX Design", level: "Advanced", icon: "brush", detail: "12 students taught", status: "Active" },
-    { title: "React Development", level: "Intermediate", icon: "code", detail: "5 students taught", status: "Active" },
-    { title: "Spanish Language", level: "Advanced", icon: "translate", detail: "Native Speaker", status: "Paused" },
+    { title: "UI/UX Design", level: "Advanced", icon: "brush", detail: "12 students taught", status: "Active", description: "Specialized in design systems and user research." },
+    { title: "React Development", level: "Intermediate", icon: "code", detail: "5 students taught", status: "Active", description: "Experienced in building scalable front-end applications." },
+    { title: "Spanish Language", level: "Advanced", icon: "translate", detail: "Native Speaker", status: "Paused", description: "Native speaker from Madrid." },
   ];
 
   const wantedSkills = [
@@ -26,6 +32,16 @@ const MySkills = () => {
   const handleEditClick = (skill) => {
     setSelectedSkill(skill);
     setIsEditModalOpen(true);
+  };
+
+  const handleViewCurriculum = (title) => {
+    setActiveSkillTitle(title);
+    setIsCurriculumOpen(true);
+  };
+
+  const handleOpenEditCurriculum = () => {
+    setIsCurriculumOpen(false); // Pehle purana band karo
+    setIsEditCurriculumOpen(true); // Naya kholo
   };
 
   return (
@@ -46,37 +62,50 @@ const MySkills = () => {
                   <p className="text-slate-500 dark:text-[#92c9a4] text-sm">Skills you are teaching to others</p>
                 </div>
               </div>
-
+              
               <button 
-                onClick={() => setIsAddModalOpen(true)} 
-                className="flex items-center gap-2 px-6 py-2 bg-primary text-background-dark font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg cursor-pointer"
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-2 bg-primary text-background-dark font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/10 cursor-pointer"
               >
                 <span className="material-symbols-outlined">add</span>
                 Add New Skill
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {offeredSkills.map((skill, index) => (
-                <MySkillCard key={index} {...skill} isOffer={true} onEdit={() => handleEditClick(skill)} />
+                <MySkillCard 
+                  key={index} 
+                  {...skill} 
+                  isOffer={true} 
+                  onEdit={() => handleEditClick(skill)}
+                  onViewCurriculum={() => handleViewCurriculum(skill.title)}
+                />
               ))}
             </div>
           </section>
 
-          {/* Section: Skills I Want to Learn */}
           <section>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                <span className="material-symbols-outlined">auto_stories</span>
-              </div>
-              <div>
-                <h3 className="text-slate-900 dark:text-white text-xl font-bold">Skills I Want to Learn</h3>
-                <p className="text-slate-500 dark:text-[#92c9a4] text-sm">Skills you're looking for partners</p>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <span className="material-symbols-outlined">auto_stories</span>
+                </div>
+                <div>
+                  <h3 className="text-slate-900 dark:text-white text-xl font-bold">Skills I Want to Learn</h3>
+                  <p className="text-slate-500 dark:text-[#92c9a4] text-sm">Skills you're looking for partners</p>
+                </div>
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {wantedSkills.map((skill, index) => (
-                <MySkillCard key={index} {...skill} isOffer={false} onEdit={() => handleEditClick(skill)} />
+                <MySkillCard 
+                  key={index} 
+                  {...skill} 
+                  isOffer={false} 
+                  onEdit={() => handleEditClick(skill)}
+                />
               ))}
               
               {/* Trigger Wanted Skill Modal */}
@@ -104,6 +133,21 @@ const MySkills = () => {
         onClose={() => setIsAddModalOpen(false)} 
       />
 
+      <CurriculumModal 
+        isOpen={isCurriculumOpen} 
+        onClose={() => setIsCurriculumOpen(false)} 
+        skillTitle={activeSkillTitle}
+        onEditRequest={() => {
+          setIsCurriculumOpen(false); 
+          setIsEditCurriculumOpen(true); 
+        }} 
+      />
+
+      <EditCurriculumModal
+        isOpen={isEditCurriculumOpen} 
+        onClose={() => setIsEditCurriculumOpen(false)} 
+        skillTitle={activeSkillTitle}
+      />
       {/* --- ADD WANTED SKILL MODAL (Integrated from your code) --- */}
       {isWantedModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#102216]/60 backdrop-blur-sm animate-in fade-in duration-300">
