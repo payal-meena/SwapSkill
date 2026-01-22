@@ -7,6 +7,7 @@ const { signupSchema } = require("../validations/authValidation.js");
 const {
   getMyProfile,
   updateProfile,
+  updateProfileImage
 
 } = require("../controllers/userController.js");
 
@@ -30,6 +31,12 @@ router.post("/signup", validate(signupSchema), SignupUser);
 
 router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateProfile);
+router.put(
+  "/profile-image",
+  protect,
+  upload.single("image"),
+  updateProfileImage
+);
 router.post("/skill", protect, addSkill);
 router.delete("/skill/:type/:skillName", protect, removeSkill);
 
