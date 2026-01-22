@@ -32,13 +32,24 @@ const Account = () => {
     }, 1500);
   };
 
+  const Toggle = ({ checked, onChange }) => (
+  <button
+    type="button"
+    onClick={onChange}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+      checked ? 'bg-primary' : 'bg-slate-300 dark:bg-[#23482f]'
+    }`}
+  >
+    <span
+      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-200 ${
+        checked ? 'translate-x-6' : 'translate-x-1'
+      }`}
+    />
+  </button>
+);
+
   return (
-    /* Updated the container:
-       - w-full: takes 100% width
-       - max-w-none: removes the 4xl/7xl limits
-       - px-4 md:px-6: small 24px gap from edges (Standard for dashboards)
-       - mx-0: ensures it starts from the left
-    */
+   
     <div className="w-full max-w-none px-4 md:px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Lexend'] mx-0">
       
       {/* 1. PROFILE PICTURE SECTION */}
