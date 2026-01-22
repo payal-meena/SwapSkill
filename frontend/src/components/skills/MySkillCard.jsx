@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MySkillCard = ({ title, level, icon, detail, status, isOffer = true, onEdit }) => {
+const MySkillCard = ({ title, level, icon, detail, status, isOffer = true, onEdit, onViewCurriculum }) => {
   return (
     <div className={`bg-white dark:bg-[#193322] border ${isOffer ? 'border-slate-200 dark:border-[#23482f]' : 'border-dashed border-slate-200 dark:border-[#23482f]'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group font-['Lexend']`}>
       <div className="flex justify-between items-start mb-4">
@@ -38,7 +38,12 @@ const MySkillCard = ({ title, level, icon, detail, status, isOffer = true, onEdi
         </span>
         
         {isOffer ? (
-          <button className="text-primary text-xs font-bold hover:underline cursor-pointer">View Curriculum</button>
+          <button 
+            className="text-primary text-xs font-bold hover:underline cursor-pointer"
+            onClick={onViewCurriculum} 
+          >
+            View Curriculum
+          </button>
         ) : (
           <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-primary text-background-dark hover:scale-105 transition-transform">
             <span className="material-symbols-outlined text-sm">search</span>
