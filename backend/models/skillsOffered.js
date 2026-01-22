@@ -16,12 +16,11 @@ const skillSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["Offer", "Learn"],
-      required: true,
+      required: false,
     },
     experience: {
       type: String,
-      required: true
+      required: false
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -31,8 +30,7 @@ const skillSchema = new mongoose.Schema(
     catogory: {
       type: String,
       required: true,
-      enum: ["IT & Software", "Business", "Finance & Accounting", "Marketing", "Health & Fitness", "Livestyle", "Photography", "Music", "Teaching & Academics"]
-
+      enum: ["Design & Creative", "Development & IT", "Business & Marketing", "Languages", "Music & Arts", "Education"]
     }
     ,
     thumbnail: {
@@ -43,8 +41,7 @@ const skillSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
-
+      required: false
     }
 
     ,

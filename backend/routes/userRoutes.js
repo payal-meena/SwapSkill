@@ -16,7 +16,7 @@ const {
 const {
 
   addSkill,
-  removeSkill,
+  deleteSkill,
 
 } = require("../controllers/skillController.js");
 
@@ -40,7 +40,7 @@ router.put(
   updateProfileImage
 );
 router.post("/skill", protect, addSkill);
-router.delete("/skill/:type/:skillName", protect, removeSkill);
+router.delete("/skill/:id", protect, deleteSkill);
 
 
 module.exports = router;
