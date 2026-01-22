@@ -3,6 +3,8 @@ const router = express.Router();
 const protect = require("../middleware/authMiddleware.js");
 const validate = require("../middleware/validateMiddleware.js");
 const { signupSchema } = require("../validations/authValidation.js");
+const upload = require("../middleware/uploadMiddleware.js");
+
 
 const {
   getMyProfile,
