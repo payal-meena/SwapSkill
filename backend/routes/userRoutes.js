@@ -1,17 +1,16 @@
-
-
 const express = require("express");
 const router = express.Router();
-
 const protect = require("../middleware/authMiddleware.js");
 const validate = require("../middleware/validateMiddleware.js");
 const { signupSchema } = require("../validations/authValidation.js");
 const upload = require("../middleware/uploadMiddleware.js");
 
+
 const {
   getMyProfile,
   updateProfile,
   updateProfileImage
+
 } = require("../controllers/userController.js");
 
 const {
@@ -26,6 +25,7 @@ const {
 
   loginUser,
   SignupUser,
+
 } = require("../controllers/authController.js");
 
 router.post("/login", loginUser);
@@ -44,3 +44,5 @@ router.delete("/skill/:id", protect, deleteSkill);
 
 
 module.exports = router;
+
+

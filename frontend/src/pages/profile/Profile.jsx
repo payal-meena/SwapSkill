@@ -4,12 +4,6 @@ import {
     Edit, Trash2, Share2, Settings, HelpCircle, ShieldCheck, Plus, LogOut,
     X, Camera, ChevronRight, Rocket, Star
 } from 'lucide-react';
-import { useAuth } from "../../context/AuthContext";
-import api from "../../api/api";
-import { useEffect } from "react";
-import {useNavigate} from "react-router-dom";
-
-
 
 const AddExpertiseModal = ({ isOpen, onClose }) => {
     const [step, setStep] = useState(1);
@@ -203,174 +197,122 @@ const ProficiencyCard = ({ level, desc, active, onClick }) => (
     </button>
 );
 
-
 const Profile = () => {
-  const { user, logout } = useAuth();
-   const navigate =useNavigate();
-  const [profile, setProfile] = useState(null);
+    const [activeTab, setActiveTab] = useState('teaching');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [activeTab, setActiveTab] = useState("teaching");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const handleLogout = () => {
-  logout(); // token + user clear
-  navigate("/auth", { replace: true }); // ✅ redirect
-};
+    const skills = [
+        {
+            id: 1,
+            title: "React Development",
+            level: "Expert",
+            info: "Certified Mentor",
+            icon: <Verified size={18} />,
+            img: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=600"
+        },
+        {
+            id: 2,
+            title: "UX Design",
+            level: "Advanced",
+            info: "12 Active Students",
+            icon: <Users size={18} />,
+            img: "https://img.freepik.com/free-vector/gradient-ui-ux-background_23-2149052117.jpg?semt=ais_hybrid&w=740&q=80"
+        },
+        {
+            id: 3,
+            title: "Python Scripting",
+            level: "Intermediate",
+            info: "Recently Updated",
+            icon: <History size={18} />,
+            img: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600"
+        }
+    ];
 
+    return (
+        <div className="min-h-screen bg-[#f6f8f6] dark:bg-[#102216] text-slate-900 dark:text-white font-['Lexend']">
+            <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
+                    <div className="flex items-center gap-3 text-[#13ec5b]">
+                        <div className="w-10 h-10 flex items-center justify-center bg-[#13ec5b]/10 rounded-lg">
+                            <Users size={24} />
+                        </div>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white uppercase">Profile</h2>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <button className="flex items-center gap-2 bg-[#13ec5b] text-[#102216] px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-[#13ec5b]/20">
+                            <LogOut size={16} /> Log Out
+                        </button>
+                        <div className="w-10 h-10 rounded-full border-2 border-[#13ec5b]/50 overflow-hidden bg-slate-200">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="avatar" />
+                        </div>
+                    </div>
+                </div>
+            </header>
 
-  // ✅ profile fetch
-  useEffect(() => {
-if (!user) return;
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get("/users/me"); // token auto attach
-        setProfile(res.data);
-      } catch (err) {
-        console.error("Profile fetch failed", err);
-      }
-    };
+            <main className="max-w-7xl mx-auto px-6 py-8">
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <aside className="w-full lg:w-80 flex-shrink-0">
+                        <div className="sticky top-24 flex flex-col gap-6">
+                            <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
+                                <div className="flex flex-col items-center text-center gap-4">
+                                    <div className="w-24 h-24 rounded-full border-4 border-[#13ec5b]/20 shadow-xl overflow-hidden bg-slate-200">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="profile" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold">Alex Rivera</h1>
+                                        <p className="text-[#13ec5b] font-medium tracking-wide">Fullstack Developer</p>
+                                    </div>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                                        Passionate builder of web experiences. I love sharing React patterns and learning design.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mt-8">
+                                    <StatBox label="Rating" value="5.0" />
+                                    <StatBox label="Swaps" value="24" />
+                                    <StatBox label="Skills" value="12" />
+                                </div>
+                                <div className="mt-8 flex flex-col gap-3">
+                                    <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#13ec5b]/10 text-[#13ec5b] border border-[#13ec5b]/20 hover:bg-[#13ec5b] hover:text-[#102216] transition-all font-bold text-sm">
+                                        <Share2 size={18} /> Share Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
 
-    fetchProfile();
-  }, []);
+                    <section className="flex-1">
+                        <div className="mb-8 border-b border-slate-200 dark:border-white/10">
+                            <div className="flex gap-10">
+                                <TabButton active={activeTab === 'teaching'} onClick={() => setActiveTab('teaching')} icon={<School size={20} />} label="Teaching" />
+                                <TabButton active={activeTab === 'learning'} onClick={() => setActiveTab('learning')} icon={<BookOpen size={20} />} label="Learning" />
+                            </div>
+                        </div>
 
-  // fallback (first render)
-  if (!profile) {
-    return <div className="p-10 text-center">Loading profile...</div>;
-  }
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {skills.map(skill => (
+                                <SkillCard key={skill.id} skill={skill} />
+                            ))}
 
-  const skills = profile.skills || [
-    {
-      id: 1,
-      title: "React Development",
-      level: "Expert",
-      info: "Certified Mentor",
-      icon: <Verified size={18} />,
-      img: "https://images.unsplash.com/photo-1633356122544-f134324a6cee",
-    },
-  ];
+                            <button 
+                                onClick={() => setIsModalOpen(true)}
+                                className="group flex flex-col items-center justify-center gap-4 p-8 min-h-[260px] border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-[#13ec5b]/50 hover:bg-[#13ec5b]/5 rounded-2xl transition-all"
+                            >
+                                <div className="w-16 h-16 rounded-full bg-[#13ec5b]/10 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(19,236,91,0.2)]">
+                                    <Plus className="text-[#13ec5b]" size={32} />
+                                </div>
+                                <div className="text-center">
+                                    <p className="font-bold text-lg group-hover:text-[#13ec5b] transition-colors">Add Expertise</p>
+                                    <p className="text-slate-500 text-sm mt-1">Share a new skill</p>
+                                </div>
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </main>
 
-  return (
-    <div className="min-h-screen bg-[#f6f8f6] dark:bg-[#102216] text-slate-900 dark:text-white font-['Lexend']">
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
-          <div className="flex items-center gap-3 text-[#13ec5b]">
-            <div className="w-10 h-10 flex items-center justify-center bg-[#13ec5b]/10 rounded-lg">
-              <Users size={24} />
-            </div>
-            <h2 className="text-xl font-bold uppercase">Profile</h2>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-[#13ec5b] text-[#102216] px-5 py-2 rounded-xl text-sm font-bold"
-            >
-              <LogOut size={16} /> Log Out
-            </button>
-
-            <div className="w-10 h-10 rounded-full border-2 border-[#13ec5b]/50 overflow-hidden">
-              <img
-                src={
-                  profile.avatar ||
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`
-                }
-                alt="avatar"
-              />
-            </div>
-          </div>
+            <AddExpertiseModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
-      </header>
-
-      {/* MAIN */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* SIDEBAR */}
-          <aside className="w-full lg:w-80">
-            <div className="bg-white dark:bg-white/5 rounded-2xl p-6 shadow-xl">
-              <div className="flex flex-col items-center text-center gap-4">
-                <div className="w-24 h-24 rounded-full overflow-hidden">
-                  <img
-                    src={
-                      profile.avatar ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`
-                    }
-                    alt="profile"
-                  />
-                </div>
-
-                <div>
-                  <h1 className="text-2xl font-bold">{profile.name}</h1>
-                  <p className="text-[#13ec5b] font-medium">
-                    {profile.role || "User"}
-                  </p>
-                </div>
-
-                <p className="text-slate-500 text-sm">
-                  {profile.bio || "No bio added yet"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 mt-8">
-                <StatBox label="Rating" value={profile.rating || "0"} />
-                <StatBox label="Swaps" value={profile.swaps || "0"} />
-                <StatBox label="Skills" value={skills.length} />
-              </div>
-
-              <div className="mt-8">
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#13ec5b]/10 text-[#13ec5b] font-bold text-sm">
-                  <Share2 size={18} /> Share Profile
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          {/* CONTENT */}
-          <section className="flex-1">
-            <div className="mb-8 border-b border-slate-200">
-              <div className="flex gap-10">
-                <TabButton
-                  active={activeTab === "teaching"}
-                  onClick={() => setActiveTab("teaching")}
-                  icon={<School size={20} />}
-                  label="Teaching"
-                />
-                <TabButton
-                  active={activeTab === "learning"}
-                  onClick={() => setActiveTab("learning")}
-                  icon={<BookOpen size={20} />}
-                  label="Learning"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {skills.map((skill, i) => (
-                <SkillCard key={i} skill={skill} />
-              ))}
-
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="group flex flex-col items-center justify-center gap-4 p-8 min-h-[260px] border-2 border-dashed rounded-2xl"
-              >
-                <div className="w-16 h-16 rounded-full bg-[#13ec5b]/10 flex items-center justify-center">
-                  <Plus className="text-[#13ec5b]" size={32} />
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-lg">Add Expertise</p>
-                  <p className="text-slate-500 text-sm">Share a new skill</p>
-                </div>
-              </button>
-            </div>
-          </section>
-        </div>
-      </main>
-
-      <AddExpertiseModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-    </div>
-  );
+    );
 };
 
 const StatBox = ({ label, value }) => (

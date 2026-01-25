@@ -1,7 +1,5 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {useAuth} from "../../context/AuthContext";
-import {useNavigate} from "react-router-dom";
 
 const NavItem = ({ icon, label, to, badge = false }) => {
   const location = useLocation();
@@ -27,14 +25,6 @@ const NavItem = ({ icon, label, to, badge = false }) => {
 };
 
 const UserSidebar = () => {
-  const {logout} = useAuth();
-  const navigate =useNavigate();
-  const handleLogout = () => {
-  logout(); // token + user clear
-  navigate("/auth", { replace: true }); // ✅ redirect
-};
-
-
   return (
     <aside className="w-64 hidden lg:flex flex-col bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-6 justify-between h-screen sticky top-0">
       <div className="flex flex-col gap-8">
@@ -59,7 +49,7 @@ const UserSidebar = () => {
 
       <div className="flex flex-col gap-2">
         <NavItem to="/settings" icon="settings" label="Settings" />
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer" onClick={handleLogout}>
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer">
           <span className="material-symbols-outlined">logout</span>
           <p className="text-sm font-medium">Logout</p>
         </div>
