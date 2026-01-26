@@ -5,14 +5,18 @@ const skillsToLearnSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
- leval:{
-  type:String,
-  required:true,
-  enum:["Beginner","Intermediate","Advanced"]
- }
- ,
+  leval: {
+    type: String,
+    required: true,
+    enum: ["Beginner", "Intermediate", "Advanced"]
+  },
   description: {
     type: String,
+    required: false
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   }
 }, { timestamps: true });

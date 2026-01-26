@@ -4,7 +4,7 @@ import { skillService } from '../../services/skillService';
 const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
   const [formData, setFormData] = useState({
     skillName: '',
-    catogory: '',
+    category: '',
     level: '',
     experience: '',
     type: '',
@@ -23,7 +23,7 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.skillName || !formData.catogory || !formData.level) {
+    if (!formData.skillName || !formData.category || !formData.level) {
       alert('Please fill in all required fields');
       return;
     }
@@ -35,7 +35,7 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
       // Reset form
       setFormData({
         skillName: '',
-        catogory: '',
+        category: '',
         level: '',
         experience: '',
         type: '',
@@ -100,8 +100,8 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
                 <label className="text-xs md:text-sm font-medium text-[#92c9a4] block ml-1">Skill Category</label>
                 <div className="relative">
                   <select 
-                    name="catogory"
-                    value={formData.catogory}
+                    name="category"
+                    value={formData.category}
                     onChange={handleInputChange}
                     className="w-full bg-[#0d1b12] border border-[#23482f] text-white rounded-xl px-4 py-3 focus:ring-1 focus:ring-[#13ec5b] focus:border-[#13ec5b] appearance-none cursor-pointer outline-none transition-all"
                     required
@@ -219,5 +219,6 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
     </div>
   );
 };
+
 
 export default AddSkillModal;

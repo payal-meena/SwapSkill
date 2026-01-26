@@ -27,7 +27,7 @@ const skillSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    catogory: {
+    category: {
       type: String,
       required: true,
       enum: ["Design & Creative", "Development & IT", "Business & Marketing", "Languages", "Music & Arts", "Education"]
