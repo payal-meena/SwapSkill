@@ -15,6 +15,10 @@ import Explore from "../pages/explore/Explore";
 import Profile from "../pages/profile/Profile";
 import UserManagment from "../pages/admin/UserManagment";
 import SkillModeration from "../pages/admin/SkillModeration";
+
+// 1. IS NAME KO MONITORING HI RAKHEIN (Aapki file ke mutabik)
+import Monitoring from "../pages/admin/Monitoring"; 
+
 function AppRoutes() {
   return (
     <Routes>
@@ -44,16 +48,20 @@ function AppRoutes() {
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         
-        {/* Path: /admin/users */}
+        {/* User Management Route */}
         <Route path="users" element={<UserManagment />} />
         
-        {/* 2. IS ROUTE KO ADD KIYA HAI - Path: /admin/skill-moderation */}
+        {/* Skill Moderation Route */}
         <Route path="skills" element={<SkillModeration />} />
         
-        <Route path="moderation" element={<div>Moderation Page</div>} />
+        {/* 2. IS PATH KO '/admin/monitor' KAR DIYA HAI */}
+        <Route path="exchanges" element={<Monitoring />} />
+
+        {/* <Route path="moderation" element={<div>Moderation Page</div>} /> */}
       </Route>
       
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 Redirect */}
+      {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
     </Routes>
   );
 }
