@@ -15,7 +15,7 @@ import Explore from "../pages/explore/Explore";
 import Profile from "../pages/profile/Profile";
 import UserManagment from "../pages/admin/UserManagment";
 import SkillModeration from "../pages/admin/SkillModeration";
-
+import AdminProfile from "../pages/admin/settings/AdminProfile"
 
 // 1. IS NAME KO MONITORING HI RAKHEIN (Aapki file ke mutabik)
 import Monitoring from "../pages/admin/Monitoring"; 
@@ -49,20 +49,19 @@ function AppRoutes() {
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         
-        {/* User Management Route */}
         <Route path="users" element={<UserManagment />} />
-        
-        {/* Skill Moderation Route */}
         <Route path="skills" element={<SkillModeration />} />
-        
-        {/* 2. IS PATH KO '/admin/monitor' KAR DIYA HAI */}
         <Route path="exchanges" element={<Monitoring />} />
 
-        {/* <Route path="moderation" element={<div>Moderation Page</div>} /> */}
+           {/* admin settings  */}
+        <Route path="settings" element={<AdminProfile />} />
+        
+
+        <Route path="moderation" element={<div>Moderation Page</div>} />
       </Route>
       
       {/* 404 Redirect */}
-      {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
