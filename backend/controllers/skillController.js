@@ -1,4 +1,5 @@
 const Skill = require("../models/skillsOffered.js");
+// const SkillsToLearn = require("../models/skillsToLearn.js");
 const SkillsToLearn = require("../models/skillsToLearn.js");
 const User = require("../models/User.js");
 
@@ -9,9 +10,9 @@ const addSkill = async (req, res) => {
 
     // Validate required fields
     if (!skillName || !level || !category) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "Missing required fields: skillName, level, and category are required" 
+        message: "Missing required fields: skillName, level, and category are required"
       });
     }
 
@@ -33,9 +34,9 @@ const addSkill = async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding skill:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: error.message || "Internal server error" 
+      message: error.message || "Internal server error"
     });
   }
 };
@@ -44,7 +45,7 @@ const getMySkills = async (req, res) => {
   try {
     const userId = req.user;
     const skills = await Skill.find({ userId, isActive: true });
-    
+
     res.json({
       success: true,
       skills
@@ -58,7 +59,7 @@ const getUserSkills = async (req, res) => {
   try {
     const { userId } = req.params;
     const skills = await Skill.find({ userId, isActive: true }).populate('userId', 'name email profileImage');
-    
+
     res.json({
       success: true,
       skills
@@ -96,9 +97,9 @@ const addWantedSkill = async (req, res) => {
     const userId = req.user;
 
     if (!skillName || !level) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "Missing required fields: skillName and level are required" 
+        message: "Missing required fields: skillName and level are required"
       });
     }
 
@@ -116,9 +117,9 @@ const addWantedSkill = async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding wanted skill:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: error.message || "Internal server error" 
+      message: error.message || "Internal server error"
     });
   }
 };
@@ -126,8 +127,8 @@ const addWantedSkill = async (req, res) => {
 const getMyWantedSkills = async (req, res) => {
   try {
     const userId = req.user;
-    const wantedSkills = await SkillsToLearn.find({ userId });
-    
+    const wantedSkills = await SkillsToLearn.find({ userId , isActive: true  });
+
     res.json({
       success: true,
       skills: wantedSkills
@@ -136,6 +137,33 @@ const getMyWantedSkills = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+const deleteWantedSkill = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+    const userId = req.user;
+
+    const skill = await SkillsToLearn.findOne({ _id: id, userId });
+    if (!skill) {
+      return res.status(404).json({ message: "Skill not found" });
+    }
+
+    skill.isActive = false;
+    await skill.save();
+
+    res.json({
+      success: true,
+      message: "Skill deleted successfully"
+    });
+  } 
+
+  catch (error) {
+  res.status(500).json({ message: error.message });
+
+
+}
+}
 
 module.exports = {
   addSkill,
@@ -144,4 +172,5 @@ module.exports = {
   deleteSkill,
   addWantedSkill,
   getMyWantedSkills,
+  deleteWantedSkill
 };

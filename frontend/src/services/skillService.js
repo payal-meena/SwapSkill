@@ -45,4 +45,9 @@ export const skillService = {
     const response = await api.get('/skills/wanted/my');
     return response.data;
   },
+  // Delete wanted skill
+  deleteWantedSkill: async (skillId) => {
+    const response = await api.delete(`/skills/wanted/${skillId}`);
+    return response.data;
+  },
 };

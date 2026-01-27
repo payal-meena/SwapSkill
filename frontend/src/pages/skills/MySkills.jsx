@@ -136,6 +136,16 @@ const MySkills = () => {
     setIsCurriculumOpen(false); 
     setIsEditCurriculumOpen(true); 
   };
+  const handleDeleteWantedSkill = async (skillId)=>{
+    try{
+      await skillService.deleteWantedSkill(skillId);
+      fetchMyWantedSkills();  
+    }
+    catch(error){
+      console.error('Error deleting wanted skill:', error);
+    }
+  }
+ 
 
   return (
     <div className="flex h-screen overflow-hidden font-['Lexend'] relative">
@@ -214,6 +224,7 @@ const MySkills = () => {
                   {...skill} 
                   isOffer={false} 
                   onEdit={() => handleEditClick(skill)}
+                  onDelete={() => handleDeleteWantedSkill(skill.id)}
                 />
               ))}
               
