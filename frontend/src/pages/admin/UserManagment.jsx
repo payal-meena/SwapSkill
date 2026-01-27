@@ -20,7 +20,7 @@ const UserManagment = () => {
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-white tracking-tight">User Moderation</h2>
+              <h2 className="text-3xl font-bold text-white tracking-tight">User Management</h2>
               <p className="text-slate-400 mt-1">Manage user compliance and reputation across the platform.</p>
             </div>
             <button className="text-[#25f47b] text-sm font-bold hover:underline flex items-center gap-1 group">
