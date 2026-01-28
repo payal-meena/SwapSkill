@@ -51,7 +51,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+     fields:{
+     type:[String],
+     default:[],
+     },
     /* Account Status */
     isBlocked: {
       type: Boolean,
