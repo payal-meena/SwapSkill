@@ -1,14 +1,18 @@
-import React, { useState, useRef } from 'react'; // useRef add kiya
+// import React, { useState, useRef } from 'react'; // useRef add kiya
 import {
     Search, School, BookOpen, Verified, Users, History,
     Edit, Trash2, Share2, Settings, HelpCircle, ShieldCheck, Plus, LogOut,
     X, Camera, ChevronRight, Rocket, Star
 } from 'lucide-react';
+import api from "../../services/api";
+
+import React, { useState, useRef, useEffect } from 'react';
 
 const AddExpertiseModal = ({ isOpen, onClose }) => {
     const [step, setStep] = useState(1);
     const [proficiency, setProficiency] = useState('Intermediate');
-    
+
+
     const fileInputRef = useRef(null);
     const [selectedImage, setSelectedImage] = useState(null);
 
@@ -31,11 +35,13 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
         { id: 3, label: "Description" }
     ];
 
+
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#102210]/60 backdrop-blur-xl animate-in fade-in duration-300">
             <div className="bg-[#102210] border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[2.5rem] flex flex-col relative shadow-2xl text-white font-['Lexend']">
-                
-                <button 
+
+                <button
                     onClick={onClose}
                     className="absolute top-8 right-8 size-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors z-50"
                 >
@@ -45,15 +51,14 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                 <div className="p-8 md:p-12 overflow-y-auto">
                     <div className="flex items-center justify-between mb-12 relative max-w-2xl mx-auto">
                         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -translate-y-1/2 z-0"></div>
-                        <div 
+                        <div
                             className="absolute top-1/2 left-0 h-0.5 bg-[#13ec5b] -translate-y-1/2 z-0 transition-all duration-500"
                             style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
                         ></div>
                         {steps.map((s) => (
                             <div key={s.id} className="relative z-10 flex flex-col items-center gap-3">
-                                <div className={`size-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
-                                    step >= s.id ? 'bg-[#13ec5b] text-[#102210] shadow-[0_0_15px_rgba(19,236,91,0.4)]' : 'bg-white/10 text-white/40 border-2 border-white/10'
-                                }`}>
+                                <div className={`size-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${step >= s.id ? 'bg-[#13ec5b] text-[#102210] shadow-[0_0_15px_rgba(19,236,91,0.4)]' : 'bg-white/10 text-white/40 border-2 border-white/10'
+                                    }`}>
                                     {s.id}
                                 </div>
                                 <span className={`text-[10px] font-bold uppercase tracking-widest ${step >= s.id ? 'text-[#13ec5b]' : 'text-white/40'}`}>
@@ -84,17 +89,17 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                                     </select>
                                 </div>
                             </div>
-                            
+
                             <div className="flex flex-col gap-3 text-left">
                                 <label className="text-white/80 text-xs font-bold uppercase tracking-widest ml-1">Thumbnail</label>
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    onChange={handleImageChange} 
-                                    accept="image/*" 
-                                    className="hidden" 
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                    className="hidden"
                                 />
-                                <div 
+                                <div
                                     onClick={() => fileInputRef.current.click()}
                                     className="flex-1 min-h-[180px] border-2 border-dashed border-[#13ec5b]/20 rounded-2xl bg-white/5 hover:bg-[#13ec5b]/5 flex flex-col items-center justify-center cursor-pointer transition-all group relative overflow-hidden"
                                 >
@@ -120,20 +125,20 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
                     {step === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <ProficiencyCard 
-                                    level="Beginner" desc="Foundations" 
-                                    active={proficiency === 'Beginner'} 
-                                    onClick={() => setProficiency('Beginner')} 
+                                <ProficiencyCard
+                                    level="Beginner" desc="Foundations"
+                                    active={proficiency === 'Beginner'}
+                                    onClick={() => setProficiency('Beginner')}
                                 />
-                                <ProficiencyCard 
-                                    level="Intermediate" desc="Practical Use" 
-                                    active={proficiency === 'Intermediate'} 
-                                    onClick={() => setProficiency('Intermediate')} 
+                                <ProficiencyCard
+                                    level="Intermediate" desc="Practical Use"
+                                    active={proficiency === 'Intermediate'}
+                                    onClick={() => setProficiency('Intermediate')}
                                 />
-                                <ProficiencyCard 
-                                    level="Expert" desc="Mastery" 
-                                    active={proficiency === 'Expert'} 
-                                    onClick={() => setProficiency('Expert')} 
+                                <ProficiencyCard
+                                    level="Expert" desc="Mastery"
+                                    active={proficiency === 'Expert'}
+                                    onClick={() => setProficiency('Expert')}
                                 />
                             </div>
                         </div>
@@ -141,30 +146,30 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
 
                     {step === 3 && (
                         <div className="space-y-4 text-left animate-in slide-in-from-right-4 duration-300">
-                             <label className="text-white/80 text-xs font-bold uppercase tracking-widest ml-1">Description</label>
-                             <textarea 
+                            <label className="text-white/80 text-xs font-bold uppercase tracking-widest ml-1">Description</label>
+                            <textarea
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[200px] outline-none focus:border-[#13ec5b] transition-all"
                                 placeholder="Describe what you will teach..."
-                             />
+                            />
                         </div>
                     )}
 
                     <div className="flex items-center justify-between pt-10 mt-10 border-t border-white/5">
-                        <button 
+                        <button
                             onClick={() => step > 1 && setStep(step - 1)}
                             className={`px-8 py-4 font-bold rounded-xl transition-all ${step === 1 ? 'opacity-0 pointer-events-none' : 'text-white/60 hover:text-white'}`}
                         >
                             Back
                         </button>
                         <div className="flex gap-4">
-                            <button 
+                            <button
                                 onClick={onClose}
                                 className="bg-white/5 px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all"
                             >
                                 Cancel
                             </button>
                             {step < 3 ? (
-                                <button 
+                                <button
                                     onClick={() => setStep(step + 1)}
                                     className="bg-[#13ec5b] px-10 py-4 rounded-xl text-[#102216] font-black tracking-widest shadow-[0_0_20px_rgba(19,236,91,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                                 >
@@ -184,9 +189,8 @@ const AddExpertiseModal = ({ isOpen, onClose }) => {
 };
 
 const ProficiencyCard = ({ level, desc, active, onClick }) => (
-    <button onClick={onClick} className={`p-6 rounded-2xl border-2 transition-all text-left flex flex-col gap-2 ${
-        active ? 'border-[#13ec5b] bg-[#13ec5b]/10 shadow-[0_0_15px_rgba(19,236,91,0.2)]' : 'border-white/10 bg-white/5 hover:border-white/20'
-    }`}>
+    <button onClick={onClick} className={`p-6 rounded-2xl border-2 transition-all text-left flex flex-col gap-2 ${active ? 'border-[#13ec5b] bg-[#13ec5b]/10 shadow-[0_0_15px_rgba(19,236,91,0.2)]' : 'border-white/10 bg-white/5 hover:border-white/20'
+        }`}>
         <div className={`size-10 rounded-lg flex items-center justify-center ${active ? 'bg-[#13ec5b] text-[#102216]' : 'bg-white/10'}`}>
             <Star size={20} fill={active ? "currentColor" : "none"} />
         </div>
@@ -200,6 +204,26 @@ const ProficiencyCard = ({ level, desc, active, onClick }) => (
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('teaching');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [user, setUser] = useState({});
+    const [loading, setLoading] = useState(true); useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await api.get("/users/me");
+                setUser(res.data);
+            } catch (err) {
+                console.error("Profile fetch failed", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+
+
+
+
 
     const skills = [
         {
@@ -229,6 +253,8 @@ const Profile = () => {
     ];
 
     return (
+
+        
         <div className="min-h-screen bg-[#f6f8f6] dark:bg-[#102216] text-slate-900 dark:text-white font-['Lexend']">
             <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
@@ -256,14 +282,17 @@ const Profile = () => {
                             <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
                                 <div className="flex flex-col items-center text-center gap-4">
                                     <div className="w-24 h-24 rounded-full border-4 border-[#13ec5b]/20 shadow-xl overflow-hidden bg-slate-200">
-                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="profile" />
+                                        <img
+                                            src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg"}
+                                            alt="avatar"
+                                        />
                                     </div>
                                     <div>
-                                        <h1 className="text-2xl font-bold">Alex Rivera</h1>
-                                        <p className="text-[#13ec5b] font-medium tracking-wide">Fullstack Developer</p>
+                                        <h1 className="text-2xl font-bold">{user?.name || "USER"}</h1>
+                                        <p className="text-[#13ec5b] font-medium tracking-wide">{user?.field || "No fields available."}</p>
                                     </div>
                                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                                        Passionate builder of web experiences. I love sharing React patterns and learning design.
+                                        {user?.bio|| "No bio available."}
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 mt-8">
@@ -293,7 +322,7 @@ const Profile = () => {
                                 <SkillCard key={skill.id} skill={skill} />
                             ))}
 
-                            <button 
+                            <button
                                 onClick={() => setIsModalOpen(true)}
                                 className="group flex flex-col items-center justify-center gap-4 p-8 min-h-[260px] border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-[#13ec5b]/50 hover:bg-[#13ec5b]/5 rounded-2xl transition-all"
                             >
