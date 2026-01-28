@@ -15,10 +15,11 @@ import Explore from "../pages/explore/Explore";
 import Profile from "../pages/profile/Profile";
 import UserManagment from "../pages/admin/UserManagment";
 import SkillModeration from "../pages/admin/SkillModeration";
-import AdminProfile from "../pages/admin/settings/AdminProfile"
+import AdminProfile from "../pages/admin/settings/AdminProfile";
+import ExploreProfile from "../pages/explore/ExploreProfile";
 
-// 1. IS NAME KO MONITORING HI RAKHEIN (Aapki file ke mutabik)
-import Monitoring from "../pages/admin/Monitoring"; 
+// Monitoring component import
+import Monitoring from "../pages/admin/Monitoring";
 
 function AppRoutes() {
   return (
@@ -27,15 +28,16 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/auth" element={<Auth />} />
 
-      {/* User Routes */}
+      {/* User Routes (Wrapped in UserLayout) */}
       <Route element={<UserLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-skills" element={<MySkills />} />
         <Route path="/requests" element={<Requests />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/explore" element={<Explore />} />
-        <Route path="my-profile" element={<Profile />} />
-      </Route>
+        <Route path="/explore-profile" element={<ExploreProfile />} />
+        <Route path="/my-profile" element={<Profile />} />
+      </Route> {/* Fixed: Closing tag for UserLayout added here */}
 
       {/* Settings Routes */}
       <Route path="/settings" element={<SettingsLayout />}>
@@ -48,18 +50,15 @@ function AppRoutes() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        
         <Route path="users" element={<UserManagment />} />
         <Route path="skills" element={<SkillModeration />} />
         <Route path="exchanges" element={<Monitoring />} />
-
-           {/* admin settings  */}
-        <Route path="settings" element={<AdminProfile />} />
         
-
+        {/* Admin Settings */}
+        <Route path="settings" element={<AdminProfile />} />
         <Route path="moderation" element={<div>Moderation Page</div>} />
       </Route>
-      
+
       {/* 404 Redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
