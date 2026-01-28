@@ -1,9 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const SkillCard = ({ name, rating, reviews, img, offeredSkill, level, wantedSkill, statusColor = 'bg-[#13ec5b]' }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="group bg-white dark:bg-[#193322] border border-slate-200 dark:border-[#23482f] rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-[#13ec5b]/5 transition-all duration-300">
       <div className="p-6">
+        {/* Profile Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -24,6 +28,7 @@ const SkillCard = ({ name, rating, reviews, img, offeredSkill, level, wantedSkil
           </button>
         </div>
 
+        {/* Skills Section */}
         <div className="space-y-4 mb-8">
           <div>
             <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-[#92c9a4] font-bold mb-2">Offered Skill</p>
@@ -41,10 +46,17 @@ const SkillCard = ({ name, rating, reviews, img, offeredSkill, level, wantedSkil
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
-          <button className="py-2.5 rounded-xl border border-slate-200 dark:border-[#326744] text-slate-700 dark:text-white text-sm font-bold hover:bg-slate-50 dark:hover:bg-[#23482f] transition-all">
+          {/* View Profile Button - Same Style as Connect */}
+          <button 
+            onClick={() => navigate('/explore-profile')} 
+            className="py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all text-center"
+          >
             View Profile
           </button>
+
+          {/* Connect Button */}
           <button className="py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all">
             Connect
           </button>

@@ -5,7 +5,7 @@ const cloudinary = require("../config/cloudinary");
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "skill-exchange/profile",
+    folder: "profile-images",
     allowed_formats: ["jpg", "jpeg", "png"],
   },
 });

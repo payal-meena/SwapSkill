@@ -164,48 +164,51 @@ const MySkills = () => {
 
   return (
     <div className="flex h-screen overflow-hidden font-['Lexend'] relative">
-      <main className={`flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark transition-all duration-300 ${isWantedModalOpen ? 'blur-sm opacity-50' : ''}`}>
+      <main className={`flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-[#0a0f0b] transition-all duration-300 ${isWantedModalOpen ? 'blur-sm opacity-50' : ''}`}>
         <UserNavbar userName="Alex" />
 
         <div className="max-w-7xl mx-auto w-full px-6 py-10">
+          
+          {/* --- HIGH-DEFINITION CENTERED NAVIGATION TABS --- */}
+          <div className="flex justify-center mb-16">
+            <div className="relative bg-[#102216] p-1.5 rounded-[2rem] flex items-center w-full max-w-lg border border-white/5 shadow-2xl">
+              {/* Sliding Background Indicator */}
+              <div 
+                className={`absolute h-[calc(100%-12px)] top-[6px] transition-all duration-500 ease-out rounded-[1.6rem] bg-[#13ec5b] shadow-[0_0_20px_rgba(19,236,91,0.4)]
+                ${activeTab === 'offered' ? 'left-[6px] w-[calc(50%-6px)]' : 'left-[50%] w-[calc(50%-6px)]'}`}
+              />
 
-          {/* --- Centered Navigation Tabs --- */}
-          <div className="flex items-center justify-center gap-12 mb-12 border-b border-slate-200 dark:border-[#23482f] w-full">
-            <button
-              onClick={() => setActiveTab('offered')}
-              className={`relative pb-5 flex items-center gap-3 font-black transition-all text-xs uppercase tracking-widest ${activeTab === 'offered' ? 'text-[#13ec5b]' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <span className="material-symbols-outlined text-xl">school</span>
-              Skills I Offer
-              {activeTab === 'offered' && (
-                <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#13ec5b] rounded-t-full shadow-[0_-2px_15px_rgba(19,236,91,0.6)]" />
-              )}
-            </button>
+              <button 
+                onClick={() => setActiveTab('offered')}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-4 text-[15px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'offered' ? 'text-[#0a0f0b] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
+              >
+                <span className="material-symbols-outlined text-xl">school</span>
+                Skills I Offer
+              </button>
 
-            <button
-              onClick={() => setActiveTab('wanted')}
-              className={`relative pb-5 flex items-center gap-3 font-black transition-all text-xs uppercase tracking-widest ${activeTab === 'wanted' ? 'text-[#13ec5b]' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <span className="material-symbols-outlined text-xl">auto_stories</span>
-              Skills I Want to Learn
-              {activeTab === 'wanted' && (
-                <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#13ec5b] rounded-t-full shadow-[0_-2px_15px_rgba(19,236,91,0.6)]" />
-              )}
-            </button>
+              <button 
+                onClick={() => setActiveTab('wanted')}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-4 text-[15px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'wanted' ? 'text-[#0a0f0b] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
+              >
+                <span className="material-symbols-outlined text-xl">auto_stories</span>
+                Skills I Want
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-center w-full">
             {activeTab === 'offered' ? (
               /* --- OFFERED SKILLS SECTION --- */
-              <section className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
                   <div className="text-center md:text-left">
                     <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Offer</h3>
-                    <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">SHARE YOUR EXPERTISE WITH THE WORLD</p>
+                    <div className="h-1 w-12 bg-[#13ec5b] mt-2 mb-2 hidden md:block rounded-full"></div>
+                    <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em]">SHARE YOUR EXPERTISE WITH THE WORLD</p>
                   </div>
                   <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[10px] uppercase tracking-widest"
+                    className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[13px] uppercase tracking-widest"
                   >
                     <PlusCircle size={18} />
                     Add New Skill
@@ -238,11 +241,12 @@ const MySkills = () => {
                 </div>
               </section>
             ) : (
-              /* --- WANTED SKILLS SECTION (Styled exactly like Offered) --- */
-              <section className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500">
+              /* --- WANTED SKILLS SECTION --- */
+              <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <div className="text-center md:text-left mb-10">
                   <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
-                  <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
+                  <div className="h-1 w-12 bg-[#13ec5b] mt-2 mb-2 hidden md:block rounded-full"></div>
+                  <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em]">YOUR PERSONAL GROWTH ROADMAP</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -257,8 +261,8 @@ const MySkills = () => {
                   ))}
 
                   {/* Neon Styled "Add New" Button */}
-                  <button
-                    className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10"
+                  <button 
+                    className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10 min-h-[300px]"
                     onClick={() => setIsWantedModalOpen(true)}
                   >
                     <PlusCircle className="mb-5 group-hover:scale-110 transition-transform text-[#13ec5b]/40 group-hover:text-[#13ec5b]" size={56} />

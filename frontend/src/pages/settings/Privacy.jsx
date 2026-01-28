@@ -9,6 +9,31 @@ const Privacy = () => {
     { id: 2, name: 'Sarah Miller', initials: 'SM' },
   ];
 
+   const handleDeleteAccount = async () => {
+    const confirmDelete = window.confirm(
+      "Are you sure? This action will permanently delete your account."
+    );
+  
+    if (!confirmDelete) return;
+  
+    try {
+      await api.delete("/users/me");
+  
+      // logout
+      localStorage.removeItem("token");
+  
+      alert("Your account has been deleted");
+  
+      // redirect to login
+      window.location.href = "/login";
+    } catch (error) {
+      alert(
+        "Account deletion failed: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
+  };
+
   return (
     <div className="flex-1 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -76,12 +101,14 @@ const Privacy = () => {
         </div>
       </section>
 
-      <div className="pt-4 flex justify-center">
-        <button className="flex items-center gap-2 px-6 py-3 rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all text-sm font-semibold group">
-          <Trash2 size={18} className="group-hover:rotate-12 transition-transform" />
-          Delete My Account
-        </button>
-      </div>
+       <button
+       onClick={handleDeleteAccount}
+       className="flex items-center gap-2 px-6 py-3 rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all text-sm font-semibold group active:scale-95"
+     >
+       <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
+       Delete My Account
+     </button>
+     
     </div>
   );
 };

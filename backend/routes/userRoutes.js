@@ -9,23 +9,19 @@ const upload = require("../middleware/uploadMiddleware.js");
 const {
   getMyProfile,
   updateProfile,
-  updateProfileImage
-
+  updatePassword,
+  updateProfileImage,
+  deleteMyAccount 
 } = require("../controllers/userController.js");
 
 const {
-
   addSkill,
   deleteSkill,
-
 } = require("../controllers/skillController.js");
 
-
 const {
-
   loginUser,
   SignupUser,
-
 } = require("../controllers/authController.js");
 
 router.post("/login", loginUser);
@@ -33,6 +29,11 @@ router.post("/signup", validate(signupSchema), SignupUser);
 
 router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateProfile);
+router.delete("/me", protect, deleteMyAccount);
+
+
+
+router.put("/password", protect, updatePassword);
 router.put(
   "/profile-image",
   protect,
