@@ -37,7 +37,8 @@ const Account = () => {
     onConfirm: null
   });
 
-  const [activeTab, setActiveTab] = useState('general');
+  // Default ko null kiya hai taaki page load par General Settings band rahe
+  const [activeTab, setActiveTab] = useState(null);
 
   const showModal = (type, title, message, onConfirm = null) => {
     setModalConfig({ isOpen: true, type, title, message, onConfirm });
@@ -189,7 +190,7 @@ const Account = () => {
             </div>
             {activeTab === 'general' ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
           </button>
-          <div className={`transition-all duration-300 ${activeTab === 'general' ? 'max-h-[1000px] p-8 pt-2' : 'max-h-0 overflow-hidden opacity-0'}`}>
+          <div className={`transition-all duration-300 ${activeTab === 'general' ? 'max-h-[1000px] p-8 pt-2 opacity-100' : 'max-h-0 overflow-hidden opacity-0'}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
@@ -236,7 +237,7 @@ const Account = () => {
           </div>
         </div>
 
-        {/* Linked Accounts - Full Updated Design */}
+        {/* Linked Accounts - Social Presence */}
         <div className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] overflow-hidden shadow-sm">
           <button onClick={() => toggleTab('connections')} className="w-full flex items-center justify-between p-7 hover:bg-slate-50 dark:hover:bg-[#1a3323] transition-colors">
             <div className="flex items-center gap-5">
