@@ -27,7 +27,6 @@ const MySkills = () => {
   const [loading, setLoading] = useState(true);
   const [isEditWantedOpen, setIsEditWantedOpen] = useState(false);
 
-
   useEffect(() => {
     fetchMySkills();
     fetchMyWantedSkills();
@@ -134,11 +133,10 @@ const MySkills = () => {
     }
   };
 
-
   const handleEditClick = (skill) => {
     setSelectedSkill({
       _id: skill.id,
-      skillName: skill.title, // modal expects skillName
+      skillName: skill.title,
       level: skill.level,
       description: skill.description,
       category: skill.category,
@@ -146,13 +144,16 @@ const MySkills = () => {
     });
     setIsEditModalOpen(true);
   };
+
   const handleEditWantedClick = (skill) => {
-    setSelectedSkill({  _id: skill.id,skillName: skill.title, // modal expects skillName
+    setSelectedSkill({
+      _id: skill.id,
+      skillName: skill.title,
       level: skill.level,
-      description: skill.description });
+      description: skill.description
+    });
     setIsEditWantedOpen(true);
   };
-
 
   const handleViewCurriculum = (title) => {
     setActiveSkillTitle(title);
@@ -171,35 +172,37 @@ const MySkills = () => {
 
         <div className="max-w-7xl mx-auto w-full px-6 py-10">
 
-          {/* --- Centered Navigation Tabs --- */}
-          <div className="flex items-center justify-center gap-12 mb-12 border-b border-slate-200 dark:border-[#23482f] w-full">
-            <button
-              onClick={() => setActiveTab('offered')}
-              className={`relative pb-5 flex items-center gap-3 font-black transition-all text-xs uppercase tracking-widest ${activeTab === 'offered' ? 'text-[#13ec5b]' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <span className="material-symbols-outlined text-xl">school</span>
-              Skills I Offer
-              {activeTab === 'offered' && (
-                <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#13ec5b] rounded-t-full shadow-[0_-2px_15px_rgba(19,236,91,0.6)]" />
-              )}
-            </button>
+          {/* --- TOP CENTERED MODERN NAVIGATION TABS --- */}
+          <div className="flex justify-center mb-16">
+            <div className="relative bg-[#102216] p-1.5 rounded-[2rem] flex items-center w-full max-w-lg border border-white/5 shadow-2xl">
+              {/* Sliding Background Indicator */}
+              <div 
+                className={`absolute h-[calc(100%-12px)] top-[6px] transition-all duration-500 ease-out rounded-[1.6rem] bg-[#13ec5b] shadow-[0_0_25px_rgba(19,236,91,0.5)]
+                ${activeTab === 'offered' ? 'left-[6px] w-[calc(50%-6px)]' : 'left-[50%] w-[calc(50%-6px)]'}`}
+              />
 
-            <button
-              onClick={() => setActiveTab('wanted')}
-              className={`relative pb-5 flex items-center gap-3 font-black transition-all text-xs uppercase tracking-widest ${activeTab === 'wanted' ? 'text-[#13ec5b]' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <span className="material-symbols-outlined text-xl">auto_stories</span>
-              Skills I Want to Learn
-              {activeTab === 'wanted' && (
-                <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#13ec5b] rounded-t-full shadow-[0_-2px_15px_rgba(19,236,91,0.6)]" />
-              )}
-            </button>
+              <button 
+                onClick={() => setActiveTab('offered')}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-4 text-[13px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'offered' ? 'text-[#102216] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
+              >
+                <span className="material-symbols-outlined text-xl">school</span>
+                Skills I Offer
+              </button>
+
+              <button 
+                onClick={() => setActiveTab('wanted')}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-4 text-[13px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'wanted' ? 'text-[#102216] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
+              >
+                <span className="material-symbols-outlined text-xl">auto_stories</span>
+                Skills I Want
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-center w-full">
             {activeTab === 'offered' ? (
               /* --- OFFERED SKILLS SECTION --- */
-              <section className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
                   <div className="text-center md:text-left">
                     <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Offer</h3>
@@ -240,8 +243,8 @@ const MySkills = () => {
                 </div>
               </section>
             ) : (
-              /* --- WANTED SKILLS SECTION (Styled exactly like Offered) --- */
-              <section className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500">
+              /* --- WANTED SKILLS SECTION --- */
+              <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <div className="text-center md:text-left mb-10">
                   <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
                   <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
@@ -258,9 +261,8 @@ const MySkills = () => {
                     />
                   ))}
 
-                  {/* Neon Styled "Add New" Button */}
                   <button
-                    className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10"
+                    className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10 min-h-[300px]"
                     onClick={() => setIsWantedModalOpen(true)}
                   >
                     <PlusCircle className="mb-5 group-hover:scale-110 transition-transform text-[#13ec5b]/40 group-hover:text-[#13ec5b]" size={56} />
