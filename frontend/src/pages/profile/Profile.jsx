@@ -37,6 +37,7 @@ const Profile = () => {
         try {
             const response = await skillService.getMySkills();
             if (response.success) {
+                
                 const formattedSkills = response.skills.map(skill => ({
                     id: skill._id,
                     title: skill.skillName,

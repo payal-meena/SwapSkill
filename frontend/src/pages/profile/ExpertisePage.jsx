@@ -9,7 +9,8 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
   const [proficiency, setProficiency] = useState('Intermediate');
   const fileInputRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [preview,setPreview]= useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [skillData, setSkillData] = useState({
     skillName: '',
     category: '',
@@ -23,13 +24,13 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
     { id: 3, label: "Description" }
   ];
 
- const handleImageChange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  setSelectedImage(file); 
-  setPreview(URL.createObjectURL(file));
-};
+    setSelectedImage(file);
+    setPreview(URL.createObjectURL(file));
+  };
 
 
   const handleChange = (e) => {
@@ -46,39 +47,63 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
     return iconMap[category] || <Rocket size={18} />;
   };
 
-const handlePublish = async () => {
-  try {
-    console.log("🟡 RAW STATE CHECK");
-    console.log("skillData:", skillData);
-    console.log("proficiency:", proficiency);
-    console.log("selectedImage:", selectedImage);
+  const handlePublish = async () => {
+    if (isSubmitting) return; 
 
-    const formData = new FormData();
+    try {
+      setIsSubmitting(true); 
 
-    formData.append("skillName", skillData.skillName);
-    formData.append("category", skillData.category);
-    formData.append("description", skillData.description);
-    formData.append("experience", skillData.experience);
-    formData.append("level", proficiency);
-    formData.append("type", "offer");
+      console.log("🟡 RAW STATE CHECK");
+      console.log("skillData:", skillData);
+      console.log("proficiency:", proficiency);
+      console.log("selectedImage:", selectedImage);
 
-    if (selectedImage) {
-      formData.append("thumbnail", selectedImage);
+      const formData = new FormData();
+
+      formData.append("skillName", skillData.skillName);
+      formData.append("category", skillData.category);
+      formData.append("description", skillData.description);
+      formData.append("experience", skillData.experience);
+      formData.append("level", proficiency);
+      formData.append("type", "offer");
+
+      if (selectedImage) {
+        formData.append("thumbnail", selectedImage);
+      }
+
+      // 🔍 debug
+      console.log("🟢 FORM DATA CONTENTS");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], "=>", pair[1]);
+      }
+
+      const response = await skillService.addSkill(formData);
+      console.log("✅ RESPONSE:", response);
+
+      if (response.success) {
+        // 🧹 reset form
+        setSkillData({
+          skillName: '',
+          category: '',
+          description: '',
+          experience: ''
+        });
+        setProficiency('Intermediate');
+        setSelectedImage(null);
+        setPreview(null);
+        setStep(1);
+
+       
+        onClose();
+      }
+
+    } catch (err) {
+      console.error("❌ ADD SKILL ERROR:", err.response?.data || err.message);
+    } finally {
+      setIsSubmitting(false); 
     }
+  };
 
-    // 🔥 FORM DATA CHECK
-    console.log("🟢 FORM DATA CONTENTS");
-    for (let pair of formData.entries()) {
-      console.log(pair[0], "=>", pair[1]);
-    }
-
-    const response = await skillService.addSkill(formData);
-    console.log("✅ RESPONSE:", response);
-
-  } catch (err) {
-    console.error("❌ ADD SKILL ERROR:", err.response?.data || err.message);
-  }
-};
 
 
 
@@ -238,10 +263,16 @@ const handlePublish = async () => {
               ) : (
                 <button
                   onClick={handlePublish}
-                  className="bg-[#13ec5b] px-10 py-4 rounded-xl text-[#102210] font-black tracking-widest shadow-[0_0_20px_rgba(19,236,91,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                  disabled={isSubmitting}
+                  className={`bg-[#13ec5b] px-10 py-4 rounded-xl text-[#102210] font-black tracking-widest 
+    shadow-[0_0_20px_rgba(19,236,91,0.4)]
+    transition-all flex items-center gap-2
+    ${isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"}
+  `}
                 >
-                  PUBLISH <Rocket size={20} />
+                  {isSubmitting ? "PUBLISHING..." : <>PUBLISH <Rocket size={20} /></>}
                 </button>
+
               )}
             </div>
           </div>
