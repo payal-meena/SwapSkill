@@ -106,6 +106,21 @@ const Account = () => {
     setIsUploading(false);
   };
 
+  // Naya Remove Photo Function
+  const handleRemovePhoto = async () => {
+    try {
+      // Backend ko inform karein ki image remove karni hai (aapka api endpoint according to requirement ho sakta hai)
+      await api.put("/users/profile-image", { remove: true }); 
+      setPreviewImage("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex");
+      setProfileImage(null);
+      showModal('success', 'Photo Removed', 'Your profile picture has been reset to default.');
+    } catch (error) {
+      // Agar backend endpoint nahi hai toh sirf UI se reset karne ke liye:
+      setPreviewImage("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex");
+      setProfileImage(null);
+    }
+  };
+
   const deleteAccountFinal = async () => {
     try {
       await api.delete("/users/me");
@@ -173,7 +188,7 @@ const Account = () => {
             <h4 className="text-xl font-bold dark:text-white mb-4">Profile Photo</h4>
             <div className="flex gap-4 justify-center md:justify-start">
               <button onClick={uploadProfileImage} disabled={isUploading || !profileImage} className="text-sm font-bold px-6 py-3 bg-[#13ec5b] text-[#102216] rounded-xl disabled:opacity-50 shadow-lg">{isUploading ? 'Uploading...' : 'Save New Photo'}</button>
-              <button className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl">Remove</button>
+              <button onClick={handleRemovePhoto} className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl">Remove</button>
             </div>
           </div>
         </div>
