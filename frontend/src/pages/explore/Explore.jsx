@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import ExploreNavbar from '../../components/explore/ExploreNavbar';
 import SkillCard from '../../components/explore/SkillCard';
 import api from '../../services/api';
-import axios from 'axios';
 import { requestService } from '../../services/requestService';
 
 const Explore = () => {
@@ -17,25 +15,33 @@ const Explore = () => {
       const mentorRes = await api.get("/explore");
       const allMentors = mentorRes.data;
 
-
       // 2. User ki requests fetch karo
       const requestRes = await requestService.getMyRequests();
       const myRequests = requestRes.requests || [];
       const currentUserId = requestRes.currentUser;
 
-      // 3. Status merge karo
-      const mentorsWithStatus = allMentors.filter(mentor => mentor._id !== currentUserId)
-      .map(mentor => {
-        const foundRequest = myRequests.find(req => 
-          (req.receiver._id === mentor._id || req.requester._id === mentor._id) &&
-          req.status !== 'cancelled'
-        );
+      // 3. Status merge karo aur Content ki length ke hisab se SORT karo
+      const mentorsWithStatus = allMentors
+        .filter(mentor => mentor._id !== currentUserId)
+        .map(mentor => {
+          const foundRequest = myRequests.find(req => 
+            (req.receiver._id === mentor._id || req.requester._id === mentor._id) &&
+            req.status !== 'cancelled'
+          );
 
-        return {
-          ...mentor,
-          connectionStatus: foundRequest ? foundRequest.status : 'none'
-        };
-      });
+          return {
+            ...mentor,
+            connectionStatus: foundRequest ? foundRequest.status : 'none'
+          };
+        })
+        // --- SORTING LOGIC START ---
+        .sort((a, b) => {
+          const contentA = (a.offeredSkills?.length || 0) + (a.wantedSkills?.length || 0);
+          const contentB = (b.offeredSkills?.length || 0) + (b.wantedSkills?.length || 0);
+          // Chota content pehle (Top), Bada content baad mein (End)
+          return contentA - contentB;
+        });
+        // --- SORTING LOGIC END ---
 
       setMentors(mentorsWithStatus);
     } catch (err) {
@@ -51,7 +57,7 @@ const Explore = () => {
 
   const handleConnect = async (mentorId) => {
     try {
-      const res = await requestService.sendRequest({ receiver: mentorId });
+      await requestService.sendRequest({ receiver: mentorId });
       // UI update bina refresh ke
       setMentors(prev => prev.map(m => 
         m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
@@ -59,7 +65,6 @@ const Explore = () => {
     } catch (err) {
       const errorMsg = err.response?.data?.message || "";
       if (errorMsg.includes("already sent")) {
-        // Agar DB mein hai par UI mein nahi dikha raha tha, toh ab update kar do
         setMentors(prev => prev.map(m => 
           m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
         ));
@@ -81,7 +86,8 @@ const Explore = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          /* items-stretch ensure karta hai ki SkillCard ki h-full property sahi se kaam kare */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {mentors.map((mentor) => (
               <SkillCard 
                 key={mentor._id || mentor.name} 
@@ -92,6 +98,7 @@ const Explore = () => {
           </div>
         )}
 
+        {/* Bottom Section */}
         <div className="mt-12 flex flex-col items-center gap-4">
           <button className="px-8 py-3 rounded-xl border border-slate-200 dark:border-[#326744] text-slate-900 dark:text-white font-bold hover:bg-white dark:hover:bg-[#112217] shadow-sm transition-all active:scale-95">
             Load More Results
