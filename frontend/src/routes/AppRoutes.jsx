@@ -33,7 +33,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-skills" element={<MySkills />} />
         <Route path="/requests" element={<Requests />} />
-        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/messages/:userId" element={<MessagesPage />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/explore-profile" element={<ExploreProfile />} />
         <Route path="/my-profile" element={<Profile />} />

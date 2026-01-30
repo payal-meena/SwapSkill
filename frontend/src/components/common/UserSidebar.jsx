@@ -76,7 +76,7 @@ const UserSidebar = () => {
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
           <NavItem to="/requests" icon="handshake" label="Requests" badge />
-          <NavItem to="/messages" icon="chat_bubble" label="Messages" />
+          <NavItem to="/messages/:userId" icon="chat_bubble" label="Messages" />
         </nav>
       </div>
 
