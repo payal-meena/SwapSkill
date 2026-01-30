@@ -9,9 +9,11 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
   const [proficiency, setProficiency] = useState('Intermediate');
   const fileInputRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [skillData, setSkillData] = useState({
     skillName: '',
-    category: 'Development',
+    category: '',
     description: '',
     experience: ''
   });
@@ -24,12 +26,12 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setSelectedImage(reader.result);
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    setSelectedImage(file);
+    setPreview(URL.createObjectURL(file));
   };
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,43 +48,64 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
   };
 
   const handlePublish = async () => {
-    try {
-      const newSkill = {
-        skillName: skillData.skillName,
-        category: skillData.category,
-        description: skillData.description,
-        experience: skillData.experience,
-        level: proficiency,
-        img: selectedImage || '',
-        type: 'offer'
-      };
+    if (isSubmitting) return; 
 
-      const response = await skillService.addSkill(newSkill);
+    try {
+      setIsSubmitting(true); 
+
+      console.log("🟡 RAW STATE CHECK");
+      console.log("skillData:", skillData);
+      console.log("proficiency:", proficiency);
+      console.log("selectedImage:", selectedImage);
+
+      const formData = new FormData();
+
+      formData.append("skillName", skillData.skillName);
+      formData.append("category", skillData.category);
+      formData.append("description", skillData.description);
+      formData.append("experience", skillData.experience);
+      formData.append("level", proficiency);
+      formData.append("type", "offer");
+
+      if (selectedImage) {
+        formData.append("thumbnail", selectedImage);
+      }
+
+      // 🔍 debug
+      console.log("🟢 FORM DATA CONTENTS");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], "=>", pair[1]);
+      }
+
+      const response = await skillService.addSkill(formData);
+      console.log("✅ RESPONSE:", response);
 
       if (response.success) {
-        onSkillAdded({
-          id: response.skill._id,
-          title: response.skill.skillName,
-          level: response.skill.level,
-          category: response.skill.category,
-          description: response.skill.description,
-          img: response.skill.img || selectedImage,
-          icon: getIconForCategory(response.skill.category),
-          info: `${response.skill.experience || 0} years experience`,
-          type: response.skill.type || 'teaching'
+        // 🧹 reset form
+        setSkillData({
+          skillName: '',
+          category: '',
+          description: '',
+          experience: ''
         });
-
-        // Reset modal state
-        setStep(1);
         setProficiency('Intermediate');
         setSelectedImage(null);
-        setSkillData({ skillName: '', category: 'Development', description: '' });
+        setPreview(null);
+        setStep(1);
+
+       
         onClose();
       }
-    } catch (error) {
-      console.error('Error adding skill:', error);
+
+    } catch (err) {
+      console.error("❌ ADD SKILL ERROR:", err.response?.data || err.message);
+    } finally {
+      setIsSubmitting(false); 
     }
   };
+
+
+
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#102210]/60 backdrop-blur-xl">
@@ -169,9 +192,9 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
                   onClick={() => fileInputRef.current.click()}
                   className="flex-1 min-h-[180px] border-2 border-dashed border-[#13ec5b]/20 rounded-2xl bg-white/5 hover:bg-[#13ec5b]/5 flex flex-col items-center justify-center cursor-pointer transition-all group relative overflow-hidden"
                 >
-                  {selectedImage ? (
+                  {preview ? (
                     <>
-                      <img src={selectedImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                      <img src={preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-xs font-bold">CHANGE IMAGE</p>
                       </div>
@@ -240,10 +263,16 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
               ) : (
                 <button
                   onClick={handlePublish}
-                  className="bg-[#13ec5b] px-10 py-4 rounded-xl text-[#102210] font-black tracking-widest shadow-[0_0_20px_rgba(19,236,91,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                  disabled={isSubmitting}
+                  className={`bg-[#13ec5b] px-10 py-4 rounded-xl text-[#102210] font-black tracking-widest 
+    shadow-[0_0_20px_rgba(19,236,91,0.4)]
+    transition-all flex items-center gap-2
+    ${isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"}
+  `}
                 >
-                  PUBLISH <Rocket size={20} />
+                  {isSubmitting ? "PUBLISHING..." : <>PUBLISH <Rocket size={20} /></>}
                 </button>
+
               )}
             </div>
           </div>

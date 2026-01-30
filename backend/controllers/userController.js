@@ -51,11 +51,24 @@ const updatePassword = async (req, res) => {
 
 const updateProfileImage = async (req, res) => {
   try {
+    console.log('=== Profile Image Upload Debug ===');
+    console.log('User ID:', req.user);
+    console.log('File received:', req.file ? 'Yes' : 'No');
+    console.log('Request body:', req.body);
+    
     const userId = req.user;
 
     if (!req.file) {
-      return res.status(400).json({ message: "Image required" });
+      console.log('❌ No file received');
+      return res.status(400).json({ message: "Image file is required" });
     }
+
+    console.log('✅ File details:', {
+      filename: req.file.filename,
+      path: req.file.path,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -63,15 +76,26 @@ const updateProfileImage = async (req, res) => {
       { new: true }
     ).select("-password");
 
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log('✅ Profile image updated successfully');
+    console.log('New image URL:', req.file.path);
+
     res.json({
       success: true,
-      message: "Profile image updated",
+      message: "Profile image updated successfully",
       imageUrl: req.file.path,
       user,
     });
   } catch (error) {
-    console.error("Profile image update error:", error);
-    res.status(500).json({ message: error.message });
+    console.error("❌ Profile image update error:", error);
+    res.status(500).json({ 
+      message: "Failed to update profile image",
+      error: error.message 
+    });
   }
 };
 

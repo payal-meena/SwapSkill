@@ -1,5 +1,5 @@
-
 const mongoose = require("mongoose");
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -26,7 +26,6 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
-
     /* Profile Info */
     bio: {
       type: String,
@@ -50,6 +49,11 @@ const userSchema = new mongoose.Schema(
     totalReviews: {
       type: Number,
       default: 0,
+    },
+
+    profession: {
+      type: String,
+      default: "",
     },
 
     /* Account Status */

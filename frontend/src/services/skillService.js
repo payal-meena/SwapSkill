@@ -3,10 +3,10 @@ import api from './api';
 
 export const skillService = {
   // Add new skill
-  addSkill: async (skillData) => {
-    const formData = new FormData();
-    Object.keys(skillData).forEach(key => {
-      formData.append(key, skillData[key]);
+  addSkill: async (formData) => {
+    // const formData = new FormData();
+    Object.keys(formData).forEach(key => {
+      formData.append(key, formData[key]);
     });
     
     const response = await api.post('/skills', formData, {

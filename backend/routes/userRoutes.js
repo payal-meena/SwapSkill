@@ -37,6 +37,11 @@ router.put("/password", protect, updatePassword);
 router.put(
   "/profile-image",
   protect,
+  (req, res, next) => {
+    console.log('🚀 Profile image route hit');
+    console.log('Headers:', req.headers);
+    next();
+  },
   upload.single("image"),
   updateProfileImage
 );

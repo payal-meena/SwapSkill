@@ -1,335 +1,356 @@
 import React, { useState, useEffect } from 'react';
-import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe } from 'lucide-react';
+import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe, Briefcase, FileText, ChevronDown, ChevronUp, Instagram, Facebook, Ghost, Twitter, Link as LinkIcon, ExternalLink, Edit3, Check, X } from 'lucide-react';
 import { getMyProfile } from "../../services/authService.js";
 import api from "../../services/api";
+import AccountModal from "./AccountModal"; 
 
 const Account = () => {
   const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [profession, setProfession] = useState("");
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
-  );
+  const [previewImage, setPreviewImage] = useState("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex");
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [profileVisible, setProfileVisible] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('');
+  
+  // Social Media Links State
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: '',
+    facebook: '',
+    snapchat: '',
+    github: '',
+    twitter: ''
+  });
 
-  const canSavePassword =
-    passwords.next.length >= 8 &&
-    passwords.next === passwords.confirm &&
-    passwords.current.length > 0;
+  // Local state to track which link is being edited
+  const [editingField, setEditingField] = useState(null);
+  const [tempValue, setTempValue] = useState("");
+
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
+  // Default ko null kiya hai taaki page load par General Settings band rahe
+  const [activeTab, setActiveTab] = useState(null);
+
+  const showModal = (type, title, message, onConfirm = null) => {
+    setModalConfig({ isOpen: true, type, title, message, onConfirm });
+  };
+
+  const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
+
+  const toggleTab = (tab) => setActiveTab(activeTab === tab ? null : tab);
+
+  const canSavePassword = passwords.next.length >= 8 && passwords.next === passwords.confirm && passwords.current.length > 0;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getMyProfile();
-        setEmail(data.email);
-        if (data.profileImage) {
-          setPreviewImage(data.profileImage);
-        }
+        setEmail(data.email || "");
+        setBio(data.bio || "");
+        setProfession(data.profession || "");
+        setPreviewImage(data.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name || 'User'}`);
+        setSocialLinks(data.socialLinks || { instagram: '', facebook: '', snapchat: '', github: '', twitter: '' });
         setLoading(false);
       } catch (error) {
-        console.error(error);
         setLoading(false);
       }
     };
     fetchProfile();
   }, []);
 
-  const handleUpdateEmail = async () => {
+  const handleUpdateProfile = async () => {
     setIsUpdating(true);
     try {
-      await api.put('/users/me', { email });
-      alert("Email updated successfully");
+      await api.put('/users/me', { email, bio, profession, socialLinks });
+      showModal('success', 'Profile Updated', 'Your changes and social links have been saved.');
+      setActiveTab(null); 
     } catch (error) {
-      alert("Email update failed: " + (error.response?.data?.message || error.message));
+      showModal('error', 'Update Failed', error.response?.data?.message || "Failed to update profile.");
     }
     setIsUpdating(false);
   };
 
   const handleSavePassword = async () => {
-    setSaveStatus('Saving...');
     try {
-      await api.put('/users/password', {
-        currentPassword: passwords.current,
-        newPassword: passwords.next
-      });
-      setSaveStatus('Password Updated!');
+      await api.put('/users/password', { currentPassword: passwords.current, newPassword: passwords.next });
+      showModal('success', 'Password Changed', 'Your account security has been updated.');
       setPasswords({ current: '', next: '', confirm: '' });
-      setTimeout(() => setSaveStatus(''), 3000);
+      setActiveTab(null);
     } catch (error) {
-      setSaveStatus('');
-      alert("Password update failed: " + (error.response?.data?.message || error.message));
+      showModal('error', 'Auth Error', error.response?.data?.message || "Current password is wrong.");
     }
   };
 
   const uploadProfileImage = async () => {
-    if (!profileImage) {
-      alert("Please select an image first");
-      return;
-    }
-
+    if (!profileImage) return showModal('error', 'Selection Required', 'Please select an image first.');
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append("image", profileImage);
-
-      const response = await api.put("/users/profile-image", formData);
-
-      if (response.data?.user?.profileImage) {
-        setPreviewImage(response.data.user.profileImage);
-      }
-      alert("Profile image updated successfully");
+      const res = await api.put("/users/profile-image", formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setPreviewImage(res.data.user.profileImage);
+      showModal('success', 'Upload Complete', 'Your new profile picture is now live.');
       setProfileImage(null);
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("Image upload failed: " + (error.response?.data?.message || error.message));
+      showModal('error', 'Upload Failed', 'We could not save your image.');
     }
     setIsUploading(false);
   };
 
-  const handleDeleteAccount = async () => {
-  const confirmDelete = window.confirm(
-    "Are you sure? This action will permanently delete your account."
+  // Naya Remove Photo Function
+  const handleRemovePhoto = async () => {
+    try {
+      // Backend ko inform karein ki image remove karni hai (aapka api endpoint according to requirement ho sakta hai)
+      await api.put("/users/profile-image", { remove: true }); 
+      setPreviewImage("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex");
+      setProfileImage(null);
+      showModal('success', 'Photo Removed', 'Your profile picture has been reset to default.');
+    } catch (error) {
+      // Agar backend endpoint nahi hai toh sirf UI se reset karne ke liye:
+      setPreviewImage("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex");
+      setProfileImage(null);
+    }
+  };
+
+  const deleteAccountFinal = async () => {
+    try {
+      await api.delete("/users/me");
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    } catch (error) {
+      showModal('error', 'Action Failed', 'Could not delete account. Try again later.');
+    }
+  };
+
+  const confirmDelete = () => {
+    showModal('delete', 'Delete Account?', 'This will permanently remove all your data. Proceed?', deleteAccountFinal);
+  };
+
+  // Function to open link in Chrome/Browser
+  const handleConnect = (url) => {
+    if (!url) {
+        showModal('error', 'No Link Found', 'Please edit and add a link first.');
+        return;
+    }
+    const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
+    window.open(formattedUrl, '_blank');
+  };
+
+  // Start editing a specific social link
+  const startEdit = (field, currentVal) => {
+    setEditingField(field);
+    setTempValue(currentVal);
+  };
+
+  // Save specific social link to state
+  const saveTempLink = (field) => {
+    setSocialLinks({ ...socialLinks, [field]: tempValue });
+    setEditingField(null);
+  };
+
+  if (loading) return (
+    <div className="w-full flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13ec5b]"></div>
+    </div>
   );
 
-  if (!confirmDelete) return;
-
-  try {
-    await api.delete("/users/me");
-
-    // logout
-    localStorage.removeItem("token");
-
-    alert("Your account has been deleted");
-
-    // redirect to login
-    window.location.href = "/login";
-  } catch (error) {
-    alert(
-      "Account deletion failed: " +
-        (error.response?.data?.message || error.message)
-    );
-  }
-};
-
-
-  if (loading) {
-    return (
-      <div className="w-full max-w-none px-4 md:px-6 py-8 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13ec5b]"></div>
-      </div>
-    );
-  }
-
-
-
-
   return (
+    <div className="w-full max-w-6xl mx-auto px-4 md:px-8 py-10 space-y-8 animate-in fade-in duration-700 font-['Lexend']">
+      
+      <div className="mb-4">
+        <h2 className="text-3xl font-bold dark:text-white text-slate-900">Account Settings</h2>
+        <p className="text-slate-500 dark:text-[#92c9a4]">Update your profile and security preferences.</p>
+      </div>
 
-    <div className="w-full max-w-none px-4 md:px-6 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-['Lexend'] mx-0">
-
-      <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="relative group">
-            <div className="h-24 w-24 rounded-full border-4 border-[#13ec5b] overflow-hidden bg-slate-100">
-              <img
-                src={previewImage}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-
+      {/* 1. Photo Section */}
+      <section className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] p-10 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center gap-10">
+          <div className="relative">
+            <div className="h-32 w-32 rounded-full border-4 border-[#13ec5b] overflow-hidden bg-slate-100 shadow-xl">
+              <img src={previewImage} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              id="profileImageInput"
-              className="hidden"
-              onChange={(e) => {
+            <input type="file" accept="image/*" id="profileImageInput" className="hidden" onChange={(e) => {
                 const file = e.target.files[0];
-                if (file) {
-                  setProfileImage(file);
-                  setPreviewImage(URL.createObjectURL(file));
-                }
-              }}
-            />
-
-
-            <button
-              onClick={() =>
-                document.getElementById("profileImageInput").click()
-              }
-              className="absolute bottom-0 right-0 bg-[#13ec5b] p-2 rounded-full text-[#102216] hover:scale-110 transition-transform shadow-lg"
-            >
-              <Camera size={16} />
-            </button>
-
+                if (file) { setProfileImage(file); setPreviewImage(URL.createObjectURL(file)); }
+            }} />
+            <button onClick={() => document.getElementById("profileImageInput").click()} className="absolute bottom-1 right-1 bg-[#13ec5b] p-3 rounded-full text-[#102216] hover:scale-110 transition-transform shadow-lg"><Camera size={20} /></button>
           </div>
-          <div className="text-center md:text-left">
-            <h4 className="text-lg font-bold dark:text-white">Profile Photo</h4>
-            <p className="text-sm text-slate-500 dark:text-[#92c9a4] mb-3">Update your photo to be recognized by the community.</p>
-            <div className="flex gap-2 justify-center md:justify-start">
-              <button
-                onClick={uploadProfileImage}
-                disabled={isUploading || !profileImage}
-                className="text-xs font-bold px-4 py-2 bg-[#13ec5b]/10 text-[#13ec5b] rounded-lg hover:bg-[#13ec5b] hover:text-[#102216] transition-all disabled:opacity-50"
-              >
-                {isUploading ? 'Uploading...' : 'Upload New'}
-              </button>
-
-              <button className="text-xs font-bold px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-all">Remove</button>
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="text-xl font-bold dark:text-white mb-4">Profile Photo</h4>
+            <div className="flex gap-4 justify-center md:justify-start">
+              <button onClick={uploadProfileImage} disabled={isUploading || !profileImage} className="text-sm font-bold px-6 py-3 bg-[#13ec5b] text-[#102216] rounded-xl disabled:opacity-50 shadow-lg">{isUploading ? 'Uploading...' : 'Save New Photo'}</button>
+              <button onClick={handleRemovePhoto} className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl">Remove</button>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
-        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-          <UserCog className="text-[#13ec5b]" size={24} />
-          <span className="dark:text-white text-slate-900">General Settings</span>
-        </h3>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-2">
-            <label className="text-sm font-medium text-slate-500 dark:text-[#92c9a4]" htmlFor="email">Email Address</label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[#13ec5b]/50 outline-none transition-all"
-              />
-              <button
-                onClick={handleUpdateEmail}
-                disabled={isUpdating}
-                className="px-6 py-2 bg-[#13ec5b] text-[#102216] text-xs font-bold rounded-xl hover:bg-[#13ec5b]/90 transition-colors disabled:opacity-50"
-              >
-                {isUpdating ? 'Sending...' : 'Update Email'}
-              </button>
+      {/* Accordions */}
+      <div className="space-y-4">
+        {/* General Settings */}
+        <div className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] overflow-hidden">
+          <button onClick={() => toggleTab('general')} className="w-full flex items-center justify-between p-7 hover:bg-slate-50 dark:hover:bg-[#1a3323]">
+            <div className="flex items-center gap-5">
+              <div className="p-3 bg-slate-100 dark:bg-[#23482f] rounded-2xl"><UserCog className="text-[#13ec5b]" size={24} /></div>
+              <div className="text-left"><span className="block font-bold text-lg dark:text-white">General Settings</span><span className="text-xs text-slate-500">Email, Profession, and Bio</span></div>
             </div>
-          </div>
-
-          <div className="pt-6 border-t border-slate-100 dark:border-[#23482f] flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold dark:text-white text-slate-900">Profile Visibility</p>
-              <p className="text-xs text-slate-500 dark:text-[#92c9a4]">Allow others to find you in search results</p>
-            </div>
-            <Toggle checked={profileVisible} onChange={() => setProfileVisible(!profileVisible)} />
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
-        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-          <Lock className="text-[#13ec5b]" size={22} />
-          <span className="dark:text-white text-slate-900">Security</span>
-        </h3>
-
-        <div className="grid grid-cols-1 gap-4">
-          <div className="grid grid-cols-1 gap-2">
-            <label className="text-xs font-medium text-slate-500 dark:text-[#92c9a4]">Current Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={passwords.current}
-              onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[#13ec5b]/50 outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid grid-cols-1 gap-2">
-              <label className="text-xs font-medium text-slate-500 dark:text-[#92c9a4]">New Password</label>
-              <input
-                type="password"
-                placeholder="Min 8 characters"
-                value={passwords.next}
-                onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
-                className={`w-full px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 outline-none ${passwords.next.length > 0 && passwords.next.length < 8 ? 'ring-2 ring-red-500' : 'focus:ring-[#13ec5b]/50'}`}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              <label className="text-xs font-medium text-slate-500 dark:text-[#92c9a4]">Confirm New Password</label>
-              <input
-                type="password"
-                placeholder="Repeat password"
-                value={passwords.confirm}
-                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                className={`w-full px-4 py-2.5 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white text-sm focus:ring-2 outline-none ${passwords.confirm && passwords.next !== passwords.confirm ? 'ring-2 ring-red-500' : 'focus:ring-[#13ec5b]/50'}`}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-[10px] text-slate-400">Passwords must match and be at least 8 characters.</p>
-            <button
-              disabled={!canSavePassword || saveStatus !== ''}
-              onClick={handleSavePassword}
-              className="px-6 py-2.5 bg-[#13ec5b] text-[#102216] text-sm font-bold rounded-xl hover:bg-[#13ec5b]/90 transition-all disabled:opacity-30 active:scale-95"
-            >
-              {saveStatus || 'Save Password'}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white dark:bg-[#112217] rounded-2xl border border-slate-200 dark:border-[#23482f] p-8 shadow-sm">
-        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-          <ShieldCheck className="text-[#13ec5b]" size={22} />
-          <span className="dark:text-white text-slate-900">Connections</span>
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-[#23482f]/30 border border-slate-100 dark:border-[#23482f]">
-            <div className="flex items-center gap-3">
-              <Github size={20} className="dark:text-white" />
-              <div>
-                <p className="text-sm font-bold dark:text-white">GitHub</p>
-                <p className="text-xs text-slate-400">Not connected</p>
+            {activeTab === 'general' ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+          </button>
+          <div className={`transition-all duration-300 ${activeTab === 'general' ? 'max-h-[1000px] p-8 pt-2 opacity-100' : 'max-h-0 overflow-hidden opacity-0'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-[#23482f] text-white outline-none" placeholder="Email" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Professional Title</label>
+                <input type="text" value={profession} onChange={(e) => setProfession(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-[#23482f] text-white outline-none" placeholder="e.g. Full Stack Developer" />
               </div>
             </div>
-            <button className="text-xs font-bold text-[#13ec5b] hover:underline">Connect</button>
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-[#23482f]/30 border border-slate-100 dark:border-[#23482f]">
-            <div className="flex items-center gap-3">
-              <Globe size={20} className="text-blue-500" />
-              <div>
-                <p className="text-sm font-bold dark:text-white">Google Account</p>
-                <p className="text-xs text-[#13ec5b]">Connected</p>
-              </div>
+            <div className="space-y-2 mb-6">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">About Bio</label>
+              <textarea rows="4" value={bio} onChange={(e) => setBio(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-[#23482f] text-white outline-none" placeholder="Short Bio" />
             </div>
-            <button className="text-xs font-bold text-red-500 hover:underline">Disconnect</button>
+            <div className="flex justify-between items-center p-5 bg-slate-50 dark:bg-[#23482f]/20 rounded-2xl">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold dark:text-white">Profile Visibility</span>
+                <Toggle checked={profileVisible} onChange={() => setProfileVisible(!profileVisible)} />
+              </div>
+              <button onClick={handleUpdateProfile} disabled={isUpdating} className="px-8 py-3 bg-[#13ec5b] text-[#102216] font-bold rounded-xl active:scale-95 disabled:opacity-50">{isUpdating ? 'Saving...' : 'Save Changes'}</button>
+            </div>
           </div>
         </div>
-      </section>
 
-      <button
-  onClick={handleDeleteAccount}
-  className="flex items-center gap-2 px-6 py-3 rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all text-sm font-semibold group active:scale-95"
->
-  <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-  Delete My Account
-</button>
+        {/* Security Section */}
+        <div className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] overflow-hidden shadow-sm">
+          <button onClick={() => toggleTab('security')} className="w-full flex items-center justify-between p-7 hover:bg-slate-50 dark:hover:bg-[#1a3323] transition-colors">
+            <div className="flex items-center gap-5">
+              <div className="p-3 bg-slate-100 dark:bg-[#23482f] rounded-2xl"><Lock className="text-[#13ec5b]" size={24} /></div>
+              <div className="text-left">
+                  <span className="block font-bold text-lg dark:text-white text-slate-900">Security</span>
+                  <span className="text-xs text-slate-500 dark:text-[#92c9a4]">Password Management</span>
+              </div>
+            </div>
+            {activeTab === 'security' ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+          </button>
+          <div className={`transition-all duration-300 ease-in-out ${activeTab === 'security' ? 'max-h-[800px] opacity-100 p-8 pt-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+            <input type="password" placeholder="Current Password" value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} className="w-full md:w-1/2 px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-[#23482f] text-white outline-none mb-6 block" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+              <input type="password" placeholder="New Password" value={passwords.next} onChange={(e) => setPasswords({ ...passwords, next: e.target.value })} className="w-full px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-[#23482f] text-white outline-none" />
+              <input type="password" placeholder="Confirm New Password" value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} className="w-full px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-[#23482f] text-white outline-none" />
+            </div>
+            <button disabled={!canSavePassword} onClick={handleSavePassword} className="px-10 py-3.5 bg-[#13ec5b] text-[#102216] font-bold rounded-xl disabled:opacity-30 active:scale-95 transition-transform">Update Password</button>
+          </div>
+        </div>
 
+        {/* Linked Accounts - Social Presence */}
+        <div className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] overflow-hidden shadow-sm">
+          <button onClick={() => toggleTab('connections')} className="w-full flex items-center justify-between p-7 hover:bg-slate-50 dark:hover:bg-[#1a3323] transition-colors">
+            <div className="flex items-center gap-5">
+              <div className="p-3 bg-slate-100 dark:bg-[#23482f] rounded-2xl"><ShieldCheck className="text-[#13ec5b]" size={24} /></div>
+              <div className="text-left">
+                  <span className="block font-bold text-lg dark:text-white text-slate-900">Social Presence</span>
+                  <span className="text-xs text-slate-500 dark:text-[#92c9a4]">Connect and edit your links</span>
+              </div>
+            </div>
+            {activeTab === 'connections' ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+          </button>
+          <div className={`transition-all duration-300 ease-in-out ${activeTab === 'connections' ? 'max-h-[1200px] opacity-100 p-8 pt-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {[
+                { id: 'instagram', icon: <Instagram className="text-pink-500" />, label: 'Instagram' },
+                { id: 'facebook', icon: <Facebook className="text-blue-600" />, label: 'Facebook' },
+                { id: 'snapchat', icon: <Ghost className="text-yellow-500" />, label: 'Snapchat' },
+                { id: 'github', icon: <Github className="dark:text-white" />, label: 'GitHub' },
+                { id: 'twitter', icon: <Twitter className="text-sky-500" />, label: 'Twitter / X' }
+              ].map((social) => (
+                <div key={social.id} className="p-4 rounded-2xl border border-slate-100 dark:border-[#23482f] bg-slate-50/50 dark:bg-[#1a3323]/20 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {social.icon}
+                      <span className="text-sm font-bold dark:text-white">{social.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleConnect(socialLinks[social.id])}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[#13ec5b]/10 text-[#13ec5b] rounded-lg text-xs font-bold hover:bg-[#13ec5b] hover:text-[#102216] transition-all"
+                      >
+                        <ExternalLink size={14} /> Connect
+                      </button>
+                      <button 
+                        onClick={() => startEdit(social.id, socialLinks[social.id])}
+                        className="p-1.5 text-slate-400 hover:text-[#13ec5b] transition-colors"
+                      >
+                        <Edit3 size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline Editor for Social Link */}
+                  {editingField === social.id && (
+                    <div className="flex items-center gap-2 mt-1 animate-in slide-in-from-top-1 duration-200">
+                      <input 
+                        type="text" 
+                        value={tempValue} 
+                        onChange={(e) => setTempValue(e.target.value)}
+                        placeholder="Paste URL here..."
+                        className="flex-1 px-3 py-2 bg-white dark:bg-[#23482f] dark:text-white rounded-lg text-xs outline-none border border-[#13ec5b]/30 focus:border-[#13ec5b]"
+                      />
+                      <button onClick={() => saveTempLink(social.id)} className="p-2 bg-[#13ec5b] text-[#102216] rounded-lg"><Check size={14} /></button>
+                      <button onClick={() => setEditingField(null)} className="p-2 bg-red-500/10 text-red-500 rounded-lg"><X size={14} /></button>
+                    </div>
+                  )}
+                  {!editingField && socialLinks[social.id] && (
+                    <p className="text-[10px] text-slate-400 truncate px-1 italic">{socialLinks[social.id]}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-[#23482f]">
+                <button 
+                  onClick={handleUpdateProfile} 
+                  disabled={isUpdating}
+                  className="px-8 py-3 bg-[#13ec5b] text-[#102216] font-bold rounded-xl active:scale-95 shadow-lg shadow-[#13ec5b]/20"
+                >
+                  {isUpdating ? 'Saving...' : 'Save All Changes'}
+                </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Integration */}
+      <AccountModal 
+        {...modalConfig} 
+        onClose={closeModal} 
+      />
+
+      {/* Delete Footer */}
+      <div className="pt-8 border-t border-slate-200 dark:border-[#23482f] flex flex-col md:flex-row gap-4 justify-between items-center">
+        <p className="text-sm text-slate-500">Dangerous area: This action cannot be undone.</p>
+        <button onClick={confirmDelete} className="flex items-center gap-2 px-8 py-4 rounded-2xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all text-sm font-bold active:scale-95">
+          <Trash2 size={20} />
+          Delete Account Permanently
+        </button>
+      </div>
     </div>
   );
 };
 
 const Toggle = ({ checked, onChange }) => (
-  <div
-    onClick={onChange}
-    className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in cursor-pointer"
-  >
-    <div
-      className={`block w-12 h-6 rounded-full shadow-inner transition-colors duration-300 ${checked ? 'bg-[#13ec5b]' : 'bg-slate-300 dark:bg-[#23482f]'
-        }`}
-    ></div>
-    <div
-      className={`absolute block w-4 h-4 mt-1 ml-1 rounded-full bg-white shadow transform transition-transform duration-300 ${checked ? 'translate-x-6' : 'translate-x-0'
-        }`}
-    ></div>
+  <div onClick={onChange} className={`relative inline-flex h-6 w-12 cursor-pointer items-center rounded-full transition-colors ${checked ? 'bg-[#13ec5b]' : 'bg-slate-300 dark:bg-[#23482f]'}`}>
+    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-7' : 'translate-x-1'}`} />
   </div>
 );
 

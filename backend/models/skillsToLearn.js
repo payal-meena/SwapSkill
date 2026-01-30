@@ -8,7 +8,7 @@ const skillsToLearnSchema = new mongoose.Schema({
   leval: {
     type: String,
     required: true,
-    enum: ["Beginner", "Intermediate", "Advanced"]
+    enum: ["Beginner", "Intermediate", "Expert"]
   },
   description: {
     type: String,

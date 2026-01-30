@@ -1,3 +1,7 @@
+const dotenv = require("dotenv");
+// Load env first
+dotenv.config();
+
 const cloudinary = require("cloudinary").v2;
 
 cloudinary.config({
