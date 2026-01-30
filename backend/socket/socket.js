@@ -20,7 +20,7 @@ module.exports = (io) => {
       const chat = await Chat.findById(chatId);
       if (!chat) return;
 
-      if (!chat.participants.includes(senderId)) return;
+      if (!chat.participants.some(p => p.toString() === senderId.toString())) return;
 
       // ✅ Save message separately
       const message = await Message.create({
@@ -35,7 +35,7 @@ module.exports = (io) => {
       await chat.save();
 
       // ✅ Emit message
-      io.to(chatId).emit("receiveMessage", message);
+      io.to(chatId).emit("messageReceived", message);
     });
 
     socket.on("disconnect", () => {

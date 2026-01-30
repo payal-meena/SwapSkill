@@ -1,23 +1,24 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link ,useNavigate} from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { requestService } from "../../services/requestService";
+import { chatService } from '../../services/chatService';
 
 const IncomingRequestCard = ({ request, refresh }) => {
   const { _id, requester, offeredSkill, requestedSkill, status } = request;
-  const navigate=useNavigate();
-  
+  const navigate = useNavigate();
+
   // Check karein ki kya ye ID pehle se hidden list mein hai
   const [isVisible, setIsVisible] = useState(() => {
     const hiddenRequests = JSON.parse(localStorage.getItem('hidden_requests') || '[]');
     return !hiddenRequests.includes(_id);
   });
-const handleMessageClick=()=>{
-  navigate(`/messages/${requester._id}`,{state: { 
-        userName: requester.name,
-        userImage: requester.profileImage 
-      }});
-}
+  // const handleMessageClick=(requestId,)=>{
+  //   navigate(`/messages/${requester._id}`,{state: { 
+  //         userName: requester.name,
+  //         userImage: requester.profileImage 
+  //       }});
+  // }
 
   // const handleAction = async (action) => {
   //   try {
@@ -30,7 +31,7 @@ const handleMessageClick=()=>{
   //     } else if (action === 'remove') {
   //       // 1. Local state se hatao
   //       setIsVisible(false);
-        
+
   //       // 2. LocalStorage mein save karo taaki refresh par yaad rahe
   //       const hiddenRequests = JSON.parse(localStorage.getItem('hidden_requests') || '[]');
   //       if (!hiddenRequests.includes(_id)) {
@@ -42,12 +43,64 @@ const handleMessageClick=()=>{
   //     console.error(`${action} failed:`, err);
   //   }
   // };
+  // chatService import karo upar
+
+  const handleMessageClick = async () => {
+    try {
+      // 1. Payload banao (Dhyan do: requestId aur otherUserId dono bhej rahe hain)
+      const chatPayload = {
+        requestId: _id,            // Card ki request ID
+        otherUserId: requester._id  // Saamne wale user ki ID
+      };
+
+      console.log("Creating/Fetching Chat with payload:", chatPayload);
+
+      // 2. Service call (Ab backend ko requestId mil jayegi)
+      const res = await chatService.createOrGetChat(chatPayload);
+
+      // 3. Navigate karte waqt URL mein requestId bhi pass karo
+      if (res && res._id) {
+        // Hum URL aise banyenge: /messages/USER_ID?requestId=REQ_ID
+        navigate(`/messages/${requester._id}?requestId=${_id}`, {
+          state: {
+            chatId: res._id,
+            userName: requester.name,
+            userImage: requester.profileImage
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Chat Error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Chat start nahi ho payi.");
+    }
+  };
+
+  // const handleMessageClick = async () => {
+  //   try {
+  //     // 1. Backend se Chat ID mangwao (Request ID aur User ID bhej kar)
+  //     // _id yahan Request ki ID hai, aur requester._id dusre bande ki
+  //     const chat = await chatService.createOrGetChat(_id, requester._id);
+
+  //     // 2. Chat ID milne ke baad navigate karo
+  //     // Hum query string use karenge (?chatId=...) taaki Messages page ise select kar sake
+  //     navigate(`/messages?chatId=${chat._id}`, {
+  //       state: { 
+  //         userName: requester.name,
+  //         userImage: requester.profileImage 
+  //       }
+  //     });
+  //   } catch (err) {
+  //     console.error("Chat start karne mein error:", err);
+  //     alert("Could not start chat. Please try again.");
+  //   }
+  // };
+
   const handleAction = async (action) => {
     try {
       if (action === 'accept') {
         await requestService.acceptRequest(_id);
         refresh(); // List refresh hogi status change dikhane ke liye
-      } 
+      }
       else if (action === 'reject' || action === 'remove') {
         // Agar reject kar rahe hain toh pehle backend call karein
         if (action === 'reject') {
@@ -56,7 +109,7 @@ const handleMessageClick=()=>{
 
         // Card ko UI se hatao (Dono cases mein: Reject ya Remove)
         setIsVisible(false);
-        
+
         // LocalStorage mein save karo taaki refresh par wapas na aaye
         const hiddenRequests = JSON.parse(localStorage.getItem('hidden_requests') || '[]');
         if (!hiddenRequests.includes(_id)) {
@@ -77,13 +130,25 @@ const handleMessageClick=()=>{
   return (
     <div className={`group bg-[#0d120e] border p-5 rounded-[2rem] transition-all duration-300 shadow-xl ${status === 'accepted' ? 'border-[#13ec5b]/40 bg-[#111812]' : 'border-[#1d2e22] hover:border-[#13ec5b]/30'}`}>
       <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-        
+
         {/* Profile Section */}
         <Link to={`/profile/${requester._id}`} className="flex items-center gap-4 min-w-[250px]">
           <div className="relative">
-            <img 
-              src={requester?.profileImage || `https://ui-avatars.com/api/?name=${requester.name}&bg=13ec5b&color=000&bold=true`} 
+            {/* Profile Section ke andar image tag ko aise update karein */}
+            <img
+              src={
+                requester?.profileImage
+                  ? (requester.profileImage.startsWith('http')
+                    ? requester.profileImage
+                    : `${API_URL}${requester.profileImage}`)
+                  : `https://ui-avatars.com/api/?name=${requester.name}&bg=13ec5b&color=000&bold=true`
+              }
               className="w-16 h-16 rounded-2xl object-cover border-2 border-[#1d2e22]"
+              alt={requester.name}
+              onError={(e) => {
+                // Agar image load hone mein error aaye toh avatar dikhao
+                e.target.src = `https://ui-avatars.com/api/?name=${requester.name}&bg=13ec5b&color=000&bold=true`;
+              }}
             />
             {status === 'accepted' && (
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#13ec5b] border-4 border-[#0d120e] rounded-full flex items-center justify-center">
@@ -99,10 +164,10 @@ const handleMessageClick=()=>{
 
         {/* Skills Section */}
         <div className="flex-1 flex items-center justify-around bg-black/40 p-4 rounded-2xl border border-[#1d2e22]">
-           {/* ... skills content (same as before) ... */}
-           <p className="text-[#13ec5b] font-bold">Teach</p>
-           <span className="material-symbols-outlined text-[#13ec5b]">sync</span>
-           <p className="text-white font-bold">Learn</p>
+          {/* ... skills content (same as before) ... */}
+          <p className="text-[#13ec5b] font-bold">Teach</p>
+          <span className="material-symbols-outlined text-[#13ec5b]">sync</span>
+          <p className="text-white font-bold">Learn</p>
         </div>
 
         {/* Buttons */}
@@ -117,8 +182,8 @@ const handleMessageClick=()=>{
               <button onClick={handleMessageClick} className="flex items-center gap-2 px-8 py-3 bg-[#0070f3] text-white font-bold rounded-xl">
                 <span className="material-symbols-outlined text-sm">send</span> Message
               </button>
-              <button 
-                onClick={() => handleAction('remove')} 
+              <button
+                onClick={() => handleAction('remove')}
                 className="w-12 h-12 flex items-center justify-center bg-[#1a1a1a] border border-[#2d2d2d] text-slate-500 hover:text-red-500 rounded-xl"
               >
                 <span className="material-symbols-outlined">close</span>
