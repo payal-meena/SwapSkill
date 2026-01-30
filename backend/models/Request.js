@@ -15,26 +15,24 @@ const requestSchema = new mongoose.Schema(
     },
 
     offeredSkill: {
-      name: { type: String, required: true },
+      name: { type: String },
       level: {
         type: String,
         enum: ["Beginner", "Intermediate", "Advanced"],
-        required: true,
       },
     },
 
     requestedSkill: {
-      name: { type: String, required: true },
+      name: { type: String },
       level: {
         type: String,
         enum: ["Beginner", "Intermediate", "Advanced"],
-        required: true,
       },
     },
 
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected", "completed"],
+      enum: ["pending", "accepted", "rejected", "cancelled", "completed"],
       default: "pending",
     },
 

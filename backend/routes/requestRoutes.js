@@ -7,7 +7,8 @@ const  {
     getMyRequests,
     acceptRequest,
     rejectRequest,
-    completeRequest
+    completeRequest,
+    withdrawRequest
 } =require("../controllers/requestController.js");
 const router = express.Router();
 
@@ -24,5 +25,7 @@ router.put("/:id/reject", protect, rejectRequest);
 
 
 router.put("/:id/complete", protect, completeRequest);
+router.put("/withdraw/:id", protect, withdrawRequest);
+
 
 module.exports = router;

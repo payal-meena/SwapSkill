@@ -6,16 +6,16 @@ exports.sendRequestSchema = Joi.object({
   }),
 
   offeredSkill: Joi.object({
-    name: Joi.string().required(),
+    name: Joi.string(),
     level: Joi.string()
       .valid("Beginner", "Intermediate", "Advanced")
-      .required(),
-  }).required(),
+      ,
+  }),
 
   requestedSkill: Joi.object({
-    name: Joi.string().required(),
+    name: Joi.string(),
     level: Joi.string()
       .valid("Beginner", "Intermediate", "Advanced")
-      .required(),
-  }).required(),
+      ,
+  }),
 });

@@ -1,67 +1,124 @@
-import React, { useState } from 'react';
-import UserNavbar from '../../components/common/UserNavbar';
-import IncomingRequestCard from '../../components/requests/IncomingRequestCard';
-import SentRequestStatus from '../../components/requests/SentRequestStatus';
+
+import React, { useEffect, useState } from "react";
+import UserNavbar from "../../components/common/UserNavbar";
+import IncomingRequestCard from "../../components/requests/IncomingRequestCard";
+import SentRequestStatus from "../../components/requests/SentRequestStatus";
+import { requestService } from "../../services/requestService";
 
 const Requests = () => {
-  const [activeTab, setActiveTab] = useState('received');
+  const [activeTab, setActiveTab] = useState("received");
+  const [requests, setRequests] = useState([]);
+  const [currentUser, setCurrentUser] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const res = await requestService.getMyRequests();
+      // Backend se jo data aa raha hai usey state mein save karo
+      setRequests(res.requests || []);
+      setCurrentUser(res.currentUser);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWithdraw = async (id) => {
+    if (!window.confirm("Are you sure you want to cancel this request?")) return;
+
+    const previousRequests = [...requests];
+    setRequests(prev => prev.filter(req => req._id !== id));
+    try {
+      // 1. Optimistic Update: Pehle UI se hata do taaki user ko wait na karna pade
+
+      // 2. Backend Call
+      const res = await requestService.withdrawRequest(id);
+      
+      if (!res.success) {
+        
+        setRequests(previousRequests);
+        alert("Could not cancel request.");
+      }
+    } catch (err) {
+      console.error("Withdraw failed", err);
+      fetchRequests(); // Error aane par refresh karlo list
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
+
+const receivedRequests = requests.filter((r) => 
+  r.receiver?._id?.toString() === currentUser?.toString() && 
+  r.status !== 'cancelled' 
+);
+
+const sentRequests = requests.filter((r) => 
+  r.requester?._id?.toString() === currentUser?.toString() && 
+  r.status !== 'cancelled' 
+);
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark font-['Lexend']">
+    <div className="min-h-screen flex flex-col bg-[#050806] text-slate-200 font-['Lexend']">
       <UserNavbar userName="Alex" />
-      
-      <main className="p-8 max-w-[1200px] mx-auto w-full">
-        <header className="mb-8">
-          <h2 className="text-white text-xl font-bold tracking-tight">Requests Center</h2>
-          <p className="text-[#92c9a4] text-xs">Manage your incoming and outgoing skill swaps</p>
-        </header>
-
-        <div className="flex items-center gap-8 border-b border-[#23482f] mb-8">
-          <button 
-            onClick={() => setActiveTab('received')}
-            className={`pb-4 px-2 font-bold flex items-center gap-2 transition-all ${activeTab === 'received' ? 'text-[#13ec5b] border-b-2 border-[#13ec5b]' : 'text-[#92c9a4]'}`}
-          >
-            Received Requests <span className="bg-[#13ec5b1a] text-[#13ec5b] text-[10px] px-1.5 py-0.5 rounded-full">3</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('sent')}
-            className={`pb-4 px-2 font-bold flex items-center gap-2 transition-all ${activeTab === 'sent' ? 'text-[#13ec5b] border-b-2 border-[#13ec5b]' : 'text-[#92c9a4]'}`}
-          >
-            Sent Requests <span className="bg-[#23482f] text-[#92c9a4] text-[10px] px-1.5 py-0.5 rounded-full">2</span>
-          </button>
+      <main className="flex-1 p-4 md:p-10 max-w-5xl mx-auto w-full">
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="text-4xl font-black text-white tracking-tight">
+              Swap <span className="text-[#13ec5b]">Hub</span>
+            </h2>
+            <p className="text-slate-500 font-medium mt-1">Manage your incoming and outgoing requests</p>
+          </div>
+          <div className="flex gap-2 bg-[#0d120e] p-1 rounded-xl border border-[#1d2e22]">
+            <button 
+              onClick={() => setActiveTab("received")} 
+              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-500 hover:text-white"}`}
+            >
+              Received ({receivedRequests.filter(r => r.status === 'pending').length})
+            </button>
+            <button 
+              onClick={() => setActiveTab("sent")} 
+              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-500 hover:text-white"}`}
+            >
+              Sent ({sentRequests.filter(r => r.status === 'pending').length})
+            </button>
+          </div>
         </div>
 
-        {activeTab === 'received' ? (
-          <div className="grid grid-cols-1 gap-6">
-            <IncomingRequestCard 
-              name="Liam Wilson" 
-              role="Full-Stack Developer" 
-              rating="4.8" 
-              img="https://api.dicebear.com/7.x/avataaars/svg?seed=Liam"
-              offers="Native French Lessons"
-              wants="React Architecture"
-              message="Hey Alex! I've been looking for someone with your React expertise to help me refactor a project..."
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            <SentRequestStatus 
-              title="Python Advanced with Sarah" 
-              status="In Progress" 
-              img="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" 
-              progressStep={2} 
-            />
-            <SentRequestStatus 
-              title="Machine Learning with James" 
-              status="Awaiting Response" 
-              img="https://api.dicebear.com/7.x/avataaars/svg?seed=James" 
-              progressStep={0} 
-            />
-          </div>
-        )}
+        <div className="space-y-4">
+          {loading ? (
+            <div className="space-y-4 animate-pulse">
+              {[1, 2, 3].map((i) => <div key={i} className="h-32 bg-[#0d120e] rounded-3xl border border-[#1d2e22]" />)}
+            </div>
+          ) : activeTab === "received" ? (
+            receivedRequests.length > 0 ? (
+              receivedRequests.map((req) => (
+                <IncomingRequestCard key={req._id} request={req} refresh={fetchRequests} />
+              ))
+            ) : <EmptyState message="No incoming requests yet." />
+          ) : (
+            sentRequests.length > 0 ? (
+              sentRequests.map((req) => (
+                <SentRequestStatus key={req._id} request={req} onWithdraw={handleWithdraw} />
+              ))
+            ) : <EmptyState message="You haven't sent any requests." />
+          )}
+        </div>
       </main>
     </div>
   );
 };
+
+const EmptyState = ({ message }) => (
+  <div className="text-center py-20 bg-[#0d120e] border border-dashed border-[#1d2e22] rounded-[3rem] flex flex-col items-center">
+    <span className="material-symbols-outlined text-5xl text-slate-700 mb-4">inbox</span>
+    <p className="text-slate-400 font-medium">{message}</p>
+  </div>
+);
 
 export default Requests;

@@ -6,9 +6,16 @@ const sendRequest = async (req, res) => {
 
   try {
     const { receiver, offeredSkill, requestedSkill } = req.body;
-    const requester = req.user; 
+    const requester = req.user;
 
-   
+    // Receiver mandatory
+    if (!receiver) {
+      return res.status(400).json({
+        success: false,
+        message: "receiver is required",
+      });
+    }
+
     if (requester === receiver) {
       return res.status(400).json({
         success: false,
@@ -16,14 +23,17 @@ const sendRequest = async (req, res) => {
       });
     }
 
-    
-    const existingRequest = await Request.findOne({
+    // Optional skills check
+    const existingRequestQuery = {
       requester,
       receiver,
-      "offeredSkill.name": offeredSkill.name,
-      "requestedSkill.name": requestedSkill.name,
       status: "pending",
-    });
+    };
+
+    if (offeredSkill?.name) existingRequestQuery["offeredSkill.name"] = offeredSkill.name;
+    if (requestedSkill?.name) existingRequestQuery["requestedSkill.name"] = requestedSkill.name;
+
+    const existingRequest = await Request.findOne(existingRequestQuery);
 
     if (existingRequest) {
       return res.status(400).json({
@@ -32,12 +42,16 @@ const sendRequest = async (req, res) => {
       });
     }
 
-    const request = await Request.create({
+    const requestData = {
       requester,
       receiver,
-      offeredSkill,
-      requestedSkill,
-    });
+    };
+
+    // Only add skills if present
+    if (offeredSkill) requestData.offeredSkill = offeredSkill;
+    if (requestedSkill) requestData.requestedSkill = requestedSkill;
+
+    const request = await Request.create(requestData);
 
     res.status(201).json({
       success: true,
@@ -51,6 +65,7 @@ const sendRequest = async (req, res) => {
     });
   }
 };
+
 
 
  const getMyRequests = async (req, res) => {
@@ -67,6 +82,7 @@ const sendRequest = async (req, res) => {
     res.status(200).json({
       success: true,
       count: requests.length,
+      currentUser: userId,
       requests,
     });
   } catch (error) {
@@ -106,6 +122,51 @@ const sendRequest = async (req, res) => {
       success: true,
       message: "Request accepted",
       request,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const withdrawRequest = async (req, res) => {
+  try {
+    const userId = req.user;
+    const { id } = req.params;
+
+    const request = await Request.findById(id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Sirf requester withdraw kare
+    if (request.requester.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to withdraw this request",
+      });
+    }
+
+    // Sirf pending request withdraw ho sakti hai
+    if (request.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending requests can be withdrawn",
+      });
+    }
+
+    request.status = "cancelled";
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Request withdrawn successfully",
     });
   } catch (error) {
     res.status(500).json({
@@ -198,4 +259,5 @@ module.exports = {
   acceptRequest,
   rejectRequest,
   completeRequest,
+  withdrawRequest,
 };
