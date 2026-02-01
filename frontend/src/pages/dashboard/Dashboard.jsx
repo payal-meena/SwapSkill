@@ -9,7 +9,8 @@ const StatCard = ({ label, value, trend, icon }) => {
   const isPositive = trend.includes('+');
   
   return (
-    <div className="group relative flex flex-col gap-2 rounded-[2rem] p-8 bg-[#1a2e1f]/40 dark:bg-[#102216] border border-[#13ec5b]/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden">
+    /* Card Background updated to match rgb(17, 34, 23) style */
+    <div className="group relative flex flex-col gap-2 rounded-[2rem] p-8 bg-[#1a2e21] border border-[#13ec5b]/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden">
       {/* Background Accent Glow */}
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#13ec5b]/5 blur-3xl group-hover:bg-[#13ec5b]/10 transition-all" />
       
@@ -23,10 +24,10 @@ const StatCard = ({ label, value, trend, icon }) => {
       </div>
 
       <div className="mt-6 relative z-10">
-        <p className="text-slate-500 dark:text-[#92c9a4] text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70">
+        <p className="text-[#92c9a4] text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70">
           {label}
         </p>
-        <p className="text-slate-900 dark:text-white text-4xl font-black tracking-tighter">
+        <p className="text-white text-4xl font-black tracking-tighter">
           {value}
         </p>
       </div>
@@ -39,7 +40,8 @@ const StatCard = ({ label, value, trend, icon }) => {
 
 const Dashboard = () => {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f6f8f6] dark:bg-[#050a06] font-['Lexend'] text-white">
+    /* Main Background updated to #112217 (rgb 17,34,23) */
+    <div className="flex h-screen overflow-hidden bg-[#112217] font-['Lexend'] text-white">
 
       <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
         {/* Navbar */}
@@ -49,10 +51,10 @@ const Dashboard = () => {
           
           {/* Header Section */}
           <div className="mb-10">
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-white">
               User <span className="text-[#13ec5b]">Dashboard</span>
             </h1>
-            <p className="text-slate-500 dark:text-[#92c9a4] text-xs font-bold uppercase tracking-[0.3em] mt-2 opacity-60">
+            <p className="text-[#92c9a4] text-xs font-bold uppercase tracking-[0.3em] mt-2 opacity-60">
               Overview of your learning journey
             </p>
           </div>
@@ -70,7 +72,7 @@ const Dashboard = () => {
             <div className="lg:col-span-2 flex flex-col gap-8">
                <div className="flex justify-between items-end border-b border-[#13ec5b]/10 pb-4">
                   <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Current Exchanges</h2>
+                    <h2 className="text-xl font-black uppercase tracking-tight text-white">Current Exchanges</h2>
                     <p className="text-[10px] text-[#13ec5b] font-bold uppercase tracking-widest mt-1">Active learning sessions</p>
                   </div>
                   <button className="px-4 py-2 bg-white/5 hover:bg-[#13ec5b]/10 text-[#13ec5b] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-[#13ec5b]/10">
@@ -79,7 +81,7 @@ const Dashboard = () => {
                </div>
 
                <div className="grid gap-6">
-                 {/* Styled Wrapper for ExchangeCard if needed, but the card itself should be premium */}
+                 {/* Card Wrapper background update if applicable */}
                  <ExchangeCard 
                     title="Learning Python with Sarah" 
                     status="In Progress" 
@@ -95,7 +97,8 @@ const Dashboard = () => {
 
             {/* Right Content - Requests */}
             <div className="flex flex-col gap-8">
-              <div className="bg-[#102216] border border-[#13ec5b]/10 rounded-[2.5rem] p-2 shadow-2xl">
+              {/* Box background changed to #1a2e21 for slight contrast against #112217 */}
+              <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2.5rem] p-2 shadow-2xl">
                 <PendingRequests />
               </div>
             </div>
