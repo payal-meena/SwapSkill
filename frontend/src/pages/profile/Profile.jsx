@@ -8,6 +8,7 @@ import {
 import { skillService } from '../../services/skillService';
 import ExpertisePage from './ExpertisePage';
 import api from "../../services/api";
+import Toast from '../../components/common/Toast';
 
 import LogOut from '../../components/modals/LogOut';
 
@@ -19,6 +20,7 @@ const Profile = () => {
     const [skills, setSkills] = useState([]);
     const [user, setUser] = useState({});
     const [loading, setLoading] = useState(true);
+    const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -66,17 +68,29 @@ const Profile = () => {
         navigate('/login'); // Login page par bhejein
     };
 
-    const handleSkillAdded = (newSkill) => {
-        const formatted = {
-            id: newSkill._id,
-            title: newSkill.skillName,
-            level: newSkill.level,
-            icon: getIconForCategory(newSkill.category),
-            info: `${newSkill.experience || 0} years experience`,
-            img: newSkill.thumbnail || "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600"
-        };
-        setSkills(prev => [...prev, formatted]);
+    const showToast = (message, type = 'info') => {
+        setToast({ isVisible: true, message, type });
+    };
+
+    const hideToast = () => {
+        setToast({ ...toast, isVisible: false });
+    };
+
+    const handleSkillAdded = (skillName) => {
+        // Check for duplicate skill
+        const isDuplicate = skills.some(skill => 
+            skill.title.toLowerCase() === skillName.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+            showToast('This Skill already exists!', 'warning');
+            return false;
+        }
+        
+        fetchSkills();
         setIsModalOpen(false);
+        showToast('Skill successfully added!', 'success');
+        return true;
     };
 
     const handleDeleteSkill = async (skillId) => {
@@ -198,6 +212,7 @@ const Profile = () => {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSkillAdded={handleSkillAdded}
+                    existingSkills={skills}
                 />
             )}
 
@@ -206,6 +221,14 @@ const Profile = () => {
                 isOpen={isLogoutModalOpen} 
                 onClose={() => setIsLogoutModalOpen(false)} 
                 onConfirm={handleLogoutConfirm}
+            />
+            
+            {/* Toast Notification */}
+            <Toast 
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={hideToast}
             />
         </div>
     );

@@ -3,11 +3,21 @@ import ExploreNavbar from '../../components/explore/ExploreNavbar';
 import SkillCard from '../../components/explore/SkillCard';
 import api from '../../services/api';
 import { requestService } from '../../services/requestService';
+import Toast from '../../components/common/Toast';
 
 const Explore = () => {
   const [mentors, setMentors] = useState([]);
   const [searchTerm, setSearchTerm] = useState(""); // Search term state
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
 
   const fetchData = async () => {
     try {
@@ -76,14 +86,16 @@ const Explore = () => {
       setMentors(prev => prev.map(m => 
         m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
       ));
+      showToast('Connection request sent successfully!', 'success');
     } catch (err) {
       const errorMsg = err.response?.data?.message || "";
       if (errorMsg.includes("already sent")) {
         setMentors(prev => prev.map(m => 
           m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
         ));
+        showToast('Request already sent', 'info');
       } else {
-        alert(errorMsg || "Failed to connect");
+        showToast(errorMsg || "Failed to connect", 'error');
       }
     }
   };
@@ -132,6 +144,13 @@ const Explore = () => {
           </div>
         )}
       </div>
+      
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };

@@ -3,12 +3,22 @@ import UserNavbar from "../../components/common/UserNavbar";
 import IncomingRequestCard from "../../components/requests/IncomingRequestCard";
 import SentRequestStatus from "../../components/requests/SentRequestStatus";
 import { requestService } from "../../services/requestService";
+import Toast from "../../components/common/Toast";
 
 const Requests = () => {
   const [activeTab, setActiveTab] = useState("received");
   const [requests, setRequests] = useState([]);
   const [currentUser, setCurrentUser] = useState("");
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
 
   useEffect(() => {
     fetchRequests();
@@ -36,12 +46,14 @@ const Requests = () => {
       const res = await requestService.withdrawRequest(id);
       if (!res.success) {
         setRequests(previousRequests);
-        alert("Could not cancel request.");
+        showToast("Could not cancel request.", 'error');
+      } else {
+        showToast("Request cancelled successfully", 'success');
       }
     } catch (err) {
       console.error("Withdraw failed", err);
       fetchRequests();
-      alert("Something went wrong. Please try again.");
+      showToast("Something went wrong. Please try again.", 'error');
     }
   };
 
@@ -108,6 +120,13 @@ const Requests = () => {
           )}
         </div>
       </main>
+      
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };
