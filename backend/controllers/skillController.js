@@ -15,7 +15,18 @@ const addSkill = async (req, res) => {
         message: "Missing required fields: skillName, level, and category are required"
       });
     }
+    const existingSkill = await Skill.findOne({
+      userId,
+      skillName: { $regex: `^${skillName}$`, $options: "i" }, // case-insensitive
+      isActive: true
+    });
 
+    if (existingSkill) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already added this skill"
+      });
+    }
     const skill = await Skill.create({
       skillName,
       level,
