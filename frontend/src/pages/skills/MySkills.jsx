@@ -210,7 +210,7 @@ const MySkills = () => {
                   </div>
                   <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[10px] uppercase tracking-widest"
+                    className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[15px] uppercase tracking-widest"
                   >
                     <PlusCircle size={18} />
                     Add New Skill
