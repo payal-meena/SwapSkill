@@ -1,10 +1,148 @@
 
+// const Chat = require("../models/Chat");
+// const Message = require("../models/Message");
+// const User = require("../models/User");
+
+// module.exports = (io) => {
+//   io.on("connection", async (socket) => {
+//     const userId = socket.handshake.query.userId;
+//     console.log("User connected:", socket.id);
+//     if (userId && userId !== "null") {
+//       socket.join(userId); // User-specific room
+//       // ✅ 1. User ko Online mark karo
+//       await User.findByIdAndUpdate(userId, { isOnline: true });
+
+//       // ✅ 2. Sabko batao ki ye banda Online aa gaya hai
+//       socket.broadcast.emit("userStatusChanged", {
+//         userId,
+//         status: "online",
+//       });
+//     }
+
+
+//     socket.on("joinChat", async ({ chatId, userId }) => {
+//       const chat = await Chat.findById(chatId);
+//       if (!chat) return;
+
+//       if (!chat.participants.includes(userId)) return;
+
+//       socket.join(chatId);
+//       console.log(`${userId} joined chat ${chatId}`);
+//     });
+
+//     socket.on("sendMessage", async ({ chatId, senderId, text }) => {
+//       const chat = await Chat.findById(chatId);
+//       if (!chat) return;
+
+//       const message = await Message.create({
+//         chat: chatId,
+//         sender: senderId,
+//         text,
+//       });
+//       if (!chat.participants.some(p => p.toString() === senderId.toString())) return;
+
+//       // ✅ Save message separately
+
+//       // ✅ Update chat metadata
+//       chat.lastMessage = message._id;
+//       chat.lastMessageAt = new Date();
+//       await chat.save();
+
+//       // ✅ Emit message
+//       io.to(chatId).emit("messageReceived", message);
+//       const updatedChat = await Chat.findById(chatId)
+//         .populate("participants", "name profileImage isOnline lastSeen")
+//         .populate("lastMessage");
+
+//       // Har participant ko batane ke liye
+//       updatedChat.participants.forEach(participant => {
+//         io.emit(`sidebarUpdate_${participant._id}`, updatedChat);
+//       });
+
+
+//     });
+//     // ✅ Delete Message Event
+//     socket.on("deleteMessage", async ({ messageId, chatId, type, userId }) => {
+//       try {
+//         const message = await Message.findById(messageId);
+//         if (!message) return;
+
+//         if (type === "everyone") {
+//           // Check karo ki delete karne wala sender hi hai na?
+//           if (message.sender.toString() !== userId.toString()) return;
+
+//           message.isDeleted = true;
+//           message.text = "This message was deleted";
+//           await message.save();
+
+//           // Sabko update bhej do
+//           io.to(chatId).emit("messageDeleted", { messageId, type: "everyone" });
+//         }
+//         else if (type === "me") {
+//           message.deletedFor.push(userId);
+//           await message.save();
+
+//           // Sirf usi user ko emit karo jisne delete kiya (ya sirf frontend se handle karlo)
+//           socket.emit("messageDeleted", { messageId, type: "me" });
+//         }
+//       } catch (err) {
+//         console.log("Delete error:", err);
+//       }
+//     });
+
+//     // Is block ko replace kar apne disconnect wale block se
+//     socket.on("disconnect", async () => {
+//       console.log("User disconnected attempt:", socket.id);
+
+//       if (userId && userId !== "null") {
+//         // 1. Foran offline mat karo, 5 second ka timer lagao
+//         setTimeout(async () => {
+//           // 2. Check karo ki kya user ne kisi dusre tab ya naye page se connect kiya hai?
+//           const activeSockets = await io.in(userId).fetchSockets();
+
+//           // Agar koi bhi active socket nahi mila, matlab user sach mein offline gaya hai
+//           if (activeSockets.length === 0) {
+//             await User.findByIdAndUpdate(userId, {
+//               isOnline: false,
+//               lastSeen: new Date()
+//             });
+
+//             // Sabko offline signal bhejo
+//             io.emit("userStatusChanged", {
+//               userId,
+//               status: "offline",
+//               lastSeen: new Date(),
+//             });
+//             console.log(`User ${userId} is now officially offline.`);
+//           } else {
+//             console.log(`User ${userId} reconnected on another page, skipping offline status.`);
+//           }
+//         }, 5000); // 5 second ka delay
+//       }
+//     });
+//   });
+// };
+
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
+const User = require("../models/User");
 
 module.exports = (io) => {
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
+    const userId = socket.handshake.query.userId;
     console.log("User connected:", socket.id);
+    if (userId && userId !== "null") {
+      socket.join(userId); // User-specific room
+      // ✅ 1. User ko Online mark karo
+      await User.findByIdAndUpdate(userId, { isOnline: true });
+
+      // ✅ 2. Sabko batao ki ye banda Online aa gaya hai
+      socket.broadcast.emit("userStatusChanged", {
+        userId,
+        status: "online",
+      });
+    }
+
 
     socket.on("joinChat", async ({ chatId, userId }) => {
       const chat = await Chat.findById(chatId);
@@ -16,31 +154,144 @@ module.exports = (io) => {
       console.log(`${userId} joined chat ${chatId}`);
     });
 
+    // socket.on("sendMessage", async ({ chatId, senderId, text }) => {
+    //   const chat = await Chat.findById(chatId);
+    //   if (!chat) return;
+
+    //   let message = await Message.create({
+    //     chat: chatId,
+    //     sender: senderId,
+    //     text,
+    //   });
+    //   message = await Message.findById(message._id).populate("sender", "name profileImage");
+    //   if (!chat.participants.some(p => p.toString() === senderId.toString())) return;
+
+    //   // ✅ Save message separately
+
+    //   // ✅ Update chat metadata
+    //   chat.lastMessage = message._id;
+    //   chat.lastMessageAt = new Date();
+    //   await chat.save();
+
+    //   // ✅ Emit message
+    //   io.to(chatId).emit("messageReceived", message);
+    //   const updatedChat = await Chat.findById(chatId)
+    //     .populate("participants", "name profileImage isOnline lastSeen")
+    //     .populate("lastMessage");
+
+
+    //   // Har participant ko batane ke liye
+    //   updatedChat.participants.forEach(participant => {
+    //     io.emit(`sidebarUpdate_${participant._id}`, updatedChat);
+    //   });
+
+
+    // });
+    // ✅ Delete Message Event
+
     socket.on("sendMessage", async ({ chatId, senderId, text }) => {
-      const chat = await Chat.findById(chatId);
-      if (!chat) return;
+      try {
+        const chat = await Chat.findById(chatId);
+        if (!chat) return;
 
-      if (!chat.participants.some(p => p.toString() === senderId.toString())) return;
+        // 1. Message create karo
+        let message = await Message.create({
+          chat: chatId,
+          sender: senderId,
+          text,
+        });
 
-      // ✅ Save message separately
-      const message = await Message.create({
-        chat: chatId,
-        sender: senderId,
-        text,
-      });
+        // 2. YAHAN SUDHAAR HAI: Pehle populate karo
+        // Note: populate ke baad .execPopulate() ki zaroorat naye versions mein nahi hoti
+        // par await lagana zaroori hai
+        message = await Message.findById(message._id).populate("sender", "name profileImage");
 
-      // ✅ Update chat metadata
-      chat.lastMessage = text;
-      chat.lastMessageAt = new Date();
-      await chat.save();
+        // 3. Chat metadata update
+        chat.lastMessage = message._id;
+        chat.lastMessageAt = new Date();
+        await chat.save();
 
-      // ✅ Emit message
-      io.to(chatId).emit("messageReceived", message);
+        // 4. Readable message emit karo (Ab isme .text dikhega)
+        io.to(chatId).emit("messageReceived", message);
+
+        // 5. Sidebar update ke liye poora chat populate karo
+        const updatedChat = await Chat.findById(chatId)
+          .populate("participants", "name profileImage isOnline lastSeen")
+          .populate("lastMessage");
+
+        updatedChat.participants.forEach(participant => {
+          io.emit(`sidebarUpdate_${participant._id}`, updatedChat);
+        });
+      } catch (err) {
+        console.error("Socket SendMessage Error:", err);
+      }
+    });
+    socket.on("deleteMessage", async ({ messageId, chatId, type, userId }) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return;
+
+        if (type === "everyone") {
+          // Check karo ki delete karne wala sender hi hai na?
+          if (message.sender.toString() !== userId.toString()) return;
+
+          message.isDeleted = true;
+          message.text = "This message was deleted";
+          await message.save();
+
+          // Sabko update bhej do
+          io.to(chatId).emit("messageDeleted", { messageId, type: "everyone" });
+        }
+        else if (type === "me") {
+          message.deletedFor.push(userId);
+          await message.save();
+
+          // Sirf usi user ko emit karo jisne delete kiya (ya sirf frontend se handle karlo)
+          socket.emit("messageDeleted", { messageId, type: "me" });
+        }
+      } catch (err) {
+        console.log("Delete error:", err);
+      }
+    });
+    // Backend Socket logic
+    socket.on("markAsRead", async ({ chatId, userId }) => {
+      await Message.updateMany(
+        { chat: chatId, sender: { $ne: userId }, isRead: false },
+        { $set: { isRead: true } }
+      );
+      // Optional: Doosre user ko notify karo ki message padh liya gaya hai
+      io.to(chatId).emit("messagesMarkedAsRead", { chatId });
     });
 
-    socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
+    // Is block ko replace kar apne disconnect wale block se
+    socket.on("disconnect", async () => {
+      console.log("User disconnected attempt:", socket.id);
+
+      if (userId && userId !== "null") {
+        // 1. Foran offline mat karo, 5 second ka timer lagao
+        setTimeout(async () => {
+          // 2. Check karo ki kya user ne kisi dusre tab ya naye page se connect kiya hai?
+          const activeSockets = await io.in(userId).fetchSockets();
+
+          // Agar koi bhi active socket nahi mila, matlab user sach mein offline gaya hai
+          if (activeSockets.length === 0) {
+            await User.findByIdAndUpdate(userId, {
+              isOnline: false,
+              lastSeen: new Date()
+            });
+
+            // Sabko offline signal bhejo
+            io.emit("userStatusChanged", {
+              userId,
+              status: "offline",
+              lastSeen: new Date(),
+            });
+            console.log(`User ${userId} is now officially offline.`);
+          } else {
+            console.log(`User ${userId} reconnected on another page, skipping offline status.`);
+          }
+        }, 5000); // 5 second ka delay
+      }
     });
   });
 };
-

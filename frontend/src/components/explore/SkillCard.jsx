@@ -305,7 +305,7 @@ const SkillCard = ({
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3 mt-auto">
           <button
-            onClick={() => navigate("/explore-profile")}
+            onClick={() => navigate(`/explore-profile/${_id}`)}
             className="py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all text-center"
           >
             View Profile

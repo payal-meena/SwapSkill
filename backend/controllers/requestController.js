@@ -75,8 +75,8 @@ const sendRequest = async (req, res) => {
     const requests = await Request.find({
       $or: [{ requester: userId }, { receiver: userId }],
     })
-      .populate("requester", "name email profilePicture")
-      .populate("receiver", "name email profilePicture")
+      .populate("requester", "name email profileImage")
+      .populate("receiver", "name email profileImage")
       .sort({ createdAt: -1 });
 
     res.status(200).json({

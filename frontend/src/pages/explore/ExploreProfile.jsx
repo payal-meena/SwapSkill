@@ -1,77 +1,279 @@
-import React from 'react';
-// Social icons ke liye lucide-react ka use kiya hai
+// import React from 'react';
+// // Social icons ke liye lucide-react ka use kiya hai
+// import { Instagram, Facebook, Github, Ghost, ExternalLink } from 'lucide-react';
+
+// const ExploreProfile = () => {
+//   const profileData = {
+//     name: "Sarah Jenkins",
+//     rating: 4.9,
+//     reviews: 128,
+//     location: "London, UK",
+//     bio: "Senior Software Engineer with 5+ years of experience in Backend Development. Passionate about teaching Python and learning creative arts.",
+//     offeredSkills: [
+//       { name: "Python Development", level: "Advanced" },
+//       { name: "Django", level: "Intermediate" },
+//       { name: "PostgreSQL", level: "Advanced" }
+//     ],
+//     wantedSkills: ["Digital Illustration", "UI/UX Design"],
+//     activeMentors: 1248,
+//     // Social Links Data
+//     socials: {
+//       instagram: "https://instagram.com",
+//       facebook: "https://facebook.com",
+//       github: "https://github.com",
+//       snapchat: "https://snapchat.com"
+//     }
+//   };
+
+//   // Link open karne ka function
+//   const openSocial = (url) => {
+//     window.open(url, '_blank', 'noopener,noreferrer');
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-[#020a06] text-white p-4 md:p-8 font-sans flex flex-col items-center">
+
+//       {/* Back Button Container */}
+//       <div className="w-full max-w-3xl mb-4">
+//         <button
+//           onClick={() => window.history.back()}
+//           className="text-[#22c55e] hover:brightness-125 flex items-center gap-2 transition-all font-black text-sm uppercase tracking-widest"
+//         >
+//           <span className="text-xl">←</span> Back
+//         </button>
+//       </div>
+
+//       {/* Main Profile Card */}
+//       <div className="w-full max-w-3xl bg-[#0a1a11] rounded-[2rem] border-2 border-white/5 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+
+//         {/* Banner Section */}
+//         <div className="relative h-40 bg-gradient-to-r from-[#052e16] via-[#22c55e] to-[#064e3b]">
+//           <div className="absolute -bottom-14 left-8 md:left-12 p-1 bg-[#0a1a11] rounded-full shadow-2xl">
+//             <img
+//               src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200"
+//               alt="Profile"
+//               className="w-28 h-28 rounded-full border-2 border-[#22c55e] object-cover"
+//             />
+//             <div className="absolute bottom-2 right-2 w-5 h-5 bg-[#22c55e] border-4 border-[#0a1a11] rounded-full animate-pulse"></div>
+//           </div>
+//         </div>
+
+//         {/* Content Section */}
+//         <div className="px-6 md:px-10 pt-16 pb-10">
+//           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+
+//             {/* Left Side: Info & Skills */}
+//             <div className="md:col-span-7 space-y-8">
+//               <div>
+//                 <h1 className="text-4xl font-black tracking-tight mb-1 text-white">{profileData.name}</h1>
+//                 <div className="flex items-center gap-3 text-gray-400 font-bold text-sm">
+//                   <span className="text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-md">
+//                     ★ {profileData.rating}
+//                   </span>
+//                   <span>•</span>
+//                   <span>{profileData.location}</span>
+//                 </div>
+//               </div>
+
+//               {/* BIO BOX */}
+//               <div className="bg-gradient-to-br from-white/[0.07] to-transparent p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+//                 <div className="absolute top-0 left-0 w-1 h-full bg-[#22c55e]"></div>
+//                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-2 text-[#22c55e]">Profile Bio</h3>
+//                 <p className="text-gray-200 leading-snug text-lg font-medium">
+//                   "{profileData.bio}"
+//                 </p>
+//               </div>
+
+//               {/* SKILLS SECTION */}
+//               <div className="space-y-8">
+//                 <div className="group">
+//                   <div className="inline-flex items-center gap-2 mb-4 bg-[#22c55e] px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+//                     <span className="material-symbols-outlined text-[18px] text-[#05160e] font-black">school</span>
+//                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[#05160e]">I Can Teach</h3>
+//                   </div>
+//                   <div className="flex flex-wrap gap-2">
+//                     {profileData.offeredSkills.map((skill, index) => (
+//                       <div key={index} className="px-4 py-2 bg-white/5 border border-[#22c55e]/30 rounded-xl flex items-center gap-3 hover:bg-[#22c55e]/10 transition-colors">
+//                         <span className="font-bold text-white text-md">{skill.name}</span>
+//                         <span className="text-[9px] font-black bg-[#22c55e] text-[#05160e] px-1.5 py-0.5 rounded uppercase">
+//                           {skill.level}
+//                         </span>
+//                       </div>
+//                     ))}
+//                   </div>
+//                 </div>
+
+//                 <div className="group">
+//                   <div className="inline-flex items-center gap-2 mb-4 bg-amber-500 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+//                     <span className="material-symbols-outlined text-[18px] text-[#05160e] font-black">bolt</span>
+//                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[#05160e]">I Want To Learn</h3>
+//                   </div>
+//                   <div className="flex flex-wrap gap-2">
+//                     {profileData.wantedSkills.map((skill, index) => (
+//                       <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl text-amber-400 font-bold text-md hover:bg-amber-500/10 transition-colors">
+//                         {skill}
+//                       </div>
+//                     ))}
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Right Side: Action Cards */}
+//             <div className="md:col-span-5 flex flex-col gap-4">
+//               <div className="grid grid-cols-2 gap-3">
+//                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
+//                   <p className="text-3xl font-black text-[#22c55e]">100%</p>
+//                   <p className="text-[9px] text-gray-400 uppercase font-black tracking-tighter">Response</p>
+//                 </div>
+//                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
+//                   <p className="text-3xl font-black text-white">1.2k</p>
+//                   <p className="text-[9px] text-gray-500 uppercase font-black tracking-tighter">Swaps</p>
+//                 </div>
+//               </div>
+
+//               {/* ACTION AREA */}
+//               <div className="bg-gradient-to-b from-white/10 to-transparent p-5 rounded-[2.5rem] border border-white/10">
+//                 {/* Connect Section */}
+//                 <div className="mb-6">
+//                   <button className="w-full py-4 bg-[#22c55e] text-[#05160e] font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(34,197,94,0.3)]">
+//                     CONNECT NOW
+//                   </button>
+//                   <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+//                     <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+//                     Active Now
+//                   </div>
+//                 </div>
+
+//                 {/* Divider Line with Text */}
+//                 <div className="relative flex py-3 items-center">
+//                   <div className="flex-grow border-t border-white/10"></div>
+//                   <span className="flex-shrink mx-4 text-[10px] font-black uppercase tracking-[0.3em] bg-gradient-to-r from-[#22c55e] to-emerald-400 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
+//                     Connect With Socials
+//                   </span>                  <div className="flex-grow border-t border-white/10"></div>
+//                 </div>
+
+//                 {/* Social Icons Container */}
+//                 <div className="flex justify-center gap-3 mt-4">
+//                   {[
+//                     { icon: <Instagram size={18} />, link: profileData.socials.instagram, color: "hover:text-pink-500", label: "Instagram" },
+//                     { icon: <Facebook size={18} />, link: profileData.socials.facebook, color: "hover:text-blue-500", label: "Facebook" },
+//                     { icon: <Ghost size={18} />, link: profileData.socials.snapchat, color: "hover:text-yellow-400", label: "Snapchat" },
+//                     { icon: <Github size={18} />, link: profileData.socials.github, color: "hover:text-white", label: "Github" },
+//                   ].map((social, i) => (
+//                     <button
+//                       key={i}
+//                       onClick={() => openSocial(social.link)}
+//                       className={`p-3.5 bg-white/5 border border-white/10 rounded-2xl transition-all duration-300 group ${social.color} hover:bg-white/10 hover:border-[#22c55e]/30 hover:-translate-y-1 shadow-lg`}
+//                       title={social.label}
+//                     >
+//                       {social.icon}
+//                     </button>
+//                   ))}
+//                 </div>
+//               </div>
+
+//               {/* Trust Badge */}
+//               <div className="p-4 bg-[#22c55e]/5 border border-[#22c55e]/20 rounded-2xl flex items-center gap-3">
+//                 <span className="material-symbols-outlined text-[#22c55e]">verified</span>
+//                 <p className="text-[11px] font-bold text-gray-300">Verified Skills & Top Response Rate</p>
+//               </div>
+//             </div>
+
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ExploreProfile;
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // API call ke liye
 import { Instagram, Facebook, Github, Ghost, ExternalLink } from 'lucide-react';
+import api from '../../services/api';
 
 const ExploreProfile = () => {
-  const profileData = {
-    name: "Sarah Jenkins",
-    rating: 4.9,
-    reviews: 128,
-    location: "London, UK",
-    bio: "Senior Software Engineer with 5+ years of experience in Backend Development. Passionate about teaching Python and learning creative arts.",
-    offeredSkills: [
-      { name: "Python Development", level: "Advanced" },
-      { name: "Django", level: "Intermediate" },
-      { name: "PostgreSQL", level: "Advanced" }
-    ],
-    wantedSkills: ["Digital Illustration", "UI/UX Design"],
-    activeMentors: 1248,
-    // Social Links Data
-    socials: {
-      instagram: "https://instagram.com",
-      facebook: "https://facebook.com",
-      github: "https://github.com",
-      snapchat: "https://snapchat.com"
-    }
-  };
+  const { userId } = useParams(); // URL se ID lega
+  const navigate = useNavigate();
+  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Link open karne ka function
+  // Backend se data mangane ka logic
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        // Apne backend URL ke hisab se change karein
+        const response = await api.get(`/users/profile/${userId}`);
+        setProfileData(response.data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (userId) fetchProfile();
+  }, [userId]);
+
   const openSocial = (url) => {
+    if (!url) return;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  if (loading) return (
+    <div className="min-h-screen bg-[#020a06] flex items-center justify-center text-[#22c55e] font-black italic">
+      LOADING PROFILE...
+    </div>
+  );
+
+  if (!profileData) return (
+    <div className="min-h-screen bg-[#020a06] flex items-center justify-center text-red-500 font-black">
+      USER NOT FOUND!
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#020a06] text-white p-4 md:p-8 font-sans flex flex-col items-center">
-
-      {/* Back Button Container */}
+      {/* Back Button */}
       <div className="w-full max-w-3xl mb-4">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => navigate(-1)}
           className="text-[#22c55e] hover:brightness-125 flex items-center gap-2 transition-all font-black text-sm uppercase tracking-widest"
         >
           <span className="text-xl">←</span> Back
         </button>
       </div>
 
-      {/* Main Profile Card */}
       <div className="w-full max-w-3xl bg-[#0a1a11] rounded-[2rem] border-2 border-white/5 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]">
-
         {/* Banner Section */}
         <div className="relative h-40 bg-gradient-to-r from-[#052e16] via-[#22c55e] to-[#064e3b]">
           <div className="absolute -bottom-14 left-8 md:left-12 p-1 bg-[#0a1a11] rounded-full shadow-2xl">
             <img
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200"
+              src={profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.name}&bg=22c55e&color=000`}
               alt="Profile"
               className="w-28 h-28 rounded-full border-2 border-[#22c55e] object-cover"
             />
-            <div className="absolute bottom-2 right-2 w-5 h-5 bg-[#22c55e] border-4 border-[#0a1a11] rounded-full animate-pulse"></div>
+            {profileData.isOnline && (
+              <div className="absolute bottom-2 right-2 w-5 h-5 bg-[#22c55e] border-4 border-[#0a1a11] rounded-full animate-pulse"></div>
+            )}
           </div>
         </div>
 
         {/* Content Section */}
         <div className="px-6 md:px-10 pt-16 pb-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-
             {/* Left Side: Info & Skills */}
             <div className="md:col-span-7 space-y-8">
               <div>
                 <h1 className="text-4xl font-black tracking-tight mb-1 text-white">{profileData.name}</h1>
                 <div className="flex items-center gap-3 text-gray-400 font-bold text-sm">
                   <span className="text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-md">
-                    ★ {profileData.rating}
+                    ★ {profileData.rating || "5.0"}
                   </span>
                   <span>•</span>
-                  <span>{profileData.location}</span>
+                  <span>{profileData.location || "Global"}</span>
                 </div>
               </div>
 
@@ -80,7 +282,7 @@ const ExploreProfile = () => {
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#22c55e]"></div>
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-2 text-[#22c55e]">Profile Bio</h3>
                 <p className="text-gray-200 leading-snug text-lg font-medium">
-                  "{profileData.bio}"
+                  "{profileData.bio || "No bio added yet."}"
                 </p>
               </div>
 
@@ -92,7 +294,7 @@ const ExploreProfile = () => {
                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[#05160e]">I Can Teach</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {profileData.offeredSkills.map((skill, index) => (
+                    {profileData.offeredSkills?.map((skill, index) => (
                       <div key={index} className="px-4 py-2 bg-white/5 border border-[#22c55e]/30 rounded-xl flex items-center gap-3 hover:bg-[#22c55e]/10 transition-colors">
                         <span className="font-bold text-white text-md">{skill.name}</span>
                         <span className="text-[9px] font-black bg-[#22c55e] text-[#05160e] px-1.5 py-0.5 rounded uppercase">
@@ -109,7 +311,7 @@ const ExploreProfile = () => {
                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[#05160e]">I Want To Learn</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {profileData.wantedSkills.map((skill, index) => (
+                    {profileData.wantedSkills?.map((skill, index) => (
                       <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl text-amber-400 font-bold text-md hover:bg-amber-500/10 transition-colors">
                         {skill}
                       </div>
@@ -123,63 +325,54 @@ const ExploreProfile = () => {
             <div className="md:col-span-5 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                  <p className="text-3xl font-black text-[#22c55e]">100%</p>
+                  <p className="text-3xl font-black text-[#22c55e]">{profileData.responseRate || "100"}%</p>
                   <p className="text-[9px] text-gray-400 uppercase font-black tracking-tighter">Response</p>
                 </div>
                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                  <p className="text-3xl font-black text-white">1.2k</p>
+                  <p className="text-3xl font-black text-white">{profileData.swapsCompleted || "0"}</p>
                   <p className="text-[9px] text-gray-500 uppercase font-black tracking-tighter">Swaps</p>
                 </div>
               </div>
 
               {/* ACTION AREA */}
               <div className="bg-gradient-to-b from-white/10 to-transparent p-5 rounded-[2.5rem] border border-white/10">
-                {/* Connect Section */}
                 <div className="mb-6">
                   <button className="w-full py-4 bg-[#22c55e] text-[#05160e] font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(34,197,94,0.3)]">
                     CONNECT NOW
                   </button>
                   <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                    <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
-                    Active Now
+                    <span className={`w-2 h-2 rounded-full ${profileData.isOnline ? 'bg-[#22c55e] animate-pulse' : 'bg-gray-600'}`}></span>
+                    {profileData.isOnline ? 'Active Now' : 'Offline'}
                   </div>
                 </div>
 
-                {/* Divider Line with Text */}
                 <div className="relative flex py-3 items-center">
                   <div className="flex-grow border-t border-white/10"></div>
-                  <span className="flex-shrink mx-4 text-[10px] font-black uppercase tracking-[0.3em] bg-gradient-to-r from-[#22c55e] to-emerald-400 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">
+                  <span className="flex-shrink mx-4 text-[10px] font-black uppercase tracking-[0.3em] bg-gradient-to-r from-[#22c55e] to-emerald-400 bg-clip-text text-transparent">
                     Connect With Socials
-                  </span>                  <div className="flex-grow border-t border-white/10"></div>
+                  </span>
+                  <div className="flex-grow border-t border-white/10"></div>
                 </div>
 
                 {/* Social Icons Container */}
                 <div className="flex justify-center gap-3 mt-4">
-                  {[
-                    { icon: <Instagram size={18} />, link: profileData.socials.instagram, color: "hover:text-pink-500", label: "Instagram" },
-                    { icon: <Facebook size={18} />, link: profileData.socials.facebook, color: "hover:text-blue-500", label: "Facebook" },
-                    { icon: <Ghost size={18} />, link: profileData.socials.snapchat, color: "hover:text-yellow-400", label: "Snapchat" },
-                    { icon: <Github size={18} />, link: profileData.socials.github, color: "hover:text-white", label: "Github" },
-                  ].map((social, i) => (
+                  {profileData.socials && [
+                    { icon: <Instagram size={18} />, link: profileData.socials.instagram, color: "hover:text-pink-500" },
+                    { icon: <Facebook size={18} />, link: profileData.socials.facebook, color: "hover:text-blue-500" },
+                    { icon: <Ghost size={18} />, link: profileData.socials.snapchat, color: "hover:text-yellow-400" },
+                    { icon: <Github size={18} />, link: profileData.socials.github, color: "hover:text-white" },
+                  ].map((social, i) => social.link && (
                     <button
                       key={i}
                       onClick={() => openSocial(social.link)}
                       className={`p-3.5 bg-white/5 border border-white/10 rounded-2xl transition-all duration-300 group ${social.color} hover:bg-white/10 hover:border-[#22c55e]/30 hover:-translate-y-1 shadow-lg`}
-                      title={social.label}
                     >
                       {social.icon}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Trust Badge */}
-              <div className="p-4 bg-[#22c55e]/5 border border-[#22c55e]/20 rounded-2xl flex items-center gap-3">
-                <span className="material-symbols-outlined text-[#22c55e]">verified</span>
-                <p className="text-[11px] font-bold text-gray-300">Verified Skills & Top Response Rate</p>
-              </div>
             </div>
-
           </div>
         </div>
       </div>

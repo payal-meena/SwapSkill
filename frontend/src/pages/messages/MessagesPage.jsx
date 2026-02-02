@@ -111,7 +111,7 @@
 //             time="10:42 AM" 
 //             name={chatList[activeChat].name}
 //           />
-          
+
 //           <MessageBubble 
 //             isMe={true} 
 //             text="That's great to hear! It took a while to click. Are we still on for our call to discuss the project logic?" 
@@ -189,210 +189,311 @@
 // );
 
 // export default MessagesPage;
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { chatService } from '../../services/chatService';
-import { Search, Send, MoreVertical, Calendar } from 'lucide-react';
-// import EmojiPicker from 'emoji-picker-react';
+import { Search, Send, Smile, MoreVertical, Calendar } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 
 const getMyId = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const payload = JSON.parse(window.atob(base64));
-        return payload.id || payload._id;
-    } catch (e) {
-        return null;
-    }
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    return payload.id || payload._id;
+  } catch (e) { return null; }
 };
 
 const MessagesPage = () => {
-  const { userId: userIdFromParams } = useParams(); 
+  const { userId: userIdFromParams } = useParams();
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+
   const myUserId = getMyId();
   const scrollRef = useRef();
 
+  // --- HELPERS ---
+  const formatMessageTime = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
 
+  const formatDateLabel = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) return "Today";
+    return date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const formatLastSeen = (dateString) => {
+    if (!dateString) return "Offline";
+    const date = new Date(dateString);
+    const diff = Math.floor((new Date() - date) / 60000);
+    if (diff < 1) return "Last seen just now";
+    if (diff < 60) return `Last seen ${diff}m ago`;
+    return `Last seen ${Math.floor(diff / 60)}h ago`;
+  };
+
+  // --- SOCKET & CHAT LIST LOAD ---
   useEffect(() => {
     if (!myUserId) return;
-
     chatService.connectSocket(myUserId);
-    
-    const loadChats = async () => {
-  const queryParams = new URLSearchParams(window.location.search);
-  const requestIdFromURL = queryParams.get('requestId');
 
-  try {
-    const data = await chatService.getMyChats();
-    
-    // Duplicate chats hatane ke liye filter
-    const uniqueChats = data.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i);
-    setChats(uniqueChats);
+    const loadInitialData = async () => {
+      try {
+        const data = await chatService.getMyChats();
+        setChats(data);
+        if (userIdFromParams) {
+          const existing = data.find(c => c.participants.some(p => (p._id || p) === userIdFromParams));
+          if (existing) setActiveChat(existing);
+        }
+      } catch (err) { console.error("Load Chats Error:", err); }
+    };
+    loadInitialData();
 
-    if (userIdFromParams) {
-      const existingChat = uniqueChats.find(c => 
-        c.participants.some(p => (p._id || p) === userIdFromParams)
-      );
-
-      if (existingChat) {
-        setActiveChat(existingChat);
-      } else if (requestIdFromURL) {
-        // Sirf tab create karo jab requestId ho
-        const newChat = await chatService.createOrGetChat({ 
-            otherUserId: userIdFromParams,
-            requestId: requestIdFromURL 
-        });
-        setActiveChat(newChat);
-        // Refresh list to avoid duplicates
-        const updatedData = await chatService.getMyChats();
-        setChats(updatedData.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i));
-      }
-    } else if (uniqueChats.length > 0) {
-      setActiveChat(uniqueChats[0]);
-    }
-  } catch (err) {
-    console.error("Error:", err);
-  }
-};
-
-    loadChats();
-
+    // MESSAGE LISTENER
     chatService.onMessageReceived((newMsg) => {
-      setMessages(prev => {
-        if (prev.find(m => m._id === newMsg._id)) return prev;
-        return [...prev, newMsg];
+      const msgChatId = newMsg.chat?._id || newMsg.chat;
+      const senderId = newMsg.sender?._id || newMsg.sender;
+
+      // 1. Sidebar update logic
+      setChats(prevChats => {
+        const otherChats = prevChats.filter(c => c._id !== msgChatId);
+        const targetChat = prevChats.find(c => c._id === msgChatId);
+        if (targetChat) {
+          const isCurrentlyViewing = activeChat?._id === msgChatId;
+
+          const updatedChat =
+          {
+            ...targetChat,
+            lastMessage: { ...newMsg, isRead: isCurrentlyViewing && senderId !== myUserId },
+            updatedAt: new Date()
+
+          };
+          if (isCurrentlyViewing) {
+            chatService.markAsRead(msgChatId, myUserId);
+          }
+
+
+          return [updatedChat, ...otherChats]; // Bring to top
+        }
+        return prevChats;
+      });
+
+      // 2. Messages screen update logic (Double message fix)
+      if (senderId !== myUserId) {
+        setMessages(prevMsgs => {
+          const isDup = prevMsgs.some(m => m._id === newMsg._id);
+          return isDup ? prevMsgs : [...prevMsgs, newMsg];
+        });
+      }
+    });
+
+    // STATUS LISTENER
+    chatService.onUserStatusChanged(({ userId, status, lastSeen }) => {
+      const isOnline = status === 'online';
+      setChats(prev => prev.map(c => ({
+        ...c,
+        participants: c.participants.map(p => (p._id || p) === userId ? { ...p, isOnline, lastSeen } : p)
+      })));
+      setActiveChat(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          participants: prev.participants.map(p => (p._id || p) === userId ? { ...p, isOnline, lastSeen } : p)
+        };
       });
     });
 
     return () => {
       chatService.removeMessageListener();
+      chatService.removeStatusListener();
     };
-  }, [myUserId, userIdFromParams]); // userIdFromParams change hone par re-run hoga
+  }, [myUserId]);
 
-  // 2. Active Chat badalne par messages load karna
+  // --- JOIN CHAT & HISTORY ---
   useEffect(() => {
     if (activeChat?._id) {
       chatService.joinChat(activeChat._id, myUserId);
-      chatService.getChatHistory(activeChat._id).then(history => {
-        setMessages(history);
-      });
+      chatService.getChatHistory(activeChat._id).then(setMessages);
     }
-  }, [activeChat, myUserId]);
+  }, [activeChat?._id, myUserId]);
 
-  // 3. Auto Scroll
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // --- ACTIONS ---
   const handleSend = () => {
     if (!inputText.trim() || !activeChat) return;
+    const tempMsg = {
+      _id: "temp-" + Date.now(),
+      text: inputText,
+      sender: { _id: myUserId },
+      createdAt: new Date().toISOString(),
+      chat: activeChat._id
+    };
+    setMessages(prev => [...prev, tempMsg]);
     chatService.sendMessage(activeChat._id, myUserId, inputText);
     setInputText("");
+    setShowEmojiPicker(false);
   };
+  const handleChatClick = (chat) => {
+    setActiveChat(chat);
+
+    // Agar last message saamne wale ne bheja hai aur wo unread hai
+    if (chat.lastMessage && chat.lastMessage.sender !== myUserId && !chat.lastMessage.isRead) {
+      // Socket ke zariye "read" event bhejo
+      chatService.markAsRead(chat._id, myUserId);
+
+      // Local state update karo taaki turant dot hat jaye
+      setChats(prev => prev.map(c =>
+        c._id === chat._id
+          ? { ...c, lastMessage: { ...c.lastMessage, isRead: true } }
+          : c
+      ));
+    }
+  };
+  const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
 
   return (
-    <div className="flex h-screen bg-[#102216] text-white overflow-hidden">
+    <div className="flex h-screen bg-[#102216] text-white overflow-hidden font-sans">
       {/* SIDEBAR */}
-      <div className="w-80 border-r border-[#23482f] flex flex-col">
+      <div className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
         <div className="p-6 border-b border-[#23482f]">
           <h2 className="text-xl font-bold mb-4">Messages</h2>
-          <div className="relative">
+          <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92c9a4]" size={18} />
             <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#112217] outline-none border border-transparent focus:border-[#13ec5b]/50 text-sm" />
           </div>
         </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
 
-        <div className="flex-1 overflow-y-auto">
-  {chats.map((chat) => {
-    const otherUser = chat.participants.find(p => (p._id || p) !== myUserId);
-    
-    // Safety check: Agar otherUser object hai tabhi details dikhao
-    const displayName = otherUser?.name || "User";
-    const displayImg = otherUser?.profileImage || `https://ui-avatars.com/api/?name=${displayName}&bg=13ec5b&color=000`;
+          {chats.map((chat) => {
+            const p = chat.participants.find(u => (u._id || u) !== myUserId);
 
-    return (
-      <div 
-        key={chat._id}
-        onClick={() => setActiveChat(chat)}
-        className={`flex items-center gap-4 p-4 cursor-pointer border-l-4 transition-all ${
-          activeChat?._id === chat._id ? 'border-[#13ec5b] bg-[#13ec5b]/5' : 'border-transparent hover:bg-[#193322]/50'
-        }`}
-      >
-        {/* Avatar Image added */}
-        <img 
-          src={displayImg} 
-          alt={displayName}
-          className="h-12 w-12 rounded-full object-cover border border-[#23482f]"
-        />
-        
-        <div className="flex-1 truncate">
-          <h4 className="text-sm font-bold">{displayName}</h4>
-          <p className="text-xs text-[#92c9a4] truncate">
-            {chat.lastMessage?.text || "Start a conversation"}
-          </p>
+            // Logic: Agar last message kisi aur ne bheja hai aur wo "unread" hai
+            const isUnread = chat.lastMessage &&
+              (chat.lastMessage.sender?._id || chat.lastMessage.sender) !== myUserId &&
+              chat.lastMessage.isRead === false;
+
+            return (
+              <div
+                key={chat._id}
+                onClick={() => handleChatClick(chat)}
+                className={`flex items-center gap-4 p-4 cursor-pointer transition-all border-l-4 ${activeChat?._id === chat._id ? 'border-[#13ec5b] bg-[#13ec5b]/5' : 'border-transparent hover:bg-[#193322]/50'
+                  }`}
+              >
+                <div className="relative shrink-0">
+                  <img
+                    src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name || 'U'}&bg=13ec5b&color=000`}
+                    className="h-12 w-12 rounded-full border border-[#23482f]"
+                  />
+                  {p?.isOnline && (
+                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#13ec5b] border-2 border-[#102216]"></span>
+                  )}
+                </div>
+
+                <div className="flex-1 truncate">
+                  <div className="flex justify-between items-center mb-0.5">
+                    {/* Unread hone par naam Bold aur White dikhega */}
+                    <h4 className={`text-sm truncate ${isUnread ? 'font-black text-white' : 'font-bold text-[#92c9a4]'}`}>
+                      {p?.name || "User"}
+                    </h4>
+
+                    {/* GREEN DOT INDICATOR */}
+                    {isUnread && (
+                      <span className="h-2.5 w-2.5 bg-[#13ec5b] rounded-full shadow-[0_0_10px_#13ec5b] animate-pulse shrink-0"></span>
+                    )}
+                  </div>
+
+                  {/* Unread hone par message text bhi white dikhega */}
+                  <p className={`text-xs truncate ${isUnread ? 'text-white font-semibold' : 'text-[#92c9a4]'}`}>
+                    {chat.lastMessage?.text || "No messages yet"}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
-    );
-  })}
-</div>
       </div>
 
       {/* CHAT WINDOW */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col relative">
         {activeChat ? (
           <>
-            <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
+            <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f] z-10">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-[#13ec5b] text-[#102216] flex items-center justify-center font-bold">
-                  {activeChat.participants.find(p => (p._id || p) !== myUserId)?.name?.charAt(0) || "U"}
-                </div>
+                <div className="h-10 w-10 rounded-full bg-[#13ec5b] text-[#102216] flex items-center justify-center font-bold uppercase">
+                  <img
+                  src={
+                    otherUser?.profileImage
+                      ? (otherUser.profileImage.startsWith('http')
+                        ? otherUser.profileImage
+                        : `http://localhost:5000${otherUser.profileImage.startsWith('/') ? '' : '/'}${otherUser.profileImage}`)
+                      : `https://ui-avatars.com/api/?name=${otherUser?.name || 'U'}&bg=13ec5b&color=000&bold=true`
+                  }
+                  className="h-10 w-10 rounded-full border border-[#23482f] object-cover"
+                  alt={otherUser?.name}
+                  onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${otherUser?.name || 'U'}&bg=13ec5b&color=000&bold=true`;
+                  }}
+                /></div>
+                
                 <div>
-                  <h3 className="font-bold">{activeChat.participants.find(p => (p._id || p) !== myUserId)?.name || "Unknown"}</h3>
-                  <p className="text-[10px] text-[#13ec5b] uppercase">Active Now</p>
+                  <h3 className="font-bold">{otherUser?.name || "Unknown"}</h3>
+                  <p className={`text-[10px] font-bold uppercase ${otherUser?.isOnline ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
+                    {otherUser?.isOnline ? '● Active Now' : formatLastSeen(otherUser?.lastSeen)}
+                  </p>
                 </div>
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
-              {messages.map((m, idx) => (
-                <div key={m._id || idx} className={`flex ${ (m.sender._id === myUserId || m.sender === myUserId) ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-4 rounded-2xl ${
-                    (m.sender._id === myUserId || m.sender === myUserId) 
-                    ? 'bg-[#13ec5b] text-[#102216] rounded-tr-none' 
-                    : 'bg-[#193322] text-white rounded-tl-none border border-[#23482f]'
-                  }`}>
-                    <p className="text-sm">{m.text}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
+              {messages.map((m, idx) => {
+                const isMe = (m.sender?._id || m.sender) === myUserId;
+                const showDate = idx === 0 || new Date(messages[idx - 1].createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+                return (
+                  <React.Fragment key={m._id || idx}>
+                    {showDate && (
+                      <div className="flex justify-center my-6">
+                        <span className="text-[10px] font-bold text-[#92c9a4] bg-[#112217] px-4 py-1 rounded-full border border-[#23482f]">{formatDateLabel(m.createdAt)}</span>
+                      </div>
+                    )}
+                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`relative max-w-[75%] px-3 pt-2 pb-1 rounded-2xl shadow-md ${isMe ? 'bg-[#13ec5b] text-[#102216] rounded-tr-none' : 'bg-[#193322] text-white rounded-tl-none border border-[#23482f]'}`}>
+                        <p className="text-sm pr-10">{m.text}</p>
+                        <div className="text-[9px] self-end text-right mt-1 opacity-70">{formatMessageTime(m.createdAt)} {isMe && "✓✓"}</div>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
               <div ref={scrollRef} />
             </div>
 
             <div className="p-6 bg-[#112217] border-t border-[#23482f]">
-              <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f]">
-                <input 
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Type a message..." 
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none"
-                />
-                <button onClick={handleSend} className="h-10 w-10 bg-[#13ec5b] rounded-xl flex items-center justify-center text-[#102216] hover:scale-105 transition-all">
-                  <Send size={18} fill="currentColor" />
-                </button>
+              <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none" />
+                <div className="relative flex items-center">
+                  {showEmojiPicker && <div className="absolute bottom-14 right-0 z-50"><EmojiPicker onEmojiClick={(d) => setInputText(p => p + d.emoji)} theme="dark" width={300} height={400} /></div>}
+                  <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-1 ${showEmojiPicker ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}><Smile size={24} /></button>
+                </div>
+                <button onClick={handleSend} className="h-10 w-10 bg-[#13ec5b] rounded-xl flex items-center justify-center text-[#102216] hover:scale-105 transition-all"><Send size={18} fill="currentColor" /></button>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-[#92c9a4]">
-            Select a conversation to start chatting
-          </div>
+          <div className="flex-1 flex items-center justify-center text-[#92c9a4]">Select a conversation to start chatting</div>
         )}
       </main>
     </div>

@@ -11,7 +11,8 @@ const {
   updateProfile,
   updatePassword,
   updateProfileImage,
-  deleteMyAccount 
+  deleteMyAccount ,
+  getPublicProfile
 } = require("../controllers/userController.js");
 
 const {
@@ -30,6 +31,7 @@ router.post("/signup", validate(signupSchema), SignupUser);
 router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateProfile);
 router.delete("/me", protect, deleteMyAccount);
+router.get("/profile/:id", getPublicProfile);
 
 
 

@@ -17,11 +17,15 @@ import UserManagment from "../pages/admin/UserManagment";
 import SkillModeration from "../pages/admin/SkillModeration";
 import AdminProfile from "../pages/admin/settings/AdminProfile";
 import ExploreProfile from "../pages/explore/ExploreProfile";
-
+import { useEffect } from "react";
+// import {chatService} from "../services/chatService";
 // Monitoring component import
 import Monitoring from "../pages/admin/Monitoring";
 
 function AppRoutes() {
+//  AppRoutes.jsx ka updated useEffect
+// Empty array is fine for global app mounting
+
   return (
     <Routes>
       {/* Public Routes */}
@@ -35,7 +39,7 @@ function AppRoutes() {
         <Route path="/requests" element={<Requests />} />
         <Route path="/messages/:userId" element={<MessagesPage />} />
         <Route path="/explore" element={<Explore />} />
-        <Route path="/explore-profile" element={<ExploreProfile />} />
+        <Route path="/explore-profile/:userId" element={<ExploreProfile />} />
         <Route path="/my-profile" element={<Profile />} />
       </Route> {/* Fixed: Closing tag for UserLayout added here */}
 

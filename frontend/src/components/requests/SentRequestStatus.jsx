@@ -1,13 +1,16 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
+import { chatService } from '../../services/chatService';
 
 const SentRequestStatus = ({ request, onWithdraw }) => {
-  const { receiver, status } = request;
+  const { receiver, status ,_id,requester} = request;
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   if (status === 'rejected' || status === 'cancelled') {
     return null;
   }
+    const navigate= useNavigate();
+
 
   const steps = ["Requested", "Accepted", "Workspace"];
   const progressStep = status === 'pending' ? 0 : status === 'accepted' ? 1 : 2;
@@ -23,18 +26,66 @@ const SentRequestStatus = ({ request, onWithdraw }) => {
       setIsWithdrawing(false);
     }
   };
+  const handleMessageClick = async () => {
+
+    try {
+
+      // 1. Payload banao (Dhyan do: requestId aur otherUserId dono bhej rahe hain)
+
+      const chatPayload = {
+
+        requestId: _id,            // Card ki request ID
+
+        otherUserId: requester._id  // Saamne wale user ki ID
+
+      };
+
+
+
+      console.log("Creating/Fetching Chat with payload:", chatPayload);
+
+
+
+      // 2. Service call (Ab backend ko requestId mil jayegi)
+
+      const res = await chatService.createOrGetChat(chatPayload);
+
+      // 3. Navigate karte waqt URL mein requestId bhi pass karo
+
+      if (res && res._id) {
+        navigate(`/messages/${requester._id}?requestId=${_id}`, {
+
+          state: {
+            chatId: res._id,
+            userName: requester.name,
+            userImage: requester.profileImage
+          }
+
+        });
+
+      }
+
+    } catch (err) {
+
+      console.error("Chat Error:", err.response?.data || err.message);
+
+      alert(err.response?.data?.message || "Chat start nahi ho payi.");
+
+    }
+
+  };
 
   return (
     <div className="group bg-[#0d120e] border border-[#1d2e22] p-6 rounded-[2.5rem] transition-all duration-300 shadow-2xl">
       <div className="flex flex-col lg:flex-row items-center gap-8">
-        
+
         {/* Profile Section */}
         <Link to={`/profile/${receiver?._id}`} className="flex items-center gap-5 min-w-[260px] group/user cursor-pointer">
           <div className="relative">
-            <img 
-              className={`h-16 w-16 rounded-2xl object-cover border-2 transition-all ${isAccepted ? 'border-[#13ec5b]' : 'border-slate-700'}`} 
-              src={receiver?.profileImage || `https://ui-avatars.com/api/?name=${receiver?.name}&bg=13ec5b&color=000&bold=true`} 
-              alt={receiver?.name} 
+            <img
+              className={`h-16 w-16 rounded-2xl object-cover border-2 transition-all ${isAccepted ? 'border-[#13ec5b]' : 'border-slate-700'}`}
+              src={receiver?.profileImage || `https://ui-avatars.com/api/?name=${receiver?.name}&bg=13ec5b&color=000&bold=true`}
+              alt={receiver?.name}
             />
           </div>
           <div>
@@ -63,18 +114,19 @@ const SentRequestStatus = ({ request, onWithdraw }) => {
         {/* Action Button */}
         <div className="w-full lg:w-auto">
           {isAccepted ? (
-            <Link to={`/messages/:userId/${request._id}`} className="block text-center lg:px-8 py-3.5 bg-[#13ec5b] text-black text-xs font-black rounded-2xl uppercase tracking-widest">
-              Enter Workspace
-            </Link>
-          ) : (
-            <button 
-              onClick={handleWithdrawClick} 
-              disabled={isWithdrawing} 
-              className={`w-full lg:px-8 py-3.5 border border-[#1d2e22] text-xs font-bold rounded-2xl transition-all uppercase tracking-widest 
-                ${isWithdrawing ? 'opacity-50' : 'hover:text-red-500 hover:border-red-500/50 text-slate-500'}`}
-            >
-              {isWithdrawing ? 'Stopping...' : 'Cancel Request'}
+            <button onClick={handleMessageClick}
+             className="block text-center lg:px-8 py-3.5 bg-[#13ec5b] text-black text-xs font-black rounded-2xl uppercase tracking-widest">
+          Enter Workspace
             </button>
+          ) : (
+          <button
+            onClick={handleWithdrawClick}
+            disabled={isWithdrawing}
+            className={`w-full lg:px-8 py-3.5 border border-[#1d2e22] text-xs font-bold rounded-2xl transition-all uppercase tracking-widest 
+                ${isWithdrawing ? 'opacity-50' : 'hover:text-red-500 hover:border-red-500/50 text-slate-500'}`}
+          >
+            {isWithdrawing ? 'Stopping...' : 'Cancel Request'}
+          </button>
           )}
         </div>
       </div>
