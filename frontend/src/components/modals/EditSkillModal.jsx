@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { skillService } from '../../services/skillService';
-
+import Toast from '../common/Toast';
 
 const EditSkillModal = ({ isOpen, onClose, skillData, onSkillUpdated }) => {
 
@@ -10,9 +10,16 @@ const EditSkillModal = ({ isOpen, onClose, skillData, onSkillUpdated }) => {
     description: '',
     category: '',
     experience: ''
-
-
   });
+  const [toast, setToast] = React.useState({ isVisible: false, message: '', type: 'info' });
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
   useEffect(() => {
     console.log('Editing skillData:', skillData);
 
@@ -42,16 +49,11 @@ const EditSkillModal = ({ isOpen, onClose, skillData, onSkillUpdated }) => {
       await skillService.editOfferedSkill(skillData._id, formData);
       onSkillUpdated();
       onClose();
+      showToast('Skill updated successfully!', 'success');
     } catch (error) {
       console.error('Error updating skill:', error);
-      alert('Failed to update skill. Please try again.');
+      showToast('Failed to update skill. Please try again.', 'error');
     }
-
-
-
-
-
-
   }
 
 
@@ -160,6 +162,13 @@ const EditSkillModal = ({ isOpen, onClose, skillData, onSkillUpdated }) => {
           </div>
         </form>
       </div>
+      
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };

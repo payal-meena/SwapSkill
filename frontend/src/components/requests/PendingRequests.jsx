@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { requestService } from '../../services/requestService';
+import Toast from '../common/Toast';
 
 const RequestItem = ({ name, skill, message, img, onAccept, onDecline }) => (
   <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#193322] border border-slate-100 dark:border-[#23482f]">
@@ -34,6 +35,15 @@ const RequestItem = ({ name, skill, message, img, onAccept, onDecline }) => (
 const PendingRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
 
   const fetchPendingData = async () => {
     try {
@@ -59,23 +69,23 @@ const PendingRequests = () => {
     fetchPendingData();
   }, []);
   const handleAction = async (id, action) => {
-  try {
-    if (action === 'accept') {
-      await requestService.acceptRequest(id);
-    } else {
-     
-      await requestService.rejectRequest(id);
+    try {
+      if (action === 'accept') {
+        await requestService.acceptRequest(id);
+        showToast('Request accepted successfully!', 'success');
+      } else {
+        await requestService.rejectRequest(id);
+        showToast('Request declined', 'info');
+      }
+
+      setRequests(prev => prev.filter(req => req._id !== id));
+      fetchPendingData();
+
+    } catch (err) {
+      console.error(`Error during ${action}:`, err);
+      showToast(err.response?.data?.message || `Failed to ${action} request.`, 'error');
     }
-
-    setRequests(prev => prev.filter(req => req._id !== id));
-    
-    fetchPendingData();
-
-  } catch (err) {
-    console.error(`Error during ${action}:`, err);
-    alert(err.response?.data?.message || `Failed to ${action} request.`);
-  }
-};
+  };
 
 
   
@@ -110,6 +120,13 @@ const PendingRequests = () => {
           <p className="text-slate-500 text-xs text-center py-4">No new requests to show.</p>
         )}
       </div>
+      
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };

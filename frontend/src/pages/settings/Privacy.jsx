@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { Lock, Eye, Database, Download, Trash2, Info } from 'lucide-react';
+import Toast from '../../components/common/Toast';
+import api from '../../services/api';
+
 const Privacy = () => {
   const [showRating, setShowRating] = useState(true);
   const [allowIndexing, setAllowIndexing] = useState(false);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
 
   const blockedUsers = [
     { id: 1, name: 'Jordan Doe', initials: 'JD' },
@@ -22,14 +34,17 @@ const Privacy = () => {
       // logout
       localStorage.removeItem("token");
   
-      alert("Your account has been deleted");
+      showToast("Your account has been deleted", 'success');
   
-      // redirect to login
-      window.location.href = "/login";
+      // redirect to login after a delay
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
     } catch (error) {
-      alert(
+      showToast(
         "Account deletion failed: " +
-          (error.response?.data?.message || error.message)
+          (error.response?.data?.message || error.message),
+        'error'
       );
     }
   };
@@ -109,6 +124,12 @@ const Privacy = () => {
        Delete My Account
      </button>
      
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };

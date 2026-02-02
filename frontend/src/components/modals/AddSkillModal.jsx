@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { skillService } from '../../services/skillService';
+import Toast from '../common/Toast';
 
 const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,15 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
     description: ''
   });
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -23,12 +33,20 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
     e.preventDefault();
 
     if (!formData.skillName || !formData.category || !formData.level) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'warning');
       return;
     }
 
     try {
       setLoading(true);
+      
+      // Check for duplicate before adding
+      const canAdd = onSkillAdded(formData.skillName);
+      if (!canAdd) {
+        setLoading(false);
+        return;
+      }
+      
       await skillService.addSkill(formData);
 
       // Reset form
@@ -41,10 +59,9 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
         description: ''
       });
 
-      onSkillAdded();
     } catch (error) {
       console.error('Error adding skill:', error);
-      alert('Failed to add skill. Please try again.');
+      showToast('Failed to add skill. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -204,6 +221,13 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
           </form>
         </div>
       </div>
+      
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };

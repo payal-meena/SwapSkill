@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ExploreNavbar = () => {
+const ExploreNavbar = ({ onSearch }) => {
   return (
     <div className="sticky top-0 z-20 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md border-b border-slate-200 dark:border-[#23482f] px-8 py-6">
       <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
@@ -19,6 +19,7 @@ const ExploreNavbar = () => {
           <div className="relative flex-1 group">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#92c9a4] group-focus-within:text-[#13ec5b] transition-colors">search</span>
             <input 
+              onChange={(e) => onSearch(e.target.value)} // Search trigger on change
               className="w-full pl-12 pr-4 py-3.5 rounded-2xl border-none bg-slate-100 dark:bg-[#112217] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#92c9a4] text-base focus:ring-2 focus:ring-[#13ec5b]/50 transition-all shadow-inner outline-none" 
               placeholder="Search for skills, users, or topics..." 
               type="text" 

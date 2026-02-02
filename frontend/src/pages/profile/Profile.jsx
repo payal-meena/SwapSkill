@@ -1,19 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Logout ke baad redirect ke liye
 import {
     Search, School, BookOpen, Verified, Users, History,
-    Edit, Trash2, Share2, Settings, HelpCircle, ShieldCheck, Plus, LogOut,
+    Edit, Trash2, Share2, Settings, HelpCircle, ShieldCheck, Plus, LogOut as LogOutIcon,
     X, Camera, ChevronRight, Rocket, Star
 } from 'lucide-react';
 import { skillService } from '../../services/skillService';
 import ExpertisePage from './ExpertisePage';
 import api from "../../services/api";
+import Toast from '../../components/common/Toast';
+
+import LogOut from '../../components/modals/LogOut';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('teaching');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // Logout Modal State
     const [skills, setSkills] = useState([]);
     const [user, setUser] = useState({});
     const [loading, setLoading] = useState(true);
+    const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -37,7 +44,6 @@ const Profile = () => {
         try {
             const response = await skillService.getMySkills();
             if (response.success) {
-                
                 const formattedSkills = response.skills.map(skill => ({
                     id: skill._id,
                     title: skill.skillName,
@@ -55,25 +61,41 @@ const Profile = () => {
         }
     };
 
-    const handleSkillAdded = (newSkill) => {
-        // Formating new skill to match state structure
-        const formatted = {
-            id: newSkill._id,
-            title: newSkill.skillName,
-            level: newSkill.level,
-            icon: getIconForCategory(newSkill.category),
-            info: `${newSkill.experience || 0} years experience`,
-            img: newSkill.thumbnail || "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600"
-        };
-        setSkills(prev => [...prev, formatted]);
+    // Logout function jo confirm hone par chalega
+    const handleLogoutConfirm = () => {
+        localStorage.removeItem('token'); // Token remove karein
+        setIsLogoutModalOpen(false);
+        navigate('/login'); // Login page par bhejein
+    };
+
+    const showToast = (message, type = 'info') => {
+        setToast({ isVisible: true, message, type });
+    };
+
+    const hideToast = () => {
+        setToast({ ...toast, isVisible: false });
+    };
+
+    const handleSkillAdded = (skillName) => {
+        // Check for duplicate skill
+        const isDuplicate = skills.some(skill => 
+            skill.title.toLowerCase() === skillName.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+            showToast('This Skill already exists!', 'warning');
+            return false;
+        }
+        
+        fetchSkills();
         setIsModalOpen(false);
+        showToast('Skill successfully added!', 'success');
+        return true;
     };
 
     const handleDeleteSkill = async (skillId) => {
         try {
-            // Permanently delete from database
             await skillService.deleteSkill(skillId);
-            // Instantly remove from UI state
             setSkills(prev => prev.filter(s => s.id !== skillId));
         } catch (error) {
             console.error('Error deleting skill:', error);
@@ -103,8 +125,12 @@ const Profile = () => {
                         <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white uppercase">Profile</h2>
                     </div>
                     <div className="flex items-center gap-6">
-                        <button className="flex items-center gap-2 bg-[#13ec5b] text-[#102216] px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-[#13ec5b]/20 hover:bg-[#11d652] transition-colors">
-                            <LogOut size={16} /> Log Out
+                        {/* Logout Trigger */}
+                        <button 
+                            onClick={() => setIsLogoutModalOpen(true)}
+                            className="flex items-center gap-2 bg-[#13ec5b] text-[#102216] px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-[#13ec5b]/20 hover:bg-[#11d652] transition-colors"
+                        >
+                            <LogOutIcon size={16} /> Log Out
                         </button>
                         <div className="w-10 h-10 rounded-full border-2 border-[#13ec5b]/50 overflow-hidden bg-slate-200">
                             <img src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"} alt="avatar" />
@@ -151,7 +177,6 @@ const Profile = () => {
                         <div className="mb-8 border-b border-slate-200 dark:border-white/10">
                             <div className="flex gap-10">
                                 <TabButton active={activeTab === 'teaching'} onClick={() => setActiveTab('teaching')} icon={<School size={20} />} label="Teaching" />
-                                <TabButton active={activeTab === 'learning'} onClick={() => setActiveTab('learning')} icon={<BookOpen size={20} />} label="Learning" />
                             </div>
                         </div>
 
@@ -181,18 +206,34 @@ const Profile = () => {
                 </div>
             </main>
 
+            {/* Modals */}
             {isModalOpen && (
                 <ExpertisePage
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSkillAdded={handleSkillAdded}
+                    existingSkills={skills}
                 />
             )}
+
+            {/* Logout Modal Integration */}
+            <LogOut 
+                isOpen={isLogoutModalOpen} 
+                onClose={() => setIsLogoutModalOpen(false)} 
+                onConfirm={handleLogoutConfirm}
+            />
+            
+            {/* Toast Notification */}
+            <Toast 
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={hideToast}
+            />
         </div>
     );
 };
 
-// UI Components
 const StatBox = ({ label, value }) => (
     <div className="flex flex-col items-center p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 shadow-sm">
         <span className="text-xl font-bold dark:text-white">{value}</span>
@@ -208,46 +249,50 @@ const TabButton = ({ active, onClick, icon, label }) => (
 );
 
 const SkillCard = ({ skill, onDelete }) => (
-    <div className="group relative bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 hover:border-[#13ec5b]/50 transition-all shadow-sm hover:shadow-xl">
-        {/* Action Overlay (Edit/Delete Buttons) */}
-        <div className="absolute top-3 right-3 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div className="group relative bg-white dark:bg-[#1a2e1f] rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 hover:border-[#13ec5b]/50 transition-all shadow-lg hover:shadow-[#13ec5b]/5">
+        
+        <div className="absolute top-3 right-3 z-20 flex gap-2 translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
             <button 
-                className="p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-lg"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    console.log("Edit skill:", skill.id);
-                }}
-            >
-                <Edit size={16} />
-            </button>
-            <button 
-                className="p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                className="group/del p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-xl text-white/70 hover:text-white hover:bg-red-500/80 hover:border-red-500 transition-all shadow-xl hover:shadow-red-500/20 active:scale-90"
                 onClick={(e) => {
                     e.stopPropagation();
                     onDelete();
                 }}
             >
-                <Trash2 size={16} />
+                <Trash2 size={16} className="group-hover/del:scale-110" />
             </button>
         </div>
 
-        <div className="h-44 w-full overflow-hidden bg-slate-200 relative">
-            <img src={skill.img} alt={skill.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        </div>
-
-        <div className="p-5">
-            <div className="flex justify-between items-start mb-3">
-                <h3 className="font-bold text-lg leading-tight group-hover:text-[#13ec5b] transition-colors">{skill.title}</h3>
-                <span className="px-2 py-1 bg-[#13ec5b]/10 text-[#13ec5b] text-[10px] font-black uppercase tracking-widest rounded-md border border-[#13ec5b]/20">
+        <div className="h-44 w-full overflow-hidden bg-slate-800 relative">
+            <img src={skill.img} alt={skill.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            
+            <div className="absolute bottom-3 right-3">
+                <span className="px-2.5 py-1 bg-[#13ec5b] text-[#102216] text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg">
                     {skill.level}
                 </span>
             </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
-                <span className="text-[#13ec5b]">{skill.icon}</span> 
+        </div>
+
+        <div className="p-5">
+            <div className="flex items-center gap-2 mb-2 text-[#13ec5b]">
+                <div className="p-1.5 bg-[#13ec5b]/10 rounded-lg">
+                    {skill.icon}
+                </div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400">Expertise</span>
+            </div>
+            
+            <h3 className="font-bold text-lg leading-tight group-hover:text-[#13ec5b] transition-colors mb-2 uppercase tracking-tight">
+                {skill.title}
+            </h3>
+            
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-300 text-xs font-medium bg-slate-100 dark:bg-white/5 p-2 rounded-lg">
+                <History size={14} className="text-[#13ec5b]" />
                 {skill.info}
             </div>
         </div>
+
+        <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#13ec5b] group-hover:w-full transition-all duration-500"></div>
     </div>
 );
 

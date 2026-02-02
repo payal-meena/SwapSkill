@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Camera, ChevronRight, Rocket, Star, ShieldCheck } from 'lucide-react';
 import { skillService } from '../../services/skillService';
 
-const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
+const ExpertisePage = ({ isOpen, onClose, onSkillAdded, existingSkills = [] }) => {
   if (!isOpen) return null;
 
   const [step, setStep] = useState(1);
@@ -50,6 +50,12 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
   const handlePublish = async () => {
     if (isSubmitting) return; 
 
+    // Check for duplicate before submitting
+    const canAdd = onSkillAdded(skillData.skillName);
+    if (!canAdd) {
+      return;
+    }
+
     try {
       setIsSubmitting(true); 
 
@@ -93,7 +99,6 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded }) => {
         setPreview(null);
         setStep(1);
 
-       
         onClose();
       }
 

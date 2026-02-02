@@ -7,6 +7,7 @@ import EditWantedSkillModal from '../../components/modals/EditWantedSkillModal';
 import AddSkillModal from '../../components/modals/AddSkillModal';
 import CurriculumModal from '../../components/modals/CurriculumModal';
 import EditCurriculumModal from '../../components/modals/EditCurriculumModal';
+import Toast from '../../components/common/Toast';
 import { skillService } from '../../services/skillService';
 
 const MySkills = () => {
@@ -26,6 +27,8 @@ const MySkills = () => {
   const [wantedSkills, setWantedSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditWantedOpen, setIsEditWantedOpen] = useState(false);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchMySkills();
@@ -53,8 +56,27 @@ const MySkills = () => {
     }
   };
 
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
+
   const handleAddWantedSkill = async () => {
     if (!skillName.trim()) return;
+    
+    // Check for duplicate skill
+    const isDuplicate = wantedSkills.some(skill => 
+      skill.title.toLowerCase() === skillName.trim().toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      showToast('This skill already exists!', 'warning');
+      return;
+    }
+    
     try {
       const skillData = {
         skillName: skillName.trim(),
@@ -67,8 +89,10 @@ const MySkills = () => {
       setSkillName('');
       setDescription('');
       setTargetProficiency('beginner');
+      showToast('Skill successfully added!', 'success');
     } catch (error) {
       console.error('Error adding wanted skill:', error);
+      showToast('Error adding skill. Please try again.', 'error');
     }
   };
 
@@ -110,9 +134,21 @@ const MySkills = () => {
     return iconMap[category] || 'star';
   };
 
-  const handleSkillAdded = () => {
+  const handleSkillAdded = (skillName) => {
+    // Check for duplicate skill in offered skills
+    const isDuplicate = offeredSkills.some(skill => 
+      skill.title.toLowerCase() === skillName.toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      showToast('This Skill already exists!', 'warning');
+      return false;
+    }
+    
     fetchMySkills();
     setIsAddModalOpen(false);
+    showToast('Skill successfully added!', 'success');
+    return true;
   };
 
   const handleDeleteSkill = async (skillId) => {
@@ -165,6 +201,15 @@ const MySkills = () => {
     setIsEditCurriculumOpen(true);
   };
 
+  // Filter skills based on search term
+  const filteredOfferedSkills = offeredSkills.filter(skill =>
+    skill.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredWantedSkills = wantedSkills.filter(skill =>
+    skill.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex h-screen overflow-hidden font-['Lexend'] relative">
       <main className={`flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark transition-all duration-300 ${isWantedModalOpen ? 'blur-sm opacity-50' : ''}`}>
@@ -208,13 +253,26 @@ const MySkills = () => {
                     <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Offer</h3>
                     <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">SHARE YOUR EXPERTISE WITH THE WORLD</p>
                   </div>
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[10px] uppercase tracking-widest"
-                  >
-                    <PlusCircle size={18} />
-                    Add New Skill
-                  </button>
+                  <div className="flex items-center gap-4">
+                    {/* Search Input */}
+                    <div className="relative group">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={18} />
+                      <input 
+                        className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-xl py-3 pl-12 pr-4 text-white outline-none transition-all placeholder:text-white/30 w-64" 
+                        placeholder="Search skills..." 
+                        type="text" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                      />
+                    </div>
+                    <button
+                      onClick={() => setIsAddModalOpen(true)}
+                      className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[15px] uppercase tracking-widest"
+                    >
+                      <PlusCircle size={18} />
+                      Add New Skill
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -223,8 +281,8 @@ const MySkills = () => {
                       <div className="size-12 border-4 border-[#13ec5b]/20 border-t-[#13ec5b] rounded-full animate-spin mb-4" />
                       <div className="text-[#13ec5b] font-black text-xs tracking-widest uppercase">Syncing Skillset...</div>
                     </div>
-                  ) : offeredSkills.length > 0 ? (
-                    offeredSkills.map((skill) => (
+                  ) : filteredOfferedSkills.length > 0 ? (
+                    filteredOfferedSkills.map((skill) => (
                       <MySkillCard
                         key={skill.id}
                         {...skill}
@@ -236,8 +294,12 @@ const MySkills = () => {
                     ))
                   ) : (
                     <div className="col-span-full text-center py-24 border-2 border-dashed border-[#23482f] rounded-[3rem] bg-[#102216]/20">
-                      <div className="text-slate-500 dark:text-[#92c9a4]/40 mb-6 font-black uppercase text-xs tracking-[0.3em]">No skills being offered yet</div>
-                      <button onClick={() => setIsAddModalOpen(true)} className="text-[#13ec5b] hover:text-white transition-colors font-black text-xs uppercase underline tracking-widest">Launch Your First Course</button>
+                      <div className="text-slate-500 dark:text-[#92c9a4]/40 mb-6 font-black uppercase text-xs tracking-[0.3em]">
+                        {searchTerm ? `No skills found matching "${searchTerm}"` : 'No skills being offered yet'}
+                      </div>
+                      {!searchTerm && (
+                        <button onClick={() => setIsAddModalOpen(true)} className="text-[#13ec5b] hover:text-white transition-colors font-black text-xs uppercase underline tracking-widest">Launch Your First Course</button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -245,13 +307,26 @@ const MySkills = () => {
             ) : (
               /* --- WANTED SKILLS SECTION --- */
               <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
-                <div className="text-center md:text-left mb-10">
-                  <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
-                  <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
+                <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+                  <div className="text-center md:text-left">
+                    <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
+                    <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
+                  </div>
+                  {/* Search Input for Wanted Skills */}
+                  <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={18} />
+                    <input 
+                      className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-xl py-3 pl-12 pr-4 text-white outline-none transition-all placeholder:text-white/30 w-64" 
+                      placeholder="Search wanted skills..." 
+                      type="text" 
+                      value={searchTerm} 
+                      onChange={(e) => setSearchTerm(e.target.value)} 
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {wantedSkills.map((skill, index) => (
+                  {filteredWantedSkills.map((skill, index) => (
                     <MySkillCard
                       key={skill.id || index}
                       {...skill}
@@ -261,13 +336,25 @@ const MySkills = () => {
                     />
                   ))}
 
-                  <button
-                    className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10 min-h-[300px]"
-                    onClick={() => setIsWantedModalOpen(true)}
-                  >
-                    <PlusCircle className="mb-5 group-hover:scale-110 transition-transform text-[#13ec5b]/40 group-hover:text-[#13ec5b]" size={56} />
-                    <span className="font-black uppercase tracking-[0.2em] text-[10px]">Identify New Target</span>
-                  </button>
+                  {/* Show "Add New" button only when not searching or when there are results */}
+                  {(!searchTerm || filteredWantedSkills.length > 0) && (
+                    <button
+                      className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10 min-h-[300px]"
+                      onClick={() => setIsWantedModalOpen(true)}
+                    >
+                      <PlusCircle className="mb-5 group-hover:scale-110 transition-transform text-[#13ec5b]/40 group-hover:text-[#13ec5b]" size={56} />
+                      <span className="font-black uppercase tracking-[0.2em] text-[10px]">Identify New Target</span>
+                    </button>
+                  )}
+
+                  {/* Show no results message when searching and no results found */}
+                  {searchTerm && filteredWantedSkills.length === 0 && (
+                    <div className="col-span-full text-center py-24 border-2 border-dashed border-[#23482f] rounded-[3rem] bg-[#102216]/20">
+                      <div className="text-slate-500 dark:text-[#92c9a4]/40 mb-6 font-black uppercase text-xs tracking-[0.3em]">
+                        No skills found matching "{searchTerm}"
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             )}
@@ -336,6 +423,14 @@ const MySkills = () => {
           </div>
         </div>
       )}
+      
+      {/* Toast Notification */}
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };
