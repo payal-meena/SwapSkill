@@ -1,11 +1,31 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { Instagram, Facebook, Github, Ghost } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
 
 const ExploreProfile = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   
-  // Destructuring data from SkillCard state
+  // 1. Pehle profileData ko location.state se nikaalein
+  const profileData = location.state;
+
+  // 2. Agar profileData nahi hai (matlab direct URL access), toh error handling
+  if (!profileData) {
+    return (
+      <div className="min-h-screen bg-[#020a06] flex flex-col items-center justify-center text-white font-['Lexend'] p-4">
+        <h1 className="text-red-500 font-black text-3xl mb-4 uppercase tracking-tighter">User Not Found!</h1>
+        <p className="text-slate-400 mb-6 text-center">Please go back to the explore page to view a profile.</p>
+        <button
+          onClick={() => navigate('/explore')}
+          className="px-8 py-3 bg-[#13ec5b] text-[#05160e] font-black rounded-xl hover:scale-105 transition-all shadow-[0_10px_20px_rgba(19,236,91,0.2)]"
+        >
+          BACK TO EXPLORE
+        </button>
+      </div>
+    );
+  }
+
+  // 3. Destructure values from profileData with defaults
   const { 
     name = "Sarah Jenkins", 
     img = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200", 
@@ -13,14 +33,13 @@ const ExploreProfile = () => {
     reviews = 128, 
     offeredSkills = [], 
     wantedSkills = [],
-    // Agar card se socials aa rahe hain toh use karein, nahi toh defaults
     socials = {
       instagram: "https://instagram.com",
       facebook: "https://facebook.com",
       github: "https://github.com",
       snapchat: "https://snapchat.com"
     }
-  } = location.state || {};
+  } = profileData;
 
   const openSocial = (url) => {
     if (url) {
@@ -28,28 +47,16 @@ const ExploreProfile = () => {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#020a06] flex items-center justify-center text-[#22c55e] font-black italic">
-      LOADING PROFILE...
-    </div>
-  );
-
-  if (!profileData) return (
-    <div className="min-h-screen bg-[#020a06] flex items-center justify-center text-red-500 font-black">
-      USER NOT FOUND!
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-[#112217] text-white p-4 md:p-8 font-['Lexend'] flex flex-col items-center">
 
       {/* Back Button Container */}
       <div className="w-full max-w-3xl mb-4">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => navigate(-1)}
           className="text-[#13ec5b] hover:brightness-125 flex items-center gap-2 transition-all font-black text-sm uppercase tracking-widest"
         >
-          <span className="text-xl">←</span> Back
+          <ArrowLeft size={18} /> Back
         </button>
       </div>
 
@@ -109,7 +116,7 @@ const ExploreProfile = () => {
                           {skill.level || skill.leval}
                         </span>
                       </div>
-                    )) : <p className="text-slate-500 text-sm">No skills listed</p>}
+                    )) : <p className="text-slate-500 text-sm italic">No teaching skills listed</p>}
                   </div>
                 </div>
 
@@ -121,9 +128,9 @@ const ExploreProfile = () => {
                   <div className="flex flex-wrap gap-2">
                     {wantedSkills.length > 0 ? wantedSkills.map((skill, index) => (
                       <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl text-amber-400 font-bold text-md">
-                        {skill.name || skill}
+                        {typeof skill === 'string' ? skill : skill.name}
                       </div>
-                    )) : <p className="text-slate-500 text-sm">No skills listed</p>}
+                    )) : <p className="text-slate-500 text-sm italic">No learning goals listed</p>}
                   </div>
                 </div>
               </div>
@@ -162,7 +169,6 @@ const ExploreProfile = () => {
                   <div className="flex-grow border-t border-white/10"></div>
                 </div>
 
-                {/* Updated Dynamic Socials */}
                 <div className="flex justify-center gap-3 mt-4">
                   {[
                     { icon: <Instagram size={18}/>, link: socials.instagram, label: "Instagram" },
