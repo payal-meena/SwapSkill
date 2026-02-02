@@ -18,6 +18,22 @@ const io = new Server(server, {
   transports: ["websocket"]
 });
 socketHandler(io);
+const User = require('./models/User'); // Path check kar lena
+
+const fixDatabaseOnce = async () => {
+  try {
+    const result = await User.updateMany(
+      { isOnline: { $exists: false } }, 
+      { $set: { isOnline: false, lastSeen: new Date() } }
+    );
+    console.log(`✅ Success: ${result.modifiedCount} purane users fix ho gaye!`);
+  } catch (err) {
+    console.error("❌ Database fix error:", err);
+  }
+};
+
+// Ise sirf ek baar chalane ke liye call karein
+fixDatabaseOnce();
 
 // Start server
 const PORT = process.env.PORT || 3000;

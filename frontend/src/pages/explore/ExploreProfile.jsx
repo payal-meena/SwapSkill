@@ -28,6 +28,18 @@ const ExploreProfile = () => {
     }
   };
 
+  if (loading) return (
+    <div className="min-h-screen bg-[#020a06] flex items-center justify-center text-[#22c55e] font-black italic">
+      LOADING PROFILE...
+    </div>
+  );
+
+  if (!profileData) return (
+    <div className="min-h-screen bg-[#020a06] flex items-center justify-center text-red-500 font-black">
+      USER NOT FOUND!
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#112217] text-white p-4 md:p-8 font-['Lexend'] flex flex-col items-center">
 
@@ -175,7 +187,6 @@ const ExploreProfile = () => {
                 <p className="text-[11px] font-bold text-slate-300">Verified Skills & Top Mentor Badge</p>
               </div>
             </div>
-
           </div>
         </div>
       </div>

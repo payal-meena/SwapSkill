@@ -124,11 +124,46 @@ const deleteMyAccount = async (req, res) => {
   }
 };
 
+// Kisi bhi user ki profile ID ke through dekhne ke liye
+
+
+const getPublicProfile = async (req, res) => {
+  try {
+    
+    const { id } = req.params;
+
+    
+    const user = await User.findById(id).select("-password -email");
+
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "No User found with this ID" 
+      });
+    }
+
+    res.status(200).json(user);
+
+  } catch (error) {
+    console.error("Error in getPublicProfile:", error);
+    
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({ message: "Invalid User ID format" });
+    }
+
+    res.status(500).json({ message: "Server mein kuch gadbad hai bhai!" });
+  }
+};
+
+
+
 
 module.exports = {
   getMyProfile,
   updateProfile,
   updatePassword,
   updateProfileImage,
-  deleteMyAccount 
+  deleteMyAccount ,
+  getPublicProfile
 };

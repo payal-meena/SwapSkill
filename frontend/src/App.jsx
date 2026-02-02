@@ -3,9 +3,14 @@ import { BrowserRouter } from 'react-router-dom'
 // import { AuthProvider } from './context/AuthContext'
 // import { SocketProvider } from './context/SocketContext'
 import AppRoutes from './routes/AppRoutes'
+// import { ChatProvider } from './context/ChatContext';
+
 
 function App() {
+  
+
   return (
+    
     <BrowserRouter>
       {/* <AuthProvider> */}
         {/* <SocketProvider> */}
