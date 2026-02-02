@@ -98,10 +98,35 @@ const MessagesPage = () => {
         return prevChats;
       });
 
-      if (senderId !== myUserId) {
+
+
+      // if (senderId !== myUserId) {
+      //   setMessages(prevMsgs => {
+      //     const isDup = prevMsgs.some(m => m._id === newMsg._id);
+      //     return isDup ? prevMsgs : [...prevMsgs, newMsg];
+      //   });
+      // }
+      // --- ISS PART KO REPLACE KAREIN (onMessageReceived ke andar) ---
+
+      // 2. Messages screen update logic (Bina refresh ke chat window update)
+      // Check karein ki message usi chat ka hai jo abhi screen par active hai
+      if (activeChat?._id === msgChatId) {
         setMessages(prevMsgs => {
-          const isDup = prevMsgs.some(m => m._id === newMsg._id);
-          return isDup ? prevMsgs : [...prevMsgs, newMsg];
+          // Duplicate check: ID se ya content + temp status se
+          const isDup = prevMsgs.some(m =>
+            m._id === newMsg._id ||
+            (m.text === newMsg.text && m._id.toString().startsWith('temp-'))
+          );
+
+          if (isDup) {
+            // Agar temp message pehle se hai, toh use real backend message se replace karein (taaki ID update ho jaye)
+            return prevMsgs.map(m =>
+              (m.text === newMsg.text && m._id.toString().startsWith('temp-')) ? newMsg : m
+            );
+          }
+
+          // Naya message list mein add karein
+          return [...prevMsgs, newMsg];
         });
       }
     });
@@ -210,9 +235,9 @@ const MessagesPage = () => {
           <>
             <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f] z-10 shadow-lg">
               <div className="flex items-center gap-4">
-                <img 
+                <img
                   src={otherUser?.profileImage ? (otherUser.profileImage.startsWith('http') ? otherUser.profileImage : `http://localhost:5000${otherUser.profileImage.startsWith('/') ? '' : '/'}${otherUser.profileImage}`) : `https://ui-avatars.com/api/?name=${otherUser?.name || 'U'}&bg=13ec5b&color=000&bold=true`}
-                  className="h-10 w-10 rounded-full border border-[#23482f] object-cover" 
+                  className="h-10 w-10 rounded-full border border-[#23482f] object-cover"
                   alt="avatar"
                 />
                 <div>
@@ -225,7 +250,7 @@ const MessagesPage = () => {
 
               {/* MEETING OPTIONS BUTTONS */}
               <div className="relative" ref={meetMenuRef}>
-                <button 
+                <button
                   onClick={() => setShowMeetOptions(!showMeetOptions)}
                   className="p-2.5 rounded-full bg-[#193322] hover:bg-[#13ec5b] text-[#13ec5b] hover:text-[#102216] transition-all duration-300 border border-[#23482f]"
                   title="Schedule Meeting"
@@ -280,15 +305,8 @@ const MessagesPage = () => {
 
             <div className="p-6 bg-[#112217] border-t border-[#23482f]">
               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
-                <input 
-                  type="text" 
-                  value={inputText} 
-                  onChange={(e) => setInputText(e.target.value)} 
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()} 
-                  placeholder="Type your message..." 
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none py-2" 
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} onFocus={() => setShowEmojiPicker(false)} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none"
                 />
-                
                 <div className="relative flex items-center">
                   {showEmojiPicker && (
                     <div className="absolute bottom-16 right-0 z-50 shadow-2xl no-scrollbar-picker">
@@ -296,11 +314,11 @@ const MessagesPage = () => {
                         .no-scrollbar-picker .epr-body::-webkit-scrollbar { width: 0px; background: transparent; }
                         .no-scrollbar-picker .EmojiPickerReact { border: 1px solid #23482f !important; --epr-bg-color: #112217; --epr-category-label-bg-color: #112217; }
                       `}</style>
-                      <EmojiPicker 
-                        onEmojiClick={(d) => setInputText(p => p + d.emoji)} 
-                        theme="dark" 
-                        width={320} 
-                        height={400} 
+                      <EmojiPicker
+                        onEmojiClick={(d) => setInputText(p => p + d.emoji)}
+                        theme="dark"
+                        width={320}
+                        height={400}
                         lazyLoadEmojis={true}
                         searchDisabled={false}
                         skinTonesDisabled={true}
@@ -309,7 +327,7 @@ const MessagesPage = () => {
                   )}
                   <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2 transition-colors ${showEmojiPicker ? 'text-[#13ec5b]' : 'text-[#92c9a4] hover:text-[#13ec5b]'}`}><Smile size={22} /></button>
                 </div>
-                
+
                 <button onClick={handleSend} className="h-10 w-10 bg-[#13ec5b] rounded-xl flex items-center justify-center text-[#102216] hover:scale-105 active:scale-95 transition-all shadow-lg">
                   <Send size={18} fill="currentColor" />
                 </button>
