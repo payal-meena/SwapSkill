@@ -9,6 +9,7 @@ import { skillService } from '../../services/skillService';
 import ExpertisePage from './ExpertisePage';
 import api from "../../services/api";
 import Toast from '../../components/common/Toast';
+import Avatar from '../../components/common/Avatar';
 
 import LogOut from '../../components/modals/LogOut';
 
@@ -133,7 +134,7 @@ const Profile = () => {
                             <LogOutIcon size={16} /> Log Out
                         </button>
                         <div className="w-10 h-10 rounded-full border-2 border-[#13ec5b]/50 overflow-hidden bg-slate-200">
-                            <img src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"} alt="avatar" />
+                            <Avatar src={user?.profileImage} name={user?.name} size="w-10 h-10" />
                         </div>
                     </div>
                 </div>
@@ -145,12 +146,13 @@ const Profile = () => {
                         <div className="sticky top-24 flex flex-col gap-6">
                             <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
                                 <div className="flex flex-col items-center text-center gap-4">
-                                    <div className="w-24 h-24 rounded-full border-4 border-[#13ec5b]/20 shadow-xl overflow-hidden bg-slate-200">
-                                        <img
-                                            src={user?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg"}
-                                            alt="avatar"
-                                        />
-                                    </div>
+                                    <Avatar 
+                                        src={user?.profileImage} 
+                                        name={user?.name} 
+                                        size="w-24 h-24" 
+                                        textSize="text-2xl"
+                                        className="border-4 border-[#13ec5b]/20 shadow-xl"
+                                    />
                                     <div>
                                         <h1 className="text-2xl font-bold">{user?.name || "USER"}</h1>
                                         <p className="text-[#13ec5b] font-medium tracking-wide">{user?.profession || "No fields available."}</p>

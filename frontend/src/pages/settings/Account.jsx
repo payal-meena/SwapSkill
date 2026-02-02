@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe, Briefcase, FileText, ChevronDown, ChevronUp, Instagram, Facebook, Ghost, Twitter, Link as LinkIcon, ExternalLink, Edit3, Check, X } from 'lucide-react';
 import { getMyProfile } from "../../services/authService.js";
 import api from "../../services/api";
-import AccountModal from "./AccountModal"; 
+import AccountModal from "./AccountModal";
+import Avatar from "../../components/common/Avatar"; 
 
 const Account = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [profession, setProfession] = useState("");
@@ -54,10 +56,11 @@ const Account = () => {
     const fetchProfile = async () => {
       try {
         const data = await getMyProfile();
+        setName(data.name || "");
         setEmail(data.email || "");
         setBio(data.bio || "");
         setProfession(data.profession || "");
-        setPreviewImage(data.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name || 'User'}`);
+        setPreviewImage(data.profileImage || null);
         setSocialLinks(data.socialLinks || { instagram: '', facebook: '', snapchat: '', github: '', twitter: '' });
         setLoading(false);
       } catch (error) {
@@ -156,7 +159,7 @@ const handleDeleteProfileImage = async () => {
   try {
     await api.delete('/users/profile-image');
 
-    setPreviewImage(`https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`);
+    setPreviewImage(null);
     setProfileImage(null);
 
     showModal(
@@ -189,9 +192,13 @@ const handleDeleteProfileImage = async () => {
       <section className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] p-10 shadow-sm">
         <div className="flex flex-col md:flex-row items-center gap-10">
           <div className="relative">
-            <div className="h-32 w-32 rounded-full border-4 border-[#13ec5b] overflow-hidden bg-slate-100 shadow-xl">
-              <img src={previewImage} alt="Avatar" className="w-full h-full object-cover" />
-            </div>
+            <Avatar 
+              src={previewImage} 
+              name={name} 
+              size="h-32 w-32" 
+              textSize="text-4xl"
+              className="border-4 border-[#13ec5b] shadow-xl"
+            />
             <input type="file" accept="image/*" id="profileImageInput" className="hidden" onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) { setProfileImage(file); setPreviewImage(URL.createObjectURL(file)); }
@@ -202,7 +209,7 @@ const handleDeleteProfileImage = async () => {
             <h4 className="text-xl font-bold dark:text-white mb-4">Profile Photo</h4>
             <div className="flex gap-4 justify-center md:justify-start">
               <button onClick={uploadProfileImage} disabled={isUploading || !profileImage} className="text-sm font-bold px-6 py-3 bg-[#13ec5b] text-[#102216] rounded-xl disabled:opacity-50 shadow-lg">{isUploading ? 'Uploading...' : 'Save New Photo'}</button>
-              <button onClick={handleDeleteProfileImage} disabled={previewImage?.includes('dicebear.com')} className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Remove</button>
+              <button onClick={handleDeleteProfileImage} disabled={!previewImage} className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Remove</button>
             </div>
           </div>
         </div>

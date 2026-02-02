@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotificationModal from '../modals/NotificationModal';
 import { getMyProfile } from "../../services/authService.js";
+import Avatar from "../common/Avatar";
 
 const UserNavbar = ({ userName }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: userName || "User",
-    profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex"
+    profileImage: null
   });
   const navigate = useNavigate();
 
@@ -19,7 +20,7 @@ const UserNavbar = ({ userName }) => {
         if (data) {
           setUserProfile({
             name: data.name || userName,
-            profileImage: data.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name || 'User'}`
+            profileImage: data.profileImage || null
           });
         }
       } catch (error) {
@@ -59,14 +60,13 @@ const UserNavbar = ({ userName }) => {
 
           {/* Profile Image - Ab ye Account section se aa rahi hai */}
           <div className="group relative">
-            <div className="h-10 w-10 rounded-full border-2 border-[#13ec5b] overflow-hidden ml-2 hover:scale-105 transition-transform cursor-pointer shadow-lg shadow-[#13ec5b]/10">
-              <img 
-                className="w-full h-full object-cover" 
-                src={userProfile.profileImage} 
-                alt="Profile"
-                onClick={() => navigate('/my-profile')} 
-              />
-            </div>
+            <Avatar 
+              src={userProfile.profileImage} 
+              name={userProfile.name} 
+              size="w-10 h-10" 
+              className="border-2 border-[#13ec5b] hover:scale-105 transition-transform cursor-pointer shadow-lg shadow-[#13ec5b]/10 ml-2"
+              onClick={() => navigate('/my-profile')}
+            />
           </div>
         </div>
       </div>
