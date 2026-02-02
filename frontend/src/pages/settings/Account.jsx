@@ -202,7 +202,7 @@ const handleDeleteProfileImage = async () => {
             <h4 className="text-xl font-bold dark:text-white mb-4">Profile Photo</h4>
             <div className="flex gap-4 justify-center md:justify-start">
               <button onClick={uploadProfileImage} disabled={isUploading || !profileImage} className="text-sm font-bold px-6 py-3 bg-[#13ec5b] text-[#102216] rounded-xl disabled:opacity-50 shadow-lg">{isUploading ? 'Uploading...' : 'Save New Photo'}</button>
-              <button onClick={handleDeleteProfileImage } className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl">Remove</button>
+              <button onClick={handleDeleteProfileImage} disabled={previewImage?.includes('dicebear.com')} className="text-sm font-bold px-6 py-3 text-red-500 border border-red-500/20 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Remove</button>
             </div>
           </div>
         </div>
