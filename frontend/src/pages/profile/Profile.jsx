@@ -153,7 +153,7 @@ const Profile = () => {
                                     </div>
                                     <div>
                                         <h1 className="text-2xl font-bold">{user?.name || "USER"}</h1>
-                                        <p className="text-[#13ec5b] font-medium tracking-wide">{user?.field || "No fields available."}</p>
+                                        <p className="text-[#13ec5b] font-medium tracking-wide">{user?.profession || "No fields available."}</p>
                                     </div>
                                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                                         {user?.bio || "No bio available."}

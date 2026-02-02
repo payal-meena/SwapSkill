@@ -56,6 +56,14 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    socialLinks: {
+      instagram: { type: String, default: "" },
+      facebook: { type: String, default: "" },
+      snapchat: { type: String, default: "" },
+      github: { type: String, default: "" },
+      twitter: { type: String, default: "" }
+    },
+
     /* Account Status */
     isBlocked: {
       type: Boolean,
