@@ -519,7 +519,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { chatService } from '../../services/chatService';
-import { Search, Send, Smile } from 'lucide-react';
+import { Search, Send, Smile, Video, ExternalLink } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
 const getMyId = () => {
@@ -540,23 +540,33 @@ const MessagesPage = () => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showMeetOptions, setShowMeetOptions] = useState(false);
 
   const myUserId = getMyId();
   const scrollRef = useRef();
-  
-  // 🔥 IMPORTANT: activeChatRef ko function level par rakhein taaki listener hamesha latest value paye
+  const meetMenuRef = useRef(); // Fix for Menu Reference
   const activeChatRef = useRef(activeChat);
 
   useEffect(() => {
     activeChatRef.current = activeChat;
   }, [activeChat]);
 
+  // --- CLICK OUTSIDE TO CLOSE MENUS ---
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (meetMenuRef.current && !meetMenuRef.current.contains(event.target)) {
+        setShowMeetOptions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // --- SOCKET LISTENERS ---
   useEffect(() => {
     if (!myUserId) return;
     chatService.connectSocket(myUserId);
 
-    // 1. Initial Data Load
     chatService.getMyChats().then(data => {
       setChats(data);
       if (userIdFromParams) {
@@ -565,13 +575,11 @@ const MessagesPage = () => {
       }
     });
 
-    // 2. REAL-TIME MESSAGE RECEIVED (BINA REFRESH)
     chatService.onMessageReceived((newMsg) => {
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       const senderId = newMsg.sender?._id || newMsg.sender;
       const currentActiveChat = activeChatRef.current;
 
-      // Logic for Message Screen update
       if (currentActiveChat?._id === msgChatId) {
         if (senderId !== myUserId) {
           setMessages(prev => {
@@ -582,11 +590,9 @@ const MessagesPage = () => {
         }
       }
 
-      // Logic for Sidebar Update (Bring to Top)
       setChats(prevChats => {
         const targetChat = prevChats.find(c => c._id === msgChatId);
         const otherChats = prevChats.filter(c => c._id !== msgChatId);
-
         if (targetChat) {
           const isNowViewing = currentActiveChat?._id === msgChatId;
           return [{
@@ -602,7 +608,6 @@ const MessagesPage = () => {
       });
     });
 
-    // 3. ONLINE/OFFLINE STATUS SYNC
     chatService.onUserStatusChanged(({ userId, status, lastSeen }) => {
       const isOnline = status === 'online';
       const updateStatus = (list) => list.map(c => ({
@@ -617,15 +622,14 @@ const MessagesPage = () => {
       chatService.removeMessageListener();
       chatService.removeStatusListener();
     };
-  }, [myUserId, activeChat?._id]);
+  }, [myUserId]);
 
-  // --- CHAT SELECTION & HISTORY ---
   useEffect(() => {
     if (activeChat?._id) {
       chatService.joinChat(activeChat._id, myUserId);
       chatService.getChatHistory(activeChat._id).then(setMessages);
     }
-  }, [activeChat?._id]);
+  }, [activeChat?._id, myUserId]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -633,8 +637,6 @@ const MessagesPage = () => {
 
   const handleSend = () => {
     if (!inputText.trim() || !activeChat) return;
-    
-    // Optimistic UI update (Self message)
     const tempId = "temp-" + Date.now();
     setMessages(prev => [...prev, {
       _id: tempId,
@@ -642,7 +644,6 @@ const MessagesPage = () => {
       sender: { _id: myUserId },
       createdAt: new Date().toISOString()
     }]);
-
     chatService.sendMessage(activeChat._id, myUserId, inputText);
     setInputText("");
     setShowEmojiPicker(false);
@@ -656,11 +657,17 @@ const MessagesPage = () => {
     }
   };
 
-  // --- RENDERING HELPERS ---
   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
 
   return (
     <div className="flex h-screen bg-[#102216] text-white overflow-hidden font-sans">
+      {/* Scrollbar CSS */}
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .epr-body::-webkit-scrollbar { display: none !important; }
+      `}</style>
+
       {/* Sidebar */}
       <div className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
         <div className="p-6 border-b border-[#23482f]">
@@ -670,7 +677,7 @@ const MessagesPage = () => {
             <input type="text" placeholder="Search chats..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#112217] outline-none border border-transparent focus:border-[#13ec5b]/50 text-sm" />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto hide-scrollbar">
           {chats.map((chat) => {
             const p = chat.participants.find(u => (u._id || u) !== myUserId);
             const isUnread = chat.lastMessage && 
@@ -696,7 +703,7 @@ const MessagesPage = () => {
       </div>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col relative">
+      <main className="flex-1 flex flex-col relative bg-[#0d1a11]">
         {activeChat ? (
           <>
             <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
@@ -739,8 +746,8 @@ const MessagesPage = () => {
                 const isMe = (m.sender?._id || m.sender) === myUserId;
                 return (
                   <div key={m._id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`relative max-w-[75%] px-3 pt-2 pb-1 rounded-2xl shadow-md ${isMe ? 'bg-[#13ec5b] text-[#102216] rounded-tr-none' : 'bg-[#193322] text-white rounded-tl-none border border-[#23482f]'}`}>
-                      <p className="text-sm">{m.text}</p>
+                    <div className={`relative max-w-[75%] px-4 py-2 rounded-2xl shadow-md ${isMe ? 'bg-[#13ec5b] text-[#102216] rounded-tr-none' : 'bg-[#193322] text-white rounded-tl-none border border-[#23482f]'}`}>
+                      <p className="text-sm leading-relaxed">{m.text}</p>
                     </div>
                   </div>
                 );
@@ -749,12 +756,30 @@ const MessagesPage = () => {
             </div>
 
             <div className="p-6 bg-[#112217] border-t border-[#23482f]">
-              <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f]">
-                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none" />
-                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]"><Smile size={24} /></button>
-                <button onClick={handleSend} className="h-10 w-10 bg-[#13ec5b] rounded-xl flex items-center justify-center text-[#102216] hover:scale-105 transition-all"><Send size={18} fill="currentColor" /></button>
+              <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} onFocus={() => setShowEmojiPicker(false)} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none" />
+                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`transition-colors ${showEmojiPicker ? 'text-[#13ec5b]' : 'text-[#92c9a4] hover:text-[#13ec5b]'}`}><Smile size={24} /></button>
+                <button onClick={handleSend} className="h-10 w-10 bg-[#13ec5b] rounded-xl flex items-center justify-center text-[#102216] hover:scale-105 active:scale-95 transition-all"><Send size={18} fill="currentColor" /></button>
+                
+                {showEmojiPicker && (
+                  <div className="absolute bottom-20 right-0 z-50 shadow-2xl animate-in slide-in-from-bottom-5 duration-200">
+                    <EmojiPicker 
+                      onEmojiClick={(d) => setInputText(p => p + d.emoji)} 
+                      theme="dark"
+                      width={320}
+                      height={400}
+                      lazyLoadEmojis={true}
+                      style={{
+                        "--epr-bg-color": "#112217",
+                        "--epr-category-label-bg-color": "#193322",
+                        "--epr-picker-border-color": "#23482f",
+                        "--epr-search-border-color": "#23482f",
+                        borderRadius: '20px'
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              {showEmojiPicker && <div className="absolute bottom-24 right-10"><EmojiPicker onEmojiClick={(d) => setInputText(p => p + d.emoji)} theme="dark" /></div>}
             </div>
           </>
         ) : (
