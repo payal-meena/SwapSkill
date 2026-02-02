@@ -220,7 +220,7 @@ module.exports = (io) => {
           .populate("lastMessage");
 
         updatedChat.participants.forEach(participant => {
-          io.emit(`sidebarUpdate_${participant._id}`, updatedChat);
+          io.to(participant._id.toString()).emit(`sidebarUpdate`, updatedChat);
         });
       } catch (err) {
         console.error("Socket SendMessage Error:", err);
