@@ -38,15 +38,7 @@ const UserNavbar = ({ userName }) => {
       </div>
 
       <div className="flex items-center gap-6">
-        {/* Search Bar */}
-        <div className="relative w-64 hidden md:block">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#92c9a4] text-xl">search</span>
-          <input 
-            className="w-full pl-10 pr-4 py-2 rounded-xl border-none bg-slate-100 dark:bg-[#23482f] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#92c9a4] text-sm focus:ring-2 focus:ring-[#13ec5b80] outline-none transition-all" 
-            placeholder="Find a skill..." 
-            type="text"
-          />
-        </div>
+       
 
         <div className="flex gap-3 items-center">
           {/* Notifications */}
