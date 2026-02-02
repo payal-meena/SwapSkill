@@ -288,6 +288,8 @@ const MessagesPage = () => {
         }
         return prevChats;
       });
+      
+      
 
       // 2. Messages screen update logic (Double message fix)
       if (senderId !== myUserId) {
@@ -318,7 +320,7 @@ const MessagesPage = () => {
       chatService.removeMessageListener();
       chatService.removeStatusListener();
     };
-  }, [myUserId]);
+  }, [myUserId,activeChat?._id]);
 
   // --- JOIN CHAT & HISTORY ---
   useEffect(() => {
@@ -483,7 +485,8 @@ const MessagesPage = () => {
 
             <div className="p-6 bg-[#112217] border-t border-[#23482f]">
               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
-                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none" />
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} onFocus={() => setShowEmojiPicker(false)} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none"
+                 />
                 <div className="relative flex items-center">
                   {showEmojiPicker && <div className="absolute bottom-14 right-0 z-50"><EmojiPicker onEmojiClick={(d) => setInputText(p => p + d.emoji)} theme="dark" width={300} height={400} /></div>}
                   <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-1 ${showEmojiPicker ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}><Smile size={24} /></button>
