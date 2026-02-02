@@ -12,7 +12,8 @@ const {
   updatePassword,
   updateProfileImage,
   deleteMyAccount ,
-  getPublicProfile
+  getPublicProfile,
+  profileImageRemove
 } = require("../controllers/userController.js");
 
 const {
@@ -40,7 +41,7 @@ router.put(
   "/profile-image",
   protect,
   (req, res, next) => {
-    console.log('🚀 Profile image route hit');
+    console.log(' Profile image route hit');
     console.log('Headers:', req.headers);
     next();
   },
@@ -49,6 +50,7 @@ router.put(
 );
 router.post("/skill", protect, addSkill);
 router.delete("/skill/:id", protect, deleteSkill);
+router.delete("/profile-image",protect,profileImageRemove);
 
 
 module.exports = router;

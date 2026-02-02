@@ -1,7 +1,7 @@
 const User = require("../models/User.js");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-
+const cloudinary = require("../config/cloudinary.js");
 /* GET MY PROFILE */
 const getMyProfile = async (req, res) => {
   try {
@@ -156,6 +156,42 @@ const getPublicProfile = async (req, res) => {
   }
 };
 
+const  profileImageRemove = async (req, res) => {
+  try {
+    const userId = req.user;
+
+    const user = await User.findById(userId);
+    if (!user || !user.profileImage) {
+      return res.status(400).json({
+        success: false,
+        message: "No profile image to delete"
+      });
+    }
+
+
+    const imageUrl = user.profileImage;
+    const publicId = imageUrl.split("/").pop().split(".")[0];
+
+    
+    await cloudinary.uploader.destroy(`profile-images/${publicId}`);
+
+    
+    user.profileImage = "";
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Profile image removed successfully"
+    });
+
+  } catch (error) {
+    console.error("Delete profile image error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete profile image"
+    });
+  }
+};
 
 
 
@@ -165,5 +201,6 @@ module.exports = {
   updatePassword,
   updateProfileImage,
   deleteMyAccount ,
-  getPublicProfile
+  getPublicProfile,
+  profileImageRemove
 };
