@@ -1,4 +1,5 @@
 import React from 'react';
+import Avatar from "../common/Avatar";
 
 const ExploreNavbar = ({ onSearch }) => {
   return (
@@ -8,8 +9,8 @@ const ExploreNavbar = ({ onSearch }) => {
           <h2 className="text-slate-900 dark:text-white text-2xl font-bold tracking-tight">Discover Skills</h2>
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
-              <img alt="User" className="w-8 h-8 rounded-full border-2 border-[#102216] object-cover" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" />
-              <div className="w-8 h-8 rounded-full border-2 border-[#102216] bg-[#13ec5b] flex items-center justify-center text-[10px] font-bold text-black">AJ</div>
+              <Avatar src={null} name="Felix" size="w-8 h-8" className="border-2 border-[#102216]" />
+              <Avatar src={null} name="AJ" size="w-8 h-8" className="border-2 border-[#102216]" />
             </div>
             <span className="text-xs text-slate-500 dark:text-[#92c9a4]">1,248 active mentors</span>
           </div>

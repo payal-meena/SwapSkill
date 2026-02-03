@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
+import Avatar from '../../components/common/Avatar';
 
 const ExploreProfile = () => {
   const location = useLocation();
@@ -66,10 +67,12 @@ const ExploreProfile = () => {
         {/* Banner Section */}
         <div className="relative h-40 bg-gradient-to-r from-[#052e16] via-[#13ec5b]/60 to-[#064e3b]">
           <div className="absolute -bottom-14 left-8 md:left-12 p-1 bg-[#0a1a11] rounded-full shadow-2xl">
-            <img
-              src={img}
-              alt={name}
-              className="w-28 h-28 rounded-full border-2 border-[#13ec5b] object-cover"
+            <Avatar 
+              src={img} 
+              name={name} 
+              size="w-28 h-28" 
+              textSize="text-2xl"
+              className="border-2 border-[#13ec5b]"
             />
             <div className="absolute bottom-2 right-2 w-5 h-5 bg-[#13ec5b] border-4 border-[#0a1a11] rounded-full animate-pulse"></div>
           </div>
