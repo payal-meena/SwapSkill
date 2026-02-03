@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Logout ke baad redirect ke liye
+import { useNavigate } from 'react-router-dom';
 import {
     Search, School, BookOpen, Verified, Users, History,
     Edit, Trash2, Share2, Settings, HelpCircle, ShieldCheck, Plus, LogOut as LogOutIcon,
@@ -10,14 +10,13 @@ import ExpertisePage from './ExpertisePage';
 import api from "../../services/api";
 import Toast from '../../components/common/Toast';
 import Avatar from '../../components/common/Avatar';
-
 import LogOut from '../../components/modals/LogOut';
 
 const Profile = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('teaching');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // Logout Modal State
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [skills, setSkills] = useState([]);
     const [user, setUser] = useState({});
     const [loading, setLoading] = useState(true);
@@ -62,11 +61,10 @@ const Profile = () => {
         }
     };
 
-    // Logout function jo confirm hone par chalega
     const handleLogoutConfirm = () => {
-        localStorage.removeItem('token'); // Token remove karein
+        localStorage.removeItem('token');
         setIsLogoutModalOpen(false);
-        navigate('/login'); // Login page par bhejein
+        navigate('/login');
     };
 
     const showToast = (message, type = 'info') => {
@@ -78,7 +76,6 @@ const Profile = () => {
     };
 
     const handleSkillAdded = (skillName) => {
-        // Check for duplicate skill
         const isDuplicate = skills.some(skill => 
             skill.title.toLowerCase() === skillName.toLowerCase()
         );
@@ -117,25 +114,14 @@ const Profile = () => {
 
     return (
         <div className="min-h-screen bg-[#f6f8f6] dark:bg-[#102216] text-slate-900 dark:text-white font-['Lexend']">
+            {/* UPDATED HEADER: Solo Profile Title on the Left */}
             <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
                     <div className="flex items-center gap-3 text-[#13ec5b]">
                         <div className="w-10 h-10 flex items-center justify-center bg-[#13ec5b]/10 rounded-lg">
                             <Users size={24} />
                         </div>
                         <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white uppercase">Profile</h2>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        {/* Logout Trigger */}
-                        <button 
-                            onClick={() => setIsLogoutModalOpen(true)}
-                            className="flex items-center gap-2 bg-[#13ec5b] text-[#102216] px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-[#13ec5b]/20 hover:bg-[#11d652] transition-colors"
-                        >
-                            <LogOutIcon size={16} /> Log Out
-                        </button>
-                        <div className="w-10 h-10 rounded-full border-2 border-[#13ec5b]/50 overflow-hidden bg-slate-200">
-                            <Avatar src={user?.profileImage} name={user?.name} size="w-10 h-10" />
-                        </div>
                     </div>
                 </div>
             </header>
@@ -218,14 +204,12 @@ const Profile = () => {
                 />
             )}
 
-            {/* Logout Modal Integration */}
             <LogOut 
                 isOpen={isLogoutModalOpen} 
                 onClose={() => setIsLogoutModalOpen(false)} 
                 onConfirm={handleLogoutConfirm}
             />
             
-            {/* Toast Notification */}
             <Toast 
                 message={toast.message}
                 type={toast.type}
