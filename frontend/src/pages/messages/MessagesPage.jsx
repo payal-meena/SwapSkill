@@ -344,20 +344,21 @@ const MessagesPage = () => {
       setChats(uniqueChats);
     };
 
-    // Connect socket
+    // Connect socket and setup listener
     chatService.connectSocket(myUserId);
-    loadInitialData();
+    
+    // Wait a bit for socket to connect, then load data
+    const timer = setTimeout(() => {
+      loadInitialData();
+    }, 100);
 
-    // Remove any existing listeners to prevent duplicates
-    chatService.removeMessageListener?.();
-
-    // Listen for new messages with fresh callback
+    // Setup listener for incoming messages
     const handleNewMessage = (newMsg) => {
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       
-      console.log("📨 Message received:", newMsg._id, "for chat:", msgChatId);
+      console.log("📨 Message received from socket:", newMsg._id, "for chat:", msgChatId);
       
-      // Update sidebar with latest message
+      // Update sidebar with latest message (ALWAYS update, regardless of which chat is open)
       setChats(prev => {
         const updated = prev.map(c => 
           (c._id === msgChatId) ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt } : c
@@ -370,12 +371,18 @@ const MessagesPage = () => {
       // Real-time Chat window update - only if viewing this chat
       const currentId = activeChatIdRef.current;
       if (currentId === msgChatId) {
+        console.log("✅ Message is for current chat, adding to messages");
         setMessages(prev => {
           // Don't add if already exists
-          if (prev.find(m => m._id === newMsg._id)) return prev;
+          if (prev.find(m => m._id === newMsg._id)) {
+            console.log("Message already exists, skipping");
+            return prev;
+          }
           // Remove temp message with same text
           return [...prev.filter(m => !m.isTemp || m.text !== newMsg.text), newMsg];
         });
+      } else {
+        console.log("⚠️ Message is for different chat:", msgChatId, "current:", currentId);
       }
     };
     
@@ -383,6 +390,7 @@ const MessagesPage = () => {
     chatService.onMessageReceived?.(handleNewMessage);
 
     return () => {
+      clearTimeout(timer);
       chatService.removeMessageListener?.();
     };
   }, [myUserId]);

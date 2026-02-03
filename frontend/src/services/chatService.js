@@ -63,6 +63,7 @@ export const chatService = {
   connectSocket: (userId) => {
     // Initialize socket with userId if not already done
     if (!socket) {
+      console.log("🔌 Initializing socket for userId:", userId);
       socket = initSocket(userId);
     }
     
@@ -72,6 +73,7 @@ export const chatService = {
       return;
     }
 
+    console.log("🔄 Connecting socket...");
     socket.connect();
 
     socket.on('connect', () => {
@@ -121,11 +123,19 @@ export const chatService = {
 
   // Naye message "sunne" ke liye
   onMessageReceived: (callback) => {
+    if (!socket) {
+      console.warn("⚠️ Socket not initialized, cannot register listener");
+      return;
+    }
+    
+    console.log("📡 Setting up messageReceived listener, socket connected:", socket.connected);
+    
     // Remove any existing listener first to avoid duplicates
     socket.off('messageReceived');
-    // Backend se match karne ke liye 'messageReceived' use karo
+    
+    // Register the listener
     socket.on("messageReceived", (message) => {
-      console.log("🔔 chatService received message:", message._id);
+      console.log("🔔 chatService received message:", message._id, "chat:", message.chat);
       callback(message);
     });
   },

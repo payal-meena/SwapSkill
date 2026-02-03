@@ -145,13 +145,28 @@ module.exports = (io) => {
 
 
     socket.on("joinChat", async ({ chatId, userId }) => {
-      const chat = await Chat.findById(chatId);
-      if (!chat) return;
+      try {
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+          console.log(`⚠️ Chat not found: ${chatId}`);
+          return;
+        }
 
-      if (!chat.participants.includes(userId)) return;
+        // Check if user is a participant (handle both string and ObjectId)
+        const isParticipant = chat.participants.some(p => 
+          p.toString() === userId.toString()
+        );
+        
+        if (!isParticipant) {
+          console.log(`⚠️ User ${userId} is not a participant of chat ${chatId}`);
+          return;
+        }
 
-      socket.join(chatId);
-      console.log(`${userId} joined chat ${chatId}`);
+        socket.join(chatId);
+        console.log(`✅ ${userId} joined chat ${chatId}`);
+      } catch (err) {
+        console.error("JoinChat Error:", err);
+      }
     });
 
     
