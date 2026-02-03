@@ -154,41 +154,7 @@ module.exports = (io) => {
       console.log(`${userId} joined chat ${chatId}`);
     });
 
-    // socket.on("sendMessage", async ({ chatId, senderId, text }) => {
-    //   const chat = await Chat.findById(chatId);
-    //   if (!chat) return;
-
-    //   let message = await Message.create({
-    //     chat: chatId,
-    //     sender: senderId,
-    //     text,
-    //   });
-    //   message = await Message.findById(message._id).populate("sender", "name profileImage");
-    //   if (!chat.participants.some(p => p.toString() === senderId.toString())) return;
-
-    //   // ✅ Save message separately
-
-    //   // ✅ Update chat metadata
-    //   chat.lastMessage = message._id;
-    //   chat.lastMessageAt = new Date();
-    //   await chat.save();
-
-    //   // ✅ Emit message
-    //   io.to(chatId).emit("messageReceived", message);
-    //   const updatedChat = await Chat.findById(chatId)
-    //     .populate("participants", "name profileImage isOnline lastSeen")
-    //     .populate("lastMessage");
-
-
-    //   // Har participant ko batane ke liye
-    //   updatedChat.participants.forEach(participant => {
-    //     io.emit(`sidebarUpdate_${participant._id}`, updatedChat);
-    //   });
-
-
-    // });
-    // ✅ Delete Message Event
-
+    
     socket.on("sendMessage", async ({ chatId, senderId, text }) => {
       try {
         const chat = await Chat.findById(chatId);
@@ -211,10 +177,15 @@ module.exports = (io) => {
         chat.lastMessageAt = new Date();
         await chat.save();
 
-        // 4. Readable message emit karo (Ab isme .text dikhega)
+        // 4. Add chat reference to message for frontend
+        message = message.toObject ? message.toObject() : message;
+        message.chat = chatId;
+        
+        // 5. Emit to everyone in the chat room
         io.to(chatId).emit("messageReceived", message);
+        console.log(`✉️ Message emitted to room ${chatId}:`, message._id);
 
-        // 5. Sidebar update ke liye poora chat populate karo
+        // 6. Sidebar update ke liye poora chat populate karo
         const updatedChat = await Chat.findById(chatId)
           .populate("participants", "name profileImage isOnline lastSeen")
           .populate("lastMessage");

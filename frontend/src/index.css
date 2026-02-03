@@ -36,3 +36,24 @@
 
 .neon-glow { box-shadow: 0 0 15px rgba(37, 244, 123, 0.3); }
 
+/* Hide Scrollbar but keep scrolling */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Alternative: Invisible scrollbar */
+.scrollbar-invisible::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.scrollbar-invisible {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

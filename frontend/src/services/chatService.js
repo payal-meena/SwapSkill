@@ -2,10 +2,24 @@
 import api from './api';
 import { io } from 'socket.io-client';
 
-const socket = io("http://localhost:3000", {
-autoConnect: false,
-  reconnection: true,
-  transports: ['websocket'],});
+// Use environment variable so other devices can connect to the real backend
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+
+let socket;
+
+const initSocket = (userId) => {
+  const token = localStorage.getItem('token');
+  socket = io(SOCKET_URL, {
+    autoConnect: false,
+    reconnection: true,
+    transports: ['websocket'],
+    query: {
+      userId: userId,
+      token: token
+    }
+  });
+  return socket;
+};
 
 export const chatService = {
   // --- HTTP Methods (Axios) ---
@@ -47,23 +61,29 @@ export const chatService = {
   // services/chatService.js
 
   connectSocket: (userId) => {
-    // Agar socket pehle se connected hai, toh dobara connect mat karo
-    if (socket?.connected) return;
+    // Initialize socket with userId if not already done
+    if (!socket) {
+      socket = initSocket(userId);
+    }
+    
+    // If already connected, skip
+    if (socket?.connected) {
+      console.log('✅ Socket already connected');
+      return;
+    }
 
-    // Naya connection banayein
-    socket.io.opts.query = { userId };
     socket.connect();
 
-    socket.on("connect", () => {
-      console.log("✅ Connected to Socket. ID:", socket.id);
+    socket.on('connect', () => {
+      console.log('✅ Connected to Socket. ID:', socket.id, 'userId:', userId);
     });
 
-    socket.on("connect_error", (err) => {
-      console.error("❌ Socket Connection Error:", err.message);
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket Connection Error:', err?.message || err);
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("⚠️ Socket Disconnected:", reason);
+    socket.on('disconnect', (reason) => {
+      console.log('⚠️ Socket Disconnected:', reason);
     });
   },
 
@@ -90,23 +110,27 @@ export const chatService = {
     socket.emit("deleteMessage", { messageId, chatId, type, userId });
   },
 
-  // ✅ Naya: Message deleted event "sunne" ke liye
   onMessageDeleted: (callback) => {
     socket.on("messageDeleted", (data) => {
       callback(data);
     });
   },
+  removeDeleteListener: () => {
+    socket.off("messageDeleted");
+  },
 
   // Naye message "sunne" ke liye
   onMessageReceived: (callback) => {
+    // Remove any existing listener first to avoid duplicates
+    socket.off('messageReceived');
     // Backend se match karne ke liye 'messageReceived' use karo
     socket.on("messageReceived", (message) => {
+      console.log("🔔 chatService received message:", message._id);
       callback(message);
     });
   },
-
   removeMessageListener: () => {
-    socket.off("messageReceived");
+    socket.off('messageReceived');
   },
   removeDeleteListener: () => {
     socket.off("messageDeleted");
@@ -131,13 +155,25 @@ export const chatService = {
   removeStatusListener: () => {
     socket.off("userStatusChanged");
   },
-
-
-
-  // Cleanup function taaki memory leak na ho
-  removeMessageListener: () => {
-    socket.off("receiveMessage");
+  // Cleanup function taaki memory leak na ho (legacy name)
+  removeReceiveListener: () => {
+    socket.off('receiveMessage');
   }
+};
+
+// Upload helper using existing axios instance
+export const uploadFile = async (file) => {
+  const form = new FormData();
+  form.append('file', file);
+  // Backend should expose an endpoint to upload files and return { success, url, type }
+  const res = await api.post('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  return res.data;
+};
+
+// Convenience: send a message that contains a file (url + meta)
+export const sendFileMessage = (chatId, senderId, fileMeta) => {
+  // fileMeta: { url, name, mimeType, size }
+  socket.emit('sendMessage', { chatId, senderId, text: '', file: fileMeta });
 };
 
 

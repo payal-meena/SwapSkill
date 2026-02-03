@@ -52,7 +52,7 @@ const UserSidebar = () => {
       <div className="flex flex-col gap-8">
         {/* Logo Section */}
         <div className="flex items-center justify-between lg:justify-start gap-3 px-2">
-          <Link to="/" className="flex gap-3 items-center cursor-pointer">
+          <Link to="#" className="flex gap-3 items-center cursor-pointer">
             <div className="bg-[#13ec5b] rounded-lg p-2 flex items-center justify-center shadow-[0_0_15px_rgba(19,236,91,0.3)]">
               <span className="material-symbols-outlined text-[#102216] font-bold">swap_horiz</span>
             </div>
