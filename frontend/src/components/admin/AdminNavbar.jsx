@@ -1,4 +1,5 @@
 import React from 'react';
+import Avatar from "../common/Avatar";
 
 const AdminNavbar = () => {
   return (
@@ -29,8 +30,13 @@ const AdminNavbar = () => {
             <p className="text-sm font-bold text-white leading-tight">Alex Rivera</p>
             <p className="text-[10px] text-[#39FF14] uppercase font-bold tracking-tighter mt-1">Super Admin</p>
           </div>
-          <div className="w-10 h-10 rounded-full border-2 border-[#39FF14] shadow-[0_0_10px_rgba(57,255,20,0.3)] bg-center bg-cover overflow-hidden">
-             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin" />
+          <div className="w-10 h-10">
+             <Avatar 
+               src={null} 
+               name="Alex Rivera" 
+               size="w-10 h-10" 
+               className="border-2 border-[#39FF14] shadow-[0_0_10px_rgba(57,255,20,0.3)]"
+             />
           </div>
         </div>
       </div>

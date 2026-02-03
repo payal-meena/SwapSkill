@@ -15,11 +15,11 @@ const getMyProfile = async (req, res) => {
 /* UPDATE PROFILE */
 const updateProfile = async (req, res) => {
   try {
-    const { bio, location, email } = req.body;
+    const { bio, location, email, profession, socialLinks } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.user,
-      { bio, location, email },
+      { bio, location, email, profession, socialLinks },
       { new: true }
     ).select("-password");
 

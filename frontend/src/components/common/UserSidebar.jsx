@@ -87,7 +87,8 @@ const UserSidebar = () => {
           onClick={() => setIsLogoutModalOpen(true)}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all cursor-pointer group"
         >
-          <LogOutIcon size={20} className="group-hover:-translate-x-1 transition-transform" />
+          {/* Icon rotated to face left and hover animation adjusted */}
+          <LogOutIcon size={20} className="rotate-180 group-hover:translate-x-1 transition-transform" />
           <p className="text-sm font-bold uppercase tracking-wider">Logout</p>
         </div>
       </div>
@@ -96,7 +97,7 @@ const UserSidebar = () => {
 
   return (
     <>
-      {/* --- MOBILE HEADER (Sirf Small Screens Par Dikhega) --- */}
+      {/* --- MOBILE HEADER --- */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#112217] border-b border-slate-200 dark:border-[#23482f] flex items-center justify-between px-6 z-[60]">
         <div className="flex items-center gap-2">
           <div className="bg-[#13ec5b] rounded p-1">
@@ -112,20 +113,18 @@ const UserSidebar = () => {
         </button>
       </div>
 
-      {/* --- DESKTOP SIDEBAR (Static) --- */}
+      {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-8 h-screen sticky top-0 z-50">
         {SidebarContent(false)}
       </aside>
 
-      {/* --- MOBILE DRAWER (Overlay) --- */}
+      {/* --- MOBILE DRAWER --- */}
       {isMobileMenuOpen && (
         <>
-          {/* Dark Backdrop */}
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          {/* Drawer Content */}
           <div className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] z-[80] p-6 shadow-2xl lg:hidden animate-in slide-in-from-left duration-300">
             {SidebarContent(true)}
           </div>
