@@ -60,7 +60,6 @@ const UserSidebar = () => {
               <h1 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tight">SwapSkill</h1>
               <p className="text-[#13ec5b] text-[10px] font-bold uppercase tracking-widest">P2P Learning</p>
             </div>
-          </Link>
           
           {/* Mobile Close Button */}
           {isMobile && (
