@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut as LogOutIcon } from 'lucide-react'; // Icons for responsive
+import { Menu, X, LogOut as LogOutIcon } from 'lucide-react';
 import LogOut from '../modals/LogOut';
 
 const NavItem = ({ icon, label, to, badge = false, onClick }) => {
@@ -36,7 +36,6 @@ const UserSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Route badalne par mobile menu band kar dein
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
@@ -47,12 +46,13 @@ const UserSidebar = () => {
     navigate('/login');
   };
 
-  const SidebarContent = (isMobile = false) => (
+  // Sidebar Content Function
+  const renderSidebarContent = (isMobileView) => (
     <div className="flex flex-col justify-between h-full font-['Lexend']">
       <div className="flex flex-col gap-8">
         {/* Logo Section */}
-        <div className="flex items-center justify-between lg:justify-start gap-3 px-2">
-          <Link to="#" className="flex gap-3 items-center cursor-pointer">
+        <div className="flex items-center justify-between gap-3 px-2">
+          <div className="flex gap-3 items-center">
             <div className="bg-[#13ec5b] rounded-lg p-2 flex items-center justify-center shadow-[0_0_15px_rgba(19,236,91,0.3)]">
               <span className="material-symbols-outlined text-[#102216] font-bold">swap_horiz</span>
             </div>
@@ -60,10 +60,11 @@ const UserSidebar = () => {
               <h1 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tight">SwapSkill</h1>
               <p className="text-[#13ec5b] text-[10px] font-bold uppercase tracking-widest">P2P Learning</p>
             </div>
+          </div>
           
           {/* Mobile Close Button */}
-          {isMobile && (
-            <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-500 dark:text-white">
+          {isMobileView && (
+            <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-500 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
               <X size={24} />
             </button>
           )}
@@ -75,7 +76,7 @@ const UserSidebar = () => {
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
           <NavItem to="/requests" icon="handshake" label="Requests" badge />
-          <NavItem to="/messages/:userId" icon="chat_bubble" label="Messages" />
+          <NavItem to="/messages" icon="chat_bubble" label="Messages" />
         </nav>
       </div>
 
@@ -86,8 +87,7 @@ const UserSidebar = () => {
           onClick={() => setIsLogoutModalOpen(true)}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all cursor-pointer group"
         >
-          {/* Icon rotated to face left and hover animation adjusted */}
-          <LogOutIcon size={20} className="rotate-180 group-hover:translate-x-1 transition-transform" />
+          <LogOutIcon size={20} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
           <p className="text-sm font-bold uppercase tracking-wider">Logout</p>
         </div>
       </div>
@@ -114,7 +114,7 @@ const UserSidebar = () => {
 
       {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-8 h-screen sticky top-0 z-50">
-        {SidebarContent(false)}
+        {renderSidebarContent(false)}
       </aside>
 
       {/* --- MOBILE DRAWER --- */}
@@ -124,18 +124,20 @@ const UserSidebar = () => {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] z-[80] p-6 shadow-2xl lg:hidden animate-in slide-in-from-left duration-300">
-            {SidebarContent(true)}
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] z-[80] p-6 shadow-2xl lg:hidden">
+            {renderSidebarContent(true)}
           </div>
         </>
       )}
 
       {/* LogOut Modal */}
-      <LogOut 
-        isOpen={isLogoutModalOpen} 
-        onClose={() => setIsLogoutModalOpen(false)} 
-        onConfirm={handleLogoutConfirm} 
-      />
+      {isLogoutModalOpen && (
+        <LogOut 
+          isOpen={isLogoutModalOpen} 
+          onClose={() => setIsLogoutModalOpen(false)} 
+          onConfirm={handleLogoutConfirm} 
+        />
+      )}
     </>
   );
 };
