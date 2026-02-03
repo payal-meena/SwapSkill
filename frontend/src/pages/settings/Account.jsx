@@ -3,20 +3,21 @@ import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe, Briefc
 import { getMyProfile } from "../../services/authService.js";
 import api from "../../services/api";
 import AccountModal from "./AccountModal"; 
+import Avatar from "../../components/common/Avatar";
 
 const Account = () => {
+  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [profession, setProfession] = useState("");
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState("https://api.dicebear.com/7.x/avataaars/svg?seed=Alex");
+  const [previewImage, setPreviewImage] = useState(null); 
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [profileVisible, setProfileVisible] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Social Media Links State
   const [socialLinks, setSocialLinks] = useState({
     instagram: '',
     facebook: '',
@@ -25,7 +26,6 @@ const Account = () => {
     twitter: ''
   });
 
-  // Local state to track which link is being edited
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState("");
 
@@ -37,7 +37,6 @@ const Account = () => {
     onConfirm: null
   });
 
-  // Default ko null kiya hai taaki page load par General Settings band rahe
   const [activeTab, setActiveTab] = useState(null);
 
   const showModal = (type, title, message, onConfirm = null) => {
@@ -45,19 +44,18 @@ const Account = () => {
   };
 
   const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
-
   const toggleTab = (tab) => setActiveTab(activeTab === tab ? null : tab);
-
   const canSavePassword = passwords.next.length >= 8 && passwords.next === passwords.confirm && passwords.current.length > 0;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getMyProfile();
+        setUserName(data.name || "User");
         setEmail(data.email || "");
         setBio(data.bio || "");
         setProfession(data.profession || "");
-        setPreviewImage(data.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name || 'User'}`);
+        setPreviewImage(data.profileImage || null);
         setSocialLinks(data.socialLinks || { instagram: '', facebook: '', snapchat: '', github: '', twitter: '' });
         setLoading(false);
       } catch (error) {
@@ -106,8 +104,6 @@ const Account = () => {
     setIsUploading(false);
   };
 
-  
-
   const deleteAccountFinal = async () => {
     try {
       await api.delete("/users/me");
@@ -122,7 +118,6 @@ const Account = () => {
     showModal('delete', 'Delete Account?', 'This will permanently remove all your data. Proceed?', deleteAccountFinal);
   };
 
-  // Function to open link in Chrome/Browser
   const handleConnect = (url) => {
     if (!url) {
         showModal('error', 'No Link Found', 'Please edit and add a link first.');
@@ -132,16 +127,28 @@ const Account = () => {
     window.open(formattedUrl, '_blank');
   };
 
-  // Start editing a specific social link
   const startEdit = (field, currentVal) => {
     setEditingField(field);
     setTempValue(currentVal);
   };
 
-  // Save specific social link to state
   const saveTempLink = (field) => {
     setSocialLinks({ ...socialLinks, [field]: tempValue });
     setEditingField(null);
+  };
+
+  const handleDeleteProfileImage = async () => {
+    setIsUpdating(true);
+    try {
+      await api.delete('/users/profile-image');
+      setPreviewImage(null); 
+      setProfileImage(null);
+      showModal('success', 'Profile Image Removed', 'Your profile image has been removed.');
+      setActiveTab(null);
+    } catch (error) {
+      showModal('error', 'Image Delete Failed', error.response?.data?.message || "Failed to delete profile image.");
+    }
+    setIsUpdating(false);
   };
 
   if (loading) return (
@@ -149,33 +156,6 @@ const Account = () => {
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13ec5b]"></div>
     </div>
   );
-
-
-const handleDeleteProfileImage = async () => {
-  setIsUpdating(true);
-  try {
-    await api.delete('/users/profile-image');
-
-    setPreviewImage(`https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`);
-    setProfileImage(null);
-
-    showModal(
-      'success',
-      'Profile Image Removed',
-      'Your profile image has been removed.'
-    );
-
-    setActiveTab(null);
-  } catch (error) {
-    showModal(
-      'error',
-      'Image Delete Failed',
-      error.response?.data?.message || "Failed to delete profile image."
-    );
-  }
-  setIsUpdating(false);
-};
-
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 md:px-8 py-10 space-y-8 animate-in fade-in duration-700 font-['Lexend']">
@@ -189,12 +169,21 @@ const handleDeleteProfileImage = async () => {
       <section className="bg-white dark:bg-[#112217] rounded-3xl border border-slate-200 dark:border-[#23482f] p-10 shadow-sm">
         <div className="flex flex-col md:flex-row items-center gap-10">
           <div className="relative">
-            <div className="h-32 w-32 rounded-full border-4 border-[#13ec5b] overflow-hidden bg-slate-100 shadow-xl">
-              <img src={previewImage} alt="Avatar" className="w-full h-full object-cover" />
+            <div className="h-32 w-32 rounded-full border-4 border-[#13ec5b] overflow-hidden bg-slate-100 shadow-xl flex items-center justify-center">
+              {/* FIXED: Added text-5xl and font-bold for big initials */}
+               <Avatar 
+                src={previewImage} 
+                name={userName} 
+                size="w-full h-full" 
+                className="rounded-none border-none text-5xl font-bold flex items-center justify-center uppercase" 
+              />
             </div>
             <input type="file" accept="image/*" id="profileImageInput" className="hidden" onChange={(e) => {
                 const file = e.target.files[0];
-                if (file) { setProfileImage(file); setPreviewImage(URL.createObjectURL(file)); }
+                if (file) { 
+                  setProfileImage(file); 
+                  setPreviewImage(URL.createObjectURL(file)); 
+                }
             }} />
             <button onClick={() => document.getElementById("profileImageInput").click()} className="absolute bottom-1 right-1 bg-[#13ec5b] p-3 rounded-full text-[#102216] hover:scale-110 transition-transform shadow-lg"><Camera size={20} /></button>
           </div>
@@ -310,7 +299,6 @@ const handleDeleteProfileImage = async () => {
                     </div>
                   </div>
 
-                  {/* Inline Editor for Social Link */}
                   {editingField === social.id && (
                     <div className="flex items-center gap-2 mt-1 animate-in slide-in-from-top-1 duration-200">
                       <input 
@@ -344,7 +332,6 @@ const handleDeleteProfileImage = async () => {
         </div>
       </div>
 
-      {/* Modal Integration */}
       <AccountModal 
         {...modalConfig} 
         onClose={closeModal} 
