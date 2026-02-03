@@ -70,7 +70,7 @@ const Requests = () => {
   return (
     /* Background updated to rgb(17, 34, 23) */
     <div className="min-h-screen flex flex-col bg-[#112217] text-slate-200 font-['Lexend']">
-      <UserNavbar userName="Alex" />
+     
       <main className="flex-1 p-4 md:p-10 max-w-5xl mx-auto w-full">
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>

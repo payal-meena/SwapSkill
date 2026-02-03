@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, X, CheckCircle2, PlusCircle } from 'lucide-react';
 import UserNavbar from '../../components/common/UserNavbar';
 import MySkillCard from '../../components/skills/MySkillCard';
@@ -29,10 +30,15 @@ const MySkills = () => {
   const [isEditWantedOpen, setIsEditWantedOpen] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
   const [searchTerm, setSearchTerm] = useState('');
+  const location = useLocation();
 
   useEffect(() => {
     fetchMySkills();
     fetchMyWantedSkills();
+    // Check query param to set active tab (e.g., ?tab=wanted)
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'wanted') setActiveTab('wanted');
   }, []);
 
   const fetchMyWantedSkills = async () => {
@@ -212,8 +218,8 @@ const MySkills = () => {
 
   return (
     <div className="flex h-screen overflow-hidden font-['Lexend'] relative">
-      <main className={`flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark transition-all duration-300 ${isWantedModalOpen ? 'blur-sm opacity-50' : ''}`}>
-        <UserNavbar userName="Alex" />
+      <main className={`flex-1 flex flex-col overflow-y-auto scrollbar-hide bg-background-light dark:bg-background-dark transition-all duration-300 ${isWantedModalOpen ? 'blur-sm opacity-50' : ''}`}>
+        
 
         <div className="max-w-7xl mx-auto w-full px-6 py-10">
 

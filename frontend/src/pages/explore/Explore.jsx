@@ -102,7 +102,7 @@ const Explore = () => {
  
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f6f8f6] dark:bg-[#102216] font-['Lexend']">
+    <div className="flex-1 flex flex-col h-screen overflow-y-auto scrollbar-hide bg-[#f6f8f6] dark:bg-[#102216] font-['Lexend']">
       {/* Navbar ko setSearchTerm bhej rahe hain */}
       <ExploreNavbar onSearch={(value) => setSearchTerm(value)} />
       

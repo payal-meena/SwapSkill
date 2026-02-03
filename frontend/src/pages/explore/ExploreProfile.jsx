@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { skillService } from '../../services/skillService';
 import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
 import Avatar from '../../components/common/Avatar';
 
@@ -9,6 +10,27 @@ const ExploreProfile = () => {
   
   // 1. Pehle profileData ko location.state se nikaalein
   const profileData = location.state;
+
+  const [offeredSkillsState, setOfferedSkillsState] = useState(profileData?.offeredSkills || []);
+  const [wantedSkillsState, setWantedSkillsState] = useState(profileData?.wantedSkills || []);
+
+  useEffect(() => {
+    // If state exists and already has skills, keep them. Otherwise fetch by id if available.
+    const fetchIfNeeded = async () => {
+      if ((offeredSkillsState.length === 0 && wantedSkillsState.length === 0) && profileData?.id) {
+        try {
+          const res = await skillService.getUserSkills(profileData.id);
+          const offered = res?.offered || res?.skills || res?.offeredSkills || [];
+          const wanted = res?.wanted || res?.wantedSkills || [];
+          setOfferedSkillsState(offered);
+          setWantedSkillsState(wanted);
+        } catch (err) {
+          console.error('Failed to fetch user skills for profile view', err);
+        }
+      }
+    };
+    fetchIfNeeded();
+  }, [profileData]);
 
   // 2. Agar profileData nahi hai (matlab direct URL access), toh error handling
   if (!profileData) {
@@ -31,16 +53,14 @@ const ExploreProfile = () => {
     name = "Sarah Jenkins", 
     img = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200", 
     rating = 4.9, 
-    reviews = 128, 
-    offeredSkills = [], 
-    wantedSkills = [],
+    reviews = 128,
     socials = {
       instagram: "https://instagram.com",
       facebook: "https://facebook.com",
       github: "https://github.com",
       snapchat: "https://snapchat.com"
     }
-  } = profileData;
+  } = profileData || {};
 
   const openSocial = (url) => {
     if (url) {
@@ -112,11 +132,11 @@ const ExploreProfile = () => {
                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[#05160e]">I Can Teach</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {offeredSkills.length > 0 ? offeredSkills.map((skill, index) => (
+                    {offeredSkillsState.length > 0 ? offeredSkillsState.map((skill, index) => (
                       <div key={index} className="px-4 py-2 bg-white/5 border border-[#13ec5b]/30 rounded-xl flex items-center gap-3">
-                        <span className="font-bold text-white text-md">{skill.name}</span>
+                        <span className="font-bold text-white text-md">{skill.name || skill.skillName || skill.title}</span>
                         <span className="text-[9px] font-black bg-[#13ec5b] text-[#05160e] px-1.5 py-0.5 rounded uppercase">
-                          {skill.level || skill.leval}
+                          {skill.level || skill.leval || skill.levelName}
                         </span>
                       </div>
                     )) : <p className="text-slate-500 text-sm italic">No teaching skills listed</p>}
@@ -129,9 +149,9 @@ const ExploreProfile = () => {
                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[#05160e]">I Want To Learn</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {wantedSkills.length > 0 ? wantedSkills.map((skill, index) => (
+                    {wantedSkillsState.length > 0 ? wantedSkillsState.map((skill, index) => (
                       <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl text-amber-400 font-bold text-md">
-                        {typeof skill === 'string' ? skill : skill.name}
+                        {typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.title)}
                       </div>
                     )) : <p className="text-slate-500 text-sm italic">No learning goals listed</p>}
                   </div>

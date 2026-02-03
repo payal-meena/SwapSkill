@@ -1,7 +1,282 @@
+// import React, { useState, useEffect, useRef } from 'react';
+// import { useParams } from 'react-router-dom';
+// import { chatService } from '../../services/chatService';
+// import { Search, Send, Trash2, Edit2, X, Check, Paperclip, Smile } from 'lucide-react';
+// import EmojiPicker from 'emoji-picker-react';
+
+// const getMyId = () => {
+//   const token = localStorage.getItem('token');
+//   if (!token) return null;
+//   try {
+//     const base64Url = token.split('.')[1];
+//     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+//     const payload = JSON.parse(window.atob(base64));
+//     return payload.id || payload._id;
+//   } catch (e) { return null; }
+// };
+
+// const MessagesPage = () => {
+//   const { userId: userIdFromParams } = useParams();
+//   const [chats, setChats] = useState([]);
+//   const [activeChat, setActiveChat] = useState(null);
+//   const [messages, setMessages] = useState([]);
+//   const [inputText, setInputText] = useState("");
+//   const [editingMessage, setEditingMessage] = useState(null);
+//   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+//   const myUserId = getMyId();
+//   const scrollRef = useRef();
+//   const fileInputRef = useRef();
+//   const activeChatRef = useRef(activeChat);
+
+//   useEffect(() => { activeChatRef.current = activeChat; }, [activeChat]);
+
+//   // --- HELPERS ---
+//   const getMessageDateLabel = (dateString) => {
+//     const date = new Date(dateString);
+//     const today = new Date();
+//     const yesterday = new Date();
+//     yesterday.setDate(yesterday.getDate() - 1);
+//     if (date.toDateString() === today.toDateString()) return "Today";
+//     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+//     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+//   };
+
+//   const formatMessageTime = (dateString) => {
+//     if (!dateString) return "";
+//     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+//   };
+
+//   const getUniqueChats = (allChats) => {
+//     const uniqueMap = new Map();
+//     allChats.forEach(chat => {
+//       const otherUser = chat.participants.find(p => (p._id || p) !== myUserId);
+//       const otherId = otherUser?._id || otherUser;
+//       if (otherId) uniqueMap.set(otherId, chat);
+//     });
+//     return Array.from(uniqueMap.values());
+//   };
+
+//   // --- ACTIONS ---
+//   const handleSend = () => {
+//     if (!inputText.trim() || !activeChat) return;
+//     if (editingMessage) {
+//       chatService.editMessage?.(editingMessage.id, inputText.trim(), activeChat._id);
+//       setMessages(prev => prev.map(m => m._id === editingMessage.id ? { ...m, text: inputText } : m));
+//       setEditingMessage(null);
+//     } else {
+//       chatService.sendMessage(activeChat._id, myUserId, inputText.trim());
+//     }
+//     setInputText("");
+//     setShowEmojiPicker(false);
+//   };
+
+//   const onEmojiClick = (emojiData) => {
+//     setInputText(prev => prev + emojiData.emoji);
+//   };
+
+//   const handleInputClick = () => {
+//     setShowEmojiPicker(false);
+//     // Jab input pe click karein (matlab user active hai), tab messages read mark karein
+//     if (activeChat?._id) {
+//       chatService.markAsRead?.(activeChat._id, myUserId);
+//     }
+//   };
+
+//   const handleFileUpload = (e) => {
+//     const file = e.target.files[0];
+//     if (file && activeChat) {
+//       chatService.sendFile?.(activeChat._id, myUserId, file);
+//     }
+//   };
+
+//   // --- SOCKETS & FETCH ---
+//   useEffect(() => {
+//     if (!myUserId) return;
+//     chatService.connectSocket(myUserId);
+//     chatService.getMyChats().then(data => setChats(getUniqueChats(data)));
+    
+//     // Listen for new messages
+//     chatService.onMessageReceived((newMsg) => {
+//       const msgChatId = newMsg.chat?._id || newMsg.chat;
+//       if (activeChatRef.current?._id === msgChatId) {
+//         setMessages(prev => prev.some(m => m._id === newMsg._id) ? prev : [...prev, newMsg]);
+//         // Auto mark read if chat is open
+//         chatService.markAsRead?.(msgChatId, myUserId);
+//       }
+//       chatService.getMyChats().then(data => setChats(getUniqueChats(data)));
+//     });
+
+//     // Listen for Read Status Updates
+//     chatService.onMessagesRead?.((data) => {
+//       if (activeChatRef.current?._id === data.chatId) {
+//         setMessages(prev => prev.map(m => 
+//           m.sender === data.userId || m.sender?._id === data.userId ? m : { ...m, seen: true }
+//         ));
+//       }
+//     });
+
+//     return () => {
+//         chatService.removeMessageListener();
+//         chatService.removeReadListener?.();
+//     };
+//   }, [myUserId]);
+
+//   useEffect(() => {
+//     if (activeChat?._id) {
+//       chatService.joinChat(activeChat._id, myUserId);
+//       chatService.getChatHistory(activeChat._id).then(data => {
+//         setMessages(data);
+//         chatService.markAsRead?.(activeChat._id, myUserId);
+//       });
+//     }
+//   }, [activeChat?._id]);
+
+//   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+//   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
+
+//   return (
+//     <div className="flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
+      
+//       {/* SIDEBAR */}
+//       <aside className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
+//         <div className="p-5 border-b border-[#23482f]">
+//           <h2 className="text-xl font-bold text-[#13ec5b] mb-4">Messages</h2>
+//           <div className="relative">
+//              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92c9a4]" size={16} />
+//              <input type="text" placeholder="Search..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#112217] text-sm outline-none border border-[#23482f]" />
+//           </div>
+//         </div>
+//         <div className="flex-1 overflow-y-auto hide-scrollbar">
+//           {chats.map((chat) => {
+//             const p = chat.participants.find(u => (u._id || u) !== myUserId);
+//             const isNew = !chat.lastMessage;
+//             return (
+//               <div key={chat._id} onClick={() => setActiveChat(chat)} 
+//                 className={`flex items-center gap-3 p-4 cursor-pointer transition-all border-b border-[#1a3322]
+//                   ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}
+//                   ${isNew ? 'bg-[#13ec5b]/5 border-l-4 border-[#13ec5b]' : ''} `}>
+//                 <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" />
+//                 <div className="flex-1 truncate">
+//                   <div className="flex justify-between items-center">
+//                     <h4 className={`text-sm font-bold ${isNew ? 'text-[#13ec5b]' : ''}`}>{p?.name}</h4>
+//                     {isNew && <span className="text-[8px] bg-[#13ec5b] text-black px-1 rounded font-black">NEW</span>}
+//                   </div>
+//                   <p className="text-xs truncate text-[#92c9a4]">{isNew ? "New connection!" : chat.lastMessage?.text}</p>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </aside>
+
+//       {/* CHAT AREA */}
+//       <main className="flex-1  flex flex-col bg-[#0d1a11]">
+//         {activeChat ? (
+//           <>
+//             <header className="h-20 flex items-center px-8 bg-[#112217] border-b border-[#23482f]">
+//               <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
+//               <div>
+//                 <h3 className="font-bold">{otherUser?.name}</h3>
+//                 <p className="text-[10px] text-[#13ec5b]">● Online</p>
+//               </div>
+//             </header>
+
+//             {/* MESSAGES LIST */}
+//             <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
+//               {messages.map((m, idx) => {
+//                 const isMe = (m.sender?._id || m.sender) === myUserId;
+//                 const msgDate = new Date(m.createdAt).toDateString();
+//                 const prevMsgDate = idx > 0 ? new Date(messages[idx-1].createdAt).toDateString() : null;
+//                 const showDateLabel = msgDate !== prevMsgDate;
+
+//                 return (
+//                   <React.Fragment key={m._id || idx}>
+//                     {showDateLabel && (
+//                       <div className="flex justify-center my-6">
+//                         <span className="bg-[#1a3322] text-[#92c9a4] text-[10px] font-bold px-4 py-1 rounded-full border border-[#23482f] uppercase tracking-wider">
+//                           {getMessageDateLabel(m.createdAt)}
+//                         </span>
+//                       </div>
+//                     )}
+//                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+//                       <div className="relative group max-w-[70%]">
+//                         <div className={`px-4 py-2 rounded-2xl transition-all shadow-sm ${isMe ? 'bg-[#13ec5b] text-black rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
+//                           <p className="text-sm">{m.text}</p>
+//                           <div className="flex items-center justify-end gap-1 mt-1">
+//                             <p className="text-[9px] opacity-60">{formatMessageTime(m.createdAt)}</p>
+                            
+//                             {/* SEEN STATUS LOGIC (Only for my messages) */}
+//                             {isMe && (
+//                               <div className="flex">
+//                                 {m.seen ? (
+//                                   <div className="flex -space-x-2">
+//                                     <Check size={10} className="text-blue-500" />
+//                                     <Check size={10} className="text-blue-500" />
+//                                   </div>
+//                                 ) : (
+//                                   <Check size={10} className="text-gray-400 opacity-50" />
+//                                 )}
+//                               </div>
+//                             )}
+//                           </div>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </React.Fragment>
+//                 );
+//               })}
+//               <div ref={scrollRef} />
+//             </div>
+
+//             {/* INPUT AREA */}
+//             <div className="p-4 bg-[#112217] border-t border-[#23482f] relative">
+//               {showEmojiPicker && (
+//                 <div className="absolute bottom-20 left-4 z-50 shadow-2xl">
+//                   <EmojiPicker onEmojiClick={onEmojiClick} theme="dark" width={300} height={400} />
+//                 </div>
+//               )}
+
+//               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f]">
+//                 <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]">
+//                   <Smile size={22} />
+//                 </button>
+//                 <button onClick={() => fileInputRef.current.click()} className="text-[#92c9a4] hover:text-[#13ec5b]">
+//                   <Paperclip size={20} />
+//                 </button>
+//                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+
+//                 <input 
+//                   value={inputText} 
+//                   onChange={(e) => setInputText(e.target.value)}
+//                   onClick={handleInputClick} 
+//                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+//                   placeholder="Type a message..." 
+//                   className="flex-1 bg-transparent outline-none text-sm" 
+//                 />
+                
+//                 <button onClick={handleSend} className="bg-[#13ec5b] p-2 rounded-lg text-black hover:bg-[#11cc4f]">
+//                   <Send size={18} />
+//                 </button>
+//               </div>
+//             </div>
+//           </>
+//         ) : (
+//           <div className="flex-1 flex flex-col items-center justify-center opacity-10">
+//             <Send size={80} />
+//             <p className="mt-4 font-bold tracking-[0.3em]">SELECT A CHAT</p>
+//           </div>
+//         )}
+//       </main>
+//     </div>
+//   );
+// };
+
+// export default MessagesPage;
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import { chatService } from '../../services/chatService';
-import { Search, Send, Smile, Video, ExternalLink, MoreVertical, Trash2, User, BellOff, Eraser } from 'lucide-react';
+import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
 const getMyId = () => {
@@ -16,354 +291,256 @@ const getMyId = () => {
 };
 
 const MessagesPage = () => {
-  const { userId: userIdFromParams } = useParams();
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [editingMessage, setEditingMessage] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showMeetOptions, setShowMeetOptions] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState(null); 
+  const [deleteStep, setDeleteStep] = useState('none');
+  const [deleteTarget, setDeleteTarget] = useState({ msgId: null, isMe: false });
+  const [tempDeleteMode, setTempDeleteMode] = useState(null);
 
   const myUserId = getMyId();
   const scrollRef = useRef();
-  const meetMenuRef = useRef();
-  const chatMenuRef = useRef();
+  const activeChatIdRef = useRef(null);
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (meetMenuRef.current && !meetMenuRef.current.contains(event.target)) {
-        setShowMeetOptions(false);
-      }
-      if (chatMenuRef.current && !chatMenuRef.current.contains(event.target)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // --- HELPERS ---
-  const formatMessageTime = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  };
-
-  const formatDateLabel = (dateString) => {
+  // --- WhatsApp Style Date Logic ---
+  const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
     if (date.toDateString() === today.toDateString()) return "Today";
-    return date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  const formatLastSeen = (dateString) => {
-    if (!dateString) return "Offline";
-    const date = new Date(dateString);
-    const diff = Math.floor((new Date() - date) / 60000);
-    if (diff < 1) return "Last seen just now";
-    if (diff < 60) return `Last seen ${diff}m ago`;
-    return `Last seen ${Math.floor(diff / 60)}h ago`;
-  };
-
-  // --- ACTIONS ---
-  const handleDeleteChat = async (e, chatId) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this entire chat?")) {
-      try {
-        await chatService.deleteChat(chatId); 
-        setChats(prev => prev.filter(c => c._id !== chatId));
-        if (activeChat?._id === chatId) setActiveChat(null);
-        setOpenMenuId(null);
-      } catch (err) {
-        console.error("Delete Error:", err);
+  // --- Get Unique Chats (One user only once in sidebar) ---
+  const getUniqueChats = (allChats) => {
+    const uniqueMap = new Map();
+    allChats.forEach(chat => {
+      const otherUser = chat.participants.find(p => (p._id || p) !== myUserId);
+      const otherId = otherUser?._id || otherUser;
+      if (otherId) {
+        // If this user already exists, keep the one with the latest message
+        const existing = uniqueMap.get(otherId);
+        if (!existing || new Date(chat.lastMessageAt || 0) > new Date(existing.lastMessageAt || 0)) {
+          uniqueMap.set(otherId, chat);
+        }
       }
-    }
+    });
+    return Array.from(uniqueMap.values());
   };
 
-  const handleClearChat = async (e, chatId) => {
-    e.stopPropagation();
-    if (window.confirm("Clear all messages in this chat?")) {
-      try {
-        if (activeChat?._id === chatId) setMessages([]);
-        setOpenMenuId(null);
-      } catch (err) { console.error(err); }
-    }
-  };
-
-  // --- SOCKET & CHAT LIST LOAD ---
+  // --- 1. SOCKET & INITIAL DATA ---
   useEffect(() => {
     if (!myUserId) return;
-    chatService.connectSocket(myUserId);
 
     const loadInitialData = async () => {
-      try {
-        const data = await chatService.getMyChats();
-        setChats(data);
-        if (userIdFromParams) {
-          const existing = data.find(c => c.participants.some(p => (p._id || p) === userIdFromParams));
-          if (existing) setActiveChat(existing);
-        }
-      } catch (err) { console.error("Load Chats Error:", err); }
+      const data = await chatService.getMyChats();
+      const uniqueChats = getUniqueChats(data);
+      setChats(uniqueChats);
     };
+
+    // Connect socket
+    chatService.connectSocket(myUserId);
     loadInitialData();
 
-    chatService.onMessageReceived((newMsg) => {
-      const msgChatId = newMsg.chat?._id || newMsg.chat;
-      const senderId = newMsg.sender?._id || newMsg.sender;
+    // Remove any existing listeners to prevent duplicates
+    chatService.removeMessageListener?.();
 
-      setChats(prevChats => {
-        const otherChats = prevChats.filter(c => c._id !== msgChatId);
-        const targetChat = prevChats.find(c => c._id === msgChatId);
-        
-        if (targetChat) {
-          const isCurrentlyViewing = activeChat?._id === msgChatId;
-          const updatedChat = {
-            ...targetChat,
-            lastMessage: { 
-              ...newMsg, 
-              isRead: isCurrentlyViewing && senderId !== myUserId 
-            },
-            updatedAt: new Date()
-          };
-          if (isCurrentlyViewing && senderId !== myUserId) {
-              chatService.markAsRead(msgChatId, myUserId);
-          }
-          return [updatedChat, ...otherChats];
-        }
-        return prevChats;
+    // Listen for new messages with fresh callback
+    const handleNewMessage = (newMsg) => {
+      const msgChatId = newMsg.chat?._id || newMsg.chat;
+      
+      console.log("📨 Message received:", newMsg._id, "for chat:", msgChatId);
+      
+      // Update sidebar with latest message
+      setChats(prev => {
+        const updated = prev.map(c => 
+          (c._id === msgChatId) ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt } : c
+        );
+        // Sort by latest message
+        const sorted = updated.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+        return sorted;
       });
 
-      if (activeChat?._id === msgChatId) {
-        setMessages(prevMsgs => {
-          const isDup = prevMsgs.some(m => m._id === newMsg._id || (m.text === newMsg.text && m._id.toString().startsWith('temp-')));
-          if (isDup) {
-            return prevMsgs.map(m => (m.text === newMsg.text && m._id.toString().startsWith('temp-')) ? newMsg : m);
-          }
-          return [...prevMsgs, newMsg];
+      // Real-time Chat window update - only if viewing this chat
+      const currentId = activeChatIdRef.current;
+      if (currentId === msgChatId) {
+        setMessages(prev => {
+          // Don't add if already exists
+          if (prev.find(m => m._id === newMsg._id)) return prev;
+          // Remove temp message with same text
+          return [...prev.filter(m => !m.isTemp || m.text !== newMsg.text), newMsg];
         });
       }
-    });
-
-    chatService.onUserStatusChanged(({ userId, status, lastSeen }) => {
-      const isOnline = status === 'online';
-      setChats(prev => prev.map(c => ({
-        ...c,
-        participants: c.participants.map(p => (p._id || p) === userId ? { ...p, isOnline, lastSeen } : p)
-      })));
-    });
+    };
+    
+    // Register the listener
+    chatService.onMessageReceived?.(handleNewMessage);
 
     return () => {
-      chatService.removeMessageListener();
-      chatService.removeStatusListener();
+      chatService.removeMessageListener?.();
     };
-  }, [myUserId, activeChat?._id]);
+  }, [myUserId]);
 
+  // --- 2. ACTIVE CHAT SYNC ---
   useEffect(() => {
     if (activeChat?._id) {
-      chatService.joinChat(activeChat._id, myUserId);
+      activeChatIdRef.current = activeChat._id;
+      // Join the chat room for real-time updates
+      chatService.joinChat?.(activeChat._id, myUserId);
+      // Load chat history
       chatService.getChatHistory(activeChat._id).then(setMessages);
     }
-  }, [activeChat?._id, myUserId]);
+  }, [activeChat?._id]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
+  // --- 3. SEND & EDIT ---
   const handleSend = () => {
     if (!inputText.trim() || !activeChat) return;
-    const tempMsg = {
-      _id: "temp-" + Date.now(),
-      text: inputText,
-      sender: { _id: myUserId },
-      createdAt: new Date().toISOString(),
-      chat: activeChat._id
-    };
-    setMessages(prev => [...prev, tempMsg]);
-    chatService.sendMessage(activeChat._id, myUserId, inputText);
+
+    if (editingMessage) {
+      chatService.editMessage?.(editingMessage.id, inputText.trim(), activeChat._id);
+      setMessages(prev => prev.map(m => 
+        m._id === editingMessage.id ? { ...m, text: inputText.trim(), isEdited: true, updatedAt: new Date().toISOString() } : m
+      ));
+      setEditingMessage(null);
+    } else {
+      const tempId = "temp-" + Date.now();
+      const newMessage = {
+        _id: tempId,
+        sender: myUserId,
+        text: inputText.trim(),
+        createdAt: new Date().toISOString(),
+        isTemp: true 
+      };
+      setMessages(prev => [...prev, newMessage]);
+      chatService.sendMessage(activeChat._id, myUserId, inputText.trim());
+      setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: newMessage } : c));
+    }
     setInputText("");
     setShowEmojiPicker(false);
   };
 
-  const handleChatClick = (chat) => {
-    setActiveChat(chat);
-    if (chat.lastMessage && (chat.lastMessage.sender?._id || chat.lastMessage.sender) !== myUserId && !chat.lastMessage.isRead) {
-      chatService.markAsRead(chat._id, myUserId);
-      setChats(prev => prev.map(c =>
-        c._id === chat._id ? { ...c, lastMessage: { ...c.lastMessage, isRead: true } } : c
-      ));
+  const finalDeleteExecute = async () => {
+    chatService.deleteMessage(deleteTarget.msgId, activeChat._id, tempDeleteMode, myUserId);
+    if (tempDeleteMode === 'me') {
+      setMessages(prev => prev.filter(m => m._id !== deleteTarget.msgId));
+    } else {
+      setMessages(prev => prev.map(m => m._id === deleteTarget.msgId ? { ...m, text: "This message was deleted", isDeleted: true } : m));
     }
+    setDeleteStep('none');
   };
+
+  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
 
   return (
-    <div className="flex h-screen bg-[#102216] text-white overflow-hidden font-sans">
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Deep style overrides for Emoji Picker */
-        .epr-main {
-          border-color: #23482f !important;
-          background-color: #112217 !important;
-          border-radius: 24px !important;
-          overflow: hidden !important;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-        }
-        .epr-body::-webkit-scrollbar {
-          display: none !important;
-        }
-        .epr-body {
-          -ms-overflow-style: none !important;
-          scrollbar-width: none !important;
-        }
-        .epr-search {
-          background-color: #193322 !important;
-          border-color: #23482f !important;
-          color: white !important;
-          border-radius: 12px !important;
-        }
-        .epr-category-nav {
-          padding: 10px 0 !important;
-        }
-        .epr-header-overlay {
-          padding: 15px !important;
-        }
-      `}</style>
-
-      {/* SIDEBAR */}
-      <div className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
-        <div className="p-6 border-b border-[#23482f]">
-          <h2 className="text-xl font-bold mb-4 text-[#13ec5b]">Messages</h2>
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92c9a4]" size={18} />
-            <input type="text" placeholder="Search chats..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#112217] outline-none border border-transparent focus:border-[#13ec5b]/50 text-sm" />
+    <div className="relative flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
+      
+      {/* DELETE MODAL */}
+      {deleteStep !== 'none' && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#193322] border border-[#23482f] w-full max-w-[320px] rounded-3xl p-6 shadow-2xl">
+            {deleteStep === 'options' ? (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-bold text-center mb-4">Delete?</h3>
+                <button onClick={() => { setTempDeleteMode('me'); setDeleteStep('confirm'); }} className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm">Delete for me</button>
+                {deleteTarget.isMe && (
+                  <button onClick={() => { setTempDeleteMode('everyone'); setDeleteStep('confirm'); }} className="w-full py-3 rounded-xl bg-red-600/20 text-red-400 text-sm font-semibold">Delete for everyone</button>
+                )}
+                <button onClick={() => setDeleteStep('none')} className="w-full py-3 text-[#13ec5b] text-sm font-bold">Cancel</button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <AlertCircle className="mx-auto mb-4 text-yellow-500" size={40} />
+                <h3 className="font-bold mb-6">Confirm Delete?</h3>
+                <div className="flex gap-3">
+                  <button onClick={() => setDeleteStep('none')} className="flex-1 py-2 rounded-lg bg-white/5 text-sm">No</button>
+                  <button onClick={finalDeleteExecute} className="flex-1 py-2 rounded-lg bg-[#13ec5b] text-black font-bold">Yes</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        
+      )}
+
+      {/* SIDEBAR */}
+      <aside className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
+        <div className="p-5 border-b border-[#23482f]">
+          <h2 className="text-xl font-bold text-[#13ec5b] mb-4">Messages</h2>
+          <div className="relative">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92c9a4]" size={16} />
+             <input type="text" placeholder="Search..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#112217] text-sm outline-none border border-[#23482f]" />
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto hide-scrollbar">
           {chats.map((chat) => {
             const p = chat.participants.find(u => (u._id || u) !== myUserId);
-            const isUnread = chat.lastMessage && (chat.lastMessage.sender?._id || chat.lastMessage.sender) !== myUserId && chat.lastMessage.isRead === false;
-
+            const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
             return (
-              <div
-                key={chat._id}
-                onClick={() => handleChatClick(chat)}
-                className={`group flex items-center gap-3 p-4 cursor-pointer transition-all border-l-4 relative ${activeChat?._id === chat._id ? 'border-[#13ec5b] bg-[#13ec5b]/5' : 'border-transparent hover:bg-[#193322]/50'}`}
-              >
-                <div className="relative shrink-0">
-                  <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name || 'U'}&bg=13ec5b&color=000`} className="h-12 w-12 rounded-full border border-[#23482f]" alt="p" />
-                  {p?.isOnline && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#13ec5b] border-2 border-[#102216]"></span>}
-                </div>
-
+              <div key={chat._id} onClick={() => setActiveChat(chat)} 
+                className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}`}>
+                <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" />
                 <div className="flex-1 truncate">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <h4 className={`text-sm truncate ${isUnread ? 'font-black text-white' : 'font-bold text-[#92c9a4]'}`}>{p?.name || "User"}</h4>
-                    {isUnread && <span className="h-2.5 w-2.5 bg-[#13ec5b] rounded-full shadow-[0_0_10px_#13ec5b] animate-pulse"></span>}
-                  </div>
-                  <p className={`text-xs truncate ${isUnread ? 'text-white font-semibold' : 'text-[#92c9a4]'}`}>{chat.lastMessage?.text || "No messages yet"}</p>
-                </div>
-
-                <div className="relative ml-1" ref={openMenuId === chat._id ? chatMenuRef : null}>
-                   <button 
-                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === chat._id ? null : chat._id); }}
-                    className="p-1 text-[#92c9a4] hover:text-[#13ec5b] opacity-0 group-hover:opacity-100 transition-opacity"
-                   >
-                     <MoreVertical size={16} />
-                   </button>
-                   
-                   {openMenuId === chat._id && (
-                     <div className="absolute right-0 mt-2 w-48 bg-[#112217] border border-[#23482f] rounded-xl shadow-2xl z-50 py-1 animate-in fade-in zoom-in duration-150">
-                        <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[#92c9a4] hover:bg-[#13ec5b]/10 hover:text-white transition-colors">
-                          <User size={14}/> View Profile
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[#92c9a4] hover:bg-[#13ec5b]/10 hover:text-white transition-colors">
-                          <BellOff size={14}/> Mute Notifications
-                        </button>
-                        <button 
-                          onClick={(e) => handleClearChat(e, chat._id)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[#92c9a4] hover:bg-[#13ec5b]/10 hover:text-white transition-colors"
-                        >
-                          <Eraser size={14}/> Clear Chat
-                        </button>
-                        <div className="h-[1px] bg-[#23482f] my-1"></div>
-                        <button 
-                          onClick={(e) => handleDeleteChat(e, chat._id)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <Trash2 size={14} /> Delete Chat
-                        </button>
-                     </div>
-                   )}
+                    <h4 className="text-sm font-bold">{p?.name}</h4>
+                    <p className="text-xs truncate text-[#92c9a4]">
+                      {isMeLast ? 'You: ' : ''}{chat.lastMessage?.text || "Chat now"}
+                    </p>
                 </div>
               </div>
             );
           })}
         </div>
-      </div>
+      </aside>
 
       {/* CHAT WINDOW */}
-      <main className="flex-1 flex flex-col relative bg-[#0d1a11]">
+      <main className="flex-1 flex flex-col bg-[#0d1a11]">
         {activeChat ? (
           <>
-            <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f] z-10 shadow-lg">
-              <div className="flex items-center gap-4">
-                <img
-                  src={otherUser?.profileImage ? (otherUser.profileImage.startsWith('http') ? otherUser.profileImage : `http://localhost:5000${otherUser.profileImage.startsWith('/') ? '' : '/'}${otherUser.profileImage}`) : `https://ui-avatars.com/api/?name=${otherUser?.name || 'U'}&bg=13ec5b&color=000&bold=true`}
-                  className="h-10 w-10 rounded-full border border-[#23482f] object-cover"
-                  alt="avatar"
-                />
-                <div>
-                  <h3 className="font-bold text-white">{otherUser?.name || "Unknown"}</h3>
-                  <p className={`text-[10px] font-bold uppercase ${otherUser?.isOnline ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
-                    {otherUser?.isOnline ? '● Online' : formatLastSeen(otherUser?.lastSeen)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative" ref={meetMenuRef}>
-                <button
-                  onClick={() => setShowMeetOptions(!showMeetOptions)}
-                  className="p-2.5 rounded-full bg-[#193322] hover:bg-[#13ec5b] text-[#13ec5b] hover:text-[#102216] transition-all duration-300 border border-[#23482f]"
-                >
-                  <Video size={20} />
-                </button>
-
-                {showMeetOptions && (
-                  <div className="absolute right-0 mt-3 w-56 bg-[#112217] border border-[#23482f] rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-in fade-in zoom-in duration-200">
-                    <p className="px-4 py-2 text-[10px] font-black text-[#92c9a4] uppercase tracking-widest border-b border-[#23482f] mb-1">Select Platform</p>
-                    <a href="https://zoom.us/join" target="_blank" rel="noreferrer" className="flex items-center justify-between px-4 py-3 hover:bg-[#13ec5b]/10 text-sm font-semibold text-white group">
-                      <div className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Zoom</div>
-                      <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 text-[#13ec5b]" />
-                    </a>
-                    <a href="https://meet.google.com" target="_blank" rel="noreferrer" className="flex items-center justify-between px-4 py-3 hover:bg-[#13ec5b]/10 text-sm font-semibold text-white group">
-                      <div className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-red-500"></span> Google Meet</div>
-                      <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 text-[#13ec5b]" />
-                    </a>
-                  </div>
-                )}
-              </div>
+            <header className="h-20 flex items-center px-8 bg-[#112217] border-b border-[#23482f]">
+              <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
+              <div><h3 className="font-bold">{otherUser?.name}</h3><p className="text-[10px] text-[#13ec5b]">● Online</p></div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-4 hide-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
               {messages.map((m, idx) => {
                 const isMe = (m.sender?._id || m.sender) === myUserId;
-                const showDate = idx === 0 || new Date(messages[idx - 1].createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+                const isDeleted = m.isDeleted || m.text === "This message was deleted";
+                const wasEdited = m.isEdited || (m.updatedAt && m.updatedAt !== m.createdAt);
+
+                // --- Date Header Check ---
+                const showDateHeader = idx === 0 || formatMessageDate(messages[idx-1].createdAt) !== formatMessageDate(m.createdAt);
+
                 return (
                   <React.Fragment key={m._id || idx}>
-                    {showDate && (
+                    {showDateHeader && (
                       <div className="flex justify-center my-6">
-                        <span className="text-[10px] font-black text-[#92c9a4] bg-[#112217] px-4 py-1.5 rounded-full border border-[#23482f] uppercase">
-                          {formatDateLabel(m.createdAt)}
+                        <span className="bg-[#193322] text-[#92c9a4] text-[10px] px-4 py-1 rounded-full border border-[#23482f] uppercase tracking-widest">
+                          {formatMessageDate(m.createdAt)}
                         </span>
                       </div>
                     )}
                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`relative max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm ${isMe ? 'bg-[#13ec5b] text-[#102216] rounded-tr-none' : 'bg-[#193322] text-white rounded-tl-none border border-[#23482f]'}`}>
-                        <p className="text-[14px] leading-relaxed pr-8">{m.text}</p>
-                        <div className="text-[9px] text-right mt-1 opacity-60 font-bold">{formatMessageTime(m.createdAt)} {isMe && "✓"}</div>
+                      <div className="relative group max-w-[70%]">
+                        {!isDeleted && (
+                          <div className={`absolute -top-8 flex bg-[#1a3322] border border-[#23482f] rounded-lg opacity-0 group-hover:opacity-100 transition-all z-20 ${isMe ? 'right-0' : 'left-0'}`}>
+                            {isMe && <button onClick={() => { setEditingMessage({id: m._id, text: m.text}); setInputText(m.text); }} className="p-2 hover:bg-white/10 text-[#92c9a4]"><Edit2 size={14}/></button>}
+                            <button onClick={() => { setDeleteTarget({ msgId: m._id, isMe }); setDeleteStep('options'); }} className="p-2 hover:bg-red-500/20 text-red-400"><Trash2 size={14}/></button>
+                          </div>
+                        )}
+                        <div className={`px-4 py-2 rounded-2xl shadow-sm ${isDeleted ? 'border border-[#23482f] italic text-gray-500' : isMe ? 'bg-[#13ec5b] text-black rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
+                          <p className="text-sm">{m.text}</p>
+                          <div className="flex items-center justify-end gap-2 mt-1">
+                              {!isDeleted && wasEdited && <span className="text-[8px] opacity-50 italic font-bold">edited</span>}
+                              <p className="text-[9px] opacity-60">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              {isMe && !isDeleted && <Check size={10} className={m.seen ? "text-blue-500" : "text-gray-400"} />}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </React.Fragment>
@@ -372,42 +549,31 @@ const MessagesPage = () => {
               <div ref={scrollRef} />
             </div>
 
-            <div className="p-6 bg-[#112217] border-t border-[#23482f]">
+            <div className="p-4 bg-[#112217] border-t border-[#23482f]">
+              {editingMessage && (
+                <div className="flex items-center justify-between bg-[#193322] px-4 py-1 mb-2 rounded border-l-4 border-[#13ec5b]">
+                  <p className="text-[10px] text-[#92c9a4]">Editing...</p>
+                  <button onClick={() => {setEditingMessage(null); setInputText("");}}><X size={12}/></button>
+                </div>
+              )}
               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
-                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} onFocus={() => setShowEmojiPicker(false)} placeholder="Type a message..." className="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none" />
-                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2 transition-colors ${showEmojiPicker ? 'text-[#13ec5b]' : 'text-[#92c9a4] hover:text-[#13ec5b]'}`}><Smile size={22} /></button>
-                <button onClick={handleSend} className="h-10 w-10 bg-[#13ec5b] rounded-xl flex items-center justify-center text-[#102216] hover:scale-105 active:scale-95 transition-all shadow-lg"><Send size={18} fill="currentColor" /></button>
-                
+                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4]"><Smile size={22} /></button>
+                <input value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
+                <button onClick={handleSend} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
+                  {editingMessage ? <Check size={18}/> : <Send size={18}/>}
+                </button>
                 {showEmojiPicker && (
-                  <div className="absolute bottom-20 right-0 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
-                    <EmojiPicker 
-                      onEmojiClick={(d) => setInputText(p => p + d.emoji)} 
-                      theme="dark" 
-                      width={320} 
-                      height={420}
-                      lazyLoadEmojis={true}
-                      searchPlaceHolder="Search emojis..."
-                      skinTonesDisabled={true}
-                      previewConfig={{ showPreview: false }}
-                      style={{
-                        "--epr-bg-color": "#112217",
-                        "--epr-category-label-bg-color": "#193322",
-                        "--epr-picker-border-color": "#23482f",
-                        "--epr-search-border-color": "#23482f",
-                        "--epr-highlight-color": "#13ec5b",
-                        "--epr-hover-bg-color": "#193322",
-                        border: '1px solid #23482f',
-                      }}
-                    />
+                  <div className="absolute bottom-16 left-0 z-50">
+                    <EmojiPicker onEmojiClick={(e) => setInputText(p => p + e.emoji)} theme="dark" width={300} height={400} />
                   </div>
                 )}
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-[#92c9a4] gap-4">
-            <div className="p-6 rounded-full bg-[#112217] border border-[#23482f] opacity-20"><Send size={48} /></div>
-            <p className="font-bold tracking-widest uppercase text-xs">Select a conversation to start chatting</p>
+          <div className="flex-1 flex flex-col items-center justify-center opacity-10">
+            <Send size={80} />
+            <p className="mt-4 font-bold tracking-[0.3em]">SELECT A CHAT</p>
           </div>
         )}
       </main>
