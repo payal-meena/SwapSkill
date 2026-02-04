@@ -1,5 +1,8 @@
 import React from 'react';
 
+// Vite environment variable for API URL
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const Avatar = ({ 
   src, 
   name = "User", 
@@ -8,54 +11,58 @@ const Avatar = ({
   className = "",
   onClick
 }) => {
-  const getInitial = (name) => {
-    return name ? name.charAt(0).toUpperCase() : "U";
+
+  // ✅ 2-Letter Logic: Name + Surname ya Single Name ke first 2 letters
+  const getInitials = (userName) => {
+    if (!userName) return "U";
+    
+    const parts = userName.trim().split(/\s+/); // Name ko spaces se divide karo
+    
+    if (parts.length >= 2) {
+      // Case 1: Agar Surname hai (e.g., "Rahul Sharma" -> "RS")
+      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    } else {
+      // Case 2: Agar sirf ek naam hai (e.g., "Rahul" -> "RA")
+      return userName.length >= 2 
+        ? userName.substring(0, 2).toUpperCase() 
+        : userName.toUpperCase();
+    }
   };
 
-  const getBackgroundColor = (name) => {
-    // Navbar wala look dene ke liye professional colors
-    const colors = [
-      'bg-slate-500', 'bg-blue-600', 'bg-emerald-600', 'bg-orange-500', 
-      'bg-purple-600', 'bg-rose-500', 'bg-indigo-600', 'bg-cyan-600'
-    ];
-    const index = name ? name.charCodeAt(0) % colors.length : 0;
-    return colors[index];
+  const getImageUrl = (img) => {
+    if (!img) return null;
+    if (img.startsWith('blob:') || img.startsWith('http')) return img;
+    return `${API_URL}${img.startsWith('/') ? '' : '/'}${img}`;
   };
 
-  // ✅ Step 1: Check karo ki image valid hai ya nahi
-  // Agar link khali hai, ya bitmoji/dicebear wala hai, toh usse invalid maano
-  const isInvalidImage = !src || 
-                         src === "" || 
-                         src.includes('dicebear.com') || 
-                         src.includes('avatar');
+  const finalSrc = getImageUrl(src);
 
-  // ✅ Step 2: Agar real image hai (like cloudinary, unsplash, ya uploaded file)
-  if (!isInvalidImage) {
+  // Profile Photo View
+  if (finalSrc && !src.includes('dicebear.com')) {
     return (
       <div 
-        className={`${size} rounded-full overflow-hidden shrink-0 ${className} ${onClick ? 'cursor-pointer' : ''}`} 
+        className={`${size} rounded-full overflow-hidden border-2 border-[#1a3323] shrink-0 ${className} ${onClick ? 'cursor-pointer' : ''}`} 
         onClick={onClick}
       >
         <img 
-          src={src} 
+          src={finalSrc} 
           alt={name} 
           className="w-full h-full object-cover" 
-          onError={(e) => {
-            // Agar image load hone mein fat jaye toh fallback to initials
-            e.target.parentElement.style.display = 'none';
+          onError={(e) => { 
+            e.target.style.display = 'none';
           }}
         />
       </div>
     );
   }
 
-  // ✅ Step 3: Navbar jaisa Initial Circle (Default)
+  // ✅ AAPKA SPECIFIC UI: Grey BG, Black Text, Two Letters
   return (
     <div 
-      className={`${size} rounded-full flex items-center justify-center text-white font-bold shrink-0 ${textSize} ${getBackgroundColor(name)} ${className} ${onClick ? 'cursor-pointer' : ''}`} 
+      className={`${size} rounded-full flex items-center justify-center bg-[#d9d9d9] text-black font-bold border-2 border-[#1a3323] shrink-0 ${textSize} ${className} ${onClick ? 'cursor-pointer' : ''}`} 
       onClick={onClick}
     >
-      {getInitial(name)}
+      {getInitials(name)}
     </div>
   );
 };
