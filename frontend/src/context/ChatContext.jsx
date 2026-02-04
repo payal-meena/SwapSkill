@@ -10,8 +10,18 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (!myUserId) return;
 
-    // Background mein chats load karna
-    chatService.getMyChats().then(setChats);
+    // Background mein chats load karna (normalize online flags)
+    chatService.getMyChats().then(data => {
+      const normalized = data.map(chat => ({
+        ...chat,
+        participants: chat.participants.map(p => ({
+          ...(p || {}),
+          // Keep server-provided isOnline as authoritative
+          isOnline: !!p?.isOnline
+        }))
+      }));
+      setChats(normalized);
+    });
 
     // Global Listeners: Jo hamesha chalenge chahe aap kisi bhi page par ho
     chatService.onUserStatusChanged(({ userId, status, lastSeen }) => {

@@ -157,6 +157,32 @@ export const chatService = {
       callback(data);
     });
   },
+// Sidebar update ke liye backend se signal sunna
+  onSidebarUpdate: (callback) => {
+    if (!socket) return;
+    socket.off("sidebarUpdate"); // Purana listener hatao taaki duplicate na ho
+    socket.on("sidebarUpdate", (data) => {
+      console.log("🔔 Sidebar Update Received:", data._id);
+      callback(data);
+    });
+  },
+
+  // Cleanup ke liye
+  removeSidebarUpdateListener: () => {
+    if (socket) socket.off("sidebarUpdate");
+  },
+
+  // Emit a manual logout to the server and disconnect socket
+  logout: (userId) => {
+    try {
+      if (socket && socket.connected) {
+        socket.emit('manualLogout', { userId });
+        socket.disconnect();
+      }
+    } catch (err) {
+      console.warn('chatService.logout error', err);
+    }
+  },
   markAsRead: (chatId, userId) => {
     if (socket && socket.connected) {
       socket.emit("markAsRead", { chatId, userId });

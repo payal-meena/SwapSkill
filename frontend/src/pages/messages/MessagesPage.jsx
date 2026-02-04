@@ -1,279 +1,4 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import { useParams } from 'react-router-dom';
-// import { chatService } from '../../services/chatService';
-// import { Search, Send, Trash2, Edit2, X, Check, Paperclip, Smile } from 'lucide-react';
-// import EmojiPicker from 'emoji-picker-react';
 
-// const getMyId = () => {
-//   const token = localStorage.getItem('token');
-//   if (!token) return null;
-//   try {
-//     const base64Url = token.split('.')[1];
-//     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-//     const payload = JSON.parse(window.atob(base64));
-//     return payload.id || payload._id;
-//   } catch (e) { return null; }
-// };
-
-// const MessagesPage = () => {
-//   const { userId: userIdFromParams } = useParams();
-//   const [chats, setChats] = useState([]);
-//   const [activeChat, setActiveChat] = useState(null);
-//   const [messages, setMessages] = useState([]);
-//   const [inputText, setInputText] = useState("");
-//   const [editingMessage, setEditingMessage] = useState(null);
-//   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-//   const myUserId = getMyId();
-//   const scrollRef = useRef();
-//   const fileInputRef = useRef();
-//   const activeChatRef = useRef(activeChat);
-
-//   useEffect(() => { activeChatRef.current = activeChat; }, [activeChat]);
-
-//   // --- HELPERS ---
-//   const getMessageDateLabel = (dateString) => {
-//     const date = new Date(dateString);
-//     const today = new Date();
-//     const yesterday = new Date();
-//     yesterday.setDate(yesterday.getDate() - 1);
-//     if (date.toDateString() === today.toDateString()) return "Today";
-//     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-//     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
-//   };
-
-//   const formatMessageTime = (dateString) => {
-//     if (!dateString) return "";
-//     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-//   };
-
-//   const getUniqueChats = (allChats) => {
-//     const uniqueMap = new Map();
-//     allChats.forEach(chat => {
-//       const otherUser = chat.participants.find(p => (p._id || p) !== myUserId);
-//       const otherId = otherUser?._id || otherUser;
-//       if (otherId) uniqueMap.set(otherId, chat);
-//     });
-//     return Array.from(uniqueMap.values());
-//   };
-
-//   // --- ACTIONS ---
-//   const handleSend = () => {
-//     if (!inputText.trim() || !activeChat) return;
-//     if (editingMessage) {
-//       chatService.editMessage?.(editingMessage.id, inputText.trim(), activeChat._id);
-//       setMessages(prev => prev.map(m => m._id === editingMessage.id ? { ...m, text: inputText } : m));
-//       setEditingMessage(null);
-//     } else {
-//       chatService.sendMessage(activeChat._id, myUserId, inputText.trim());
-//     }
-//     setInputText("");
-//     setShowEmojiPicker(false);
-//   };
-
-//   const onEmojiClick = (emojiData) => {
-//     setInputText(prev => prev + emojiData.emoji);
-//   };
-
-//   const handleInputClick = () => {
-//     setShowEmojiPicker(false);
-//     // Jab input pe click karein (matlab user active hai), tab messages read mark karein
-//     if (activeChat?._id) {
-//       chatService.markAsRead?.(activeChat._id, myUserId);
-//     }
-//   };
-
-//   const handleFileUpload = (e) => {
-//     const file = e.target.files[0];
-//     if (file && activeChat) {
-//       chatService.sendFile?.(activeChat._id, myUserId, file);
-//     }
-//   };
-
-//   // --- SOCKETS & FETCH ---
-//   useEffect(() => {
-//     if (!myUserId) return;
-//     chatService.connectSocket(myUserId);
-//     chatService.getMyChats().then(data => setChats(getUniqueChats(data)));
-    
-//     // Listen for new messages
-//     chatService.onMessageReceived((newMsg) => {
-//       const msgChatId = newMsg.chat?._id || newMsg.chat;
-//       if (activeChatRef.current?._id === msgChatId) {
-//         setMessages(prev => prev.some(m => m._id === newMsg._id) ? prev : [...prev, newMsg]);
-//         // Auto mark read if chat is open
-//         chatService.markAsRead?.(msgChatId, myUserId);
-//       }
-//       chatService.getMyChats().then(data => setChats(getUniqueChats(data)));
-//     });
-
-//     // Listen for Read Status Updates
-//     chatService.onMessagesRead?.((data) => {
-//       if (activeChatRef.current?._id === data.chatId) {
-//         setMessages(prev => prev.map(m => 
-//           m.sender === data.userId || m.sender?._id === data.userId ? m : { ...m, seen: true }
-//         ));
-//       }
-//     });
-
-//     return () => {
-//         chatService.removeMessageListener();
-//         chatService.removeReadListener?.();
-//     };
-//   }, [myUserId]);
-
-//   useEffect(() => {
-//     if (activeChat?._id) {
-//       chatService.joinChat(activeChat._id, myUserId);
-//       chatService.getChatHistory(activeChat._id).then(data => {
-//         setMessages(data);
-//         chatService.markAsRead?.(activeChat._id, myUserId);
-//       });
-//     }
-//   }, [activeChat?._id]);
-
-//   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-//   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
-
-//   return (
-//     <div className="flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
-      
-//       {/* SIDEBAR */}
-//       <aside className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
-//         <div className="p-5 border-b border-[#23482f]">
-//           <h2 className="text-xl font-bold text-[#13ec5b] mb-4">Messages</h2>
-//           <div className="relative">
-//              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92c9a4]" size={16} />
-//              <input type="text" placeholder="Search..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#112217] text-sm outline-none border border-[#23482f]" />
-//           </div>
-//         </div>
-//         <div className="flex-1 overflow-y-auto hide-scrollbar">
-//           {chats.map((chat) => {
-//             const p = chat.participants.find(u => (u._id || u) !== myUserId);
-//             const isNew = !chat.lastMessage;
-//             return (
-//               <div key={chat._id} onClick={() => setActiveChat(chat)} 
-//                 className={`flex items-center gap-3 p-4 cursor-pointer transition-all border-b border-[#1a3322]
-//                   ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}
-//                   ${isNew ? 'bg-[#13ec5b]/5 border-l-4 border-[#13ec5b]' : ''} `}>
-//                 <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" />
-//                 <div className="flex-1 truncate">
-//                   <div className="flex justify-between items-center">
-//                     <h4 className={`text-sm font-bold ${isNew ? 'text-[#13ec5b]' : ''}`}>{p?.name}</h4>
-//                     {isNew && <span className="text-[8px] bg-[#13ec5b] text-black px-1 rounded font-black">NEW</span>}
-//                   </div>
-//                   <p className="text-xs truncate text-[#92c9a4]">{isNew ? "New connection!" : chat.lastMessage?.text}</p>
-//                 </div>
-//               </div>
-//             );
-//           })}
-//         </div>
-//       </aside>
-
-//       {/* CHAT AREA */}
-//       <main className="flex-1  flex flex-col bg-[#0d1a11]">
-//         {activeChat ? (
-//           <>
-//             <header className="h-20 flex items-center px-8 bg-[#112217] border-b border-[#23482f]">
-//               <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
-//               <div>
-//                 <h3 className="font-bold">{otherUser?.name}</h3>
-//                 <p className="text-[10px] text-[#13ec5b]">● Online</p>
-//               </div>
-//             </header>
-
-//             {/* MESSAGES LIST */}
-//             <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
-//               {messages.map((m, idx) => {
-//                 const isMe = (m.sender?._id || m.sender) === myUserId;
-//                 const msgDate = new Date(m.createdAt).toDateString();
-//                 const prevMsgDate = idx > 0 ? new Date(messages[idx-1].createdAt).toDateString() : null;
-//                 const showDateLabel = msgDate !== prevMsgDate;
-
-//                 return (
-//                   <React.Fragment key={m._id || idx}>
-//                     {showDateLabel && (
-//                       <div className="flex justify-center my-6">
-//                         <span className="bg-[#1a3322] text-[#92c9a4] text-[10px] font-bold px-4 py-1 rounded-full border border-[#23482f] uppercase tracking-wider">
-//                           {getMessageDateLabel(m.createdAt)}
-//                         </span>
-//                       </div>
-//                     )}
-//                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-//                       <div className="relative group max-w-[70%]">
-//                         <div className={`px-4 py-2 rounded-2xl transition-all shadow-sm ${isMe ? 'bg-[#13ec5b] text-black rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
-//                           <p className="text-sm">{m.text}</p>
-//                           <div className="flex items-center justify-end gap-1 mt-1">
-//                             <p className="text-[9px] opacity-60">{formatMessageTime(m.createdAt)}</p>
-                            
-//                             {/* SEEN STATUS LOGIC (Only for my messages) */}
-//                             {isMe && (
-//                               <div className="flex">
-//                                 {m.seen ? (
-//                                   <div className="flex -space-x-2">
-//                                     <Check size={10} className="text-blue-500" />
-//                                     <Check size={10} className="text-blue-500" />
-//                                   </div>
-//                                 ) : (
-//                                   <Check size={10} className="text-gray-400 opacity-50" />
-//                                 )}
-//                               </div>
-//                             )}
-//                           </div>
-//                         </div>
-//                       </div>
-//                     </div>
-//                   </React.Fragment>
-//                 );
-//               })}
-//               <div ref={scrollRef} />
-//             </div>
-
-//             {/* INPUT AREA */}
-//             <div className="p-4 bg-[#112217] border-t border-[#23482f] relative">
-//               {showEmojiPicker && (
-//                 <div className="absolute bottom-20 left-4 z-50 shadow-2xl">
-//                   <EmojiPicker onEmojiClick={onEmojiClick} theme="dark" width={300} height={400} />
-//                 </div>
-//               )}
-
-//               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f]">
-//                 <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]">
-//                   <Smile size={22} />
-//                 </button>
-//                 <button onClick={() => fileInputRef.current.click()} className="text-[#92c9a4] hover:text-[#13ec5b]">
-//                   <Paperclip size={20} />
-//                 </button>
-//                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-
-//                 <input 
-//                   value={inputText} 
-//                   onChange={(e) => setInputText(e.target.value)}
-//                   onClick={handleInputClick} 
-//                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-//                   placeholder="Type a message..." 
-//                   className="flex-1 bg-transparent outline-none text-sm" 
-//                 />
-                
-//                 <button onClick={handleSend} className="bg-[#13ec5b] p-2 rounded-lg text-black hover:bg-[#11cc4f]">
-//                   <Send size={18} />
-//                 </button>
-//               </div>
-//             </div>
-//           </>
-//         ) : (
-//           <div className="flex-1 flex flex-col items-center justify-center opacity-10">
-//             <Send size={80} />
-//             <p className="mt-4 font-bold tracking-[0.3em]">SELECT A CHAT</p>
-//           </div>
-//         )}
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default MessagesPage;
 import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services/chatService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle } from 'lucide-react';
@@ -305,7 +30,6 @@ const MessagesPage = () => {
   const scrollRef = useRef();
   const activeChatIdRef = useRef(null);
 
-  // --- WhatsApp Style Date Logic ---
   const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -315,6 +39,26 @@ const MessagesPage = () => {
     if (date.toDateString() === today.toDateString()) return "Today";
     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  // --- Format last seen nicely ---
+  const formatLastSeen = (dateString) => {
+    if (!dateString) return "unknown";
+    const d = new Date(dateString);
+    const diff = Date.now() - d.getTime();
+    const sec = Math.floor(diff / 1000);
+    if (sec < 60) return 'just now';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isRecentlyOnline = (user) => {
+    if (!user) return false;
+    // Show online whenever server reports isOnline === true
+    return !!user.isOnline;
   };
 
   // --- Get Unique Chats (One user only once in sidebar) ---
@@ -340,7 +84,16 @@ const MessagesPage = () => {
 
     const loadInitialData = async () => {
       const data = await chatService.getMyChats();
-      const uniqueChats = getUniqueChats(data);
+      // Normalize participant online flags by checking lastSeen recency
+      const normalized = data.map(chat => ({
+        ...chat,
+        participants: chat.participants.map(p => ({
+          ...(p || {}),
+          // Keep server-provided isOnline as authoritative
+          isOnline: !!p?.isOnline
+        }))
+      }));
+      const uniqueChats = getUniqueChats(normalized);
       setChats(uniqueChats);
     };
 
@@ -357,11 +110,12 @@ const MessagesPage = () => {
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       
       console.log("📨 Message received from socket:", newMsg._id, "for chat:", msgChatId);
+      console.log("Current open chat:", activeChatIdRef.current);
       
       // Update sidebar with latest message (ALWAYS update, regardless of which chat is open)
       setChats(prev => {
         const updated = prev.map(c => 
-          (c._id === msgChatId) ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt } : c
+          (c._id.toString() === msgChatId.toString()) ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt } : c
         );
         // Sort by latest message
         const sorted = updated.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
@@ -370,7 +124,11 @@ const MessagesPage = () => {
 
       // Real-time Chat window update - only if viewing this chat
       const currentId = activeChatIdRef.current;
-      if (currentId === msgChatId) {
+      // Compare as strings to handle ObjectId vs string
+      const isSameChat = currentId && msgChatId && 
+        currentId.toString() === msgChatId.toString();
+      
+      if (isSameChat) {
         console.log("✅ Message is for current chat, adding to messages");
         setMessages(prev => {
           // Don't add if already exists
@@ -379,32 +137,69 @@ const MessagesPage = () => {
             return prev;
           }
           // Remove temp message with same text
-          return [...prev.filter(m => !m.isTemp || m.text !== newMsg.text), newMsg];
+          const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.text);
+          return [...filtered, newMsg];
         });
       } else {
-        console.log("⚠️ Message is for different chat:", msgChatId, "current:", currentId);
+        console.log("⚠️ Message is for different chat - currentId:", currentId, "msgChatId:", msgChatId);
       }
     };
     
     // Register the listener
     chatService.onMessageReceived?.(handleNewMessage);
 
+    chatService.onSidebarUpdate?.((updatedChat) => {
+    console.log("update sidebar data aaya:", updatedChat);
+    setChats(prev => {
+      // Is chat ko purani list se nikalo (ID check karke)
+      const filtered = prev.filter(c => c._id.toString() !== updatedChat._id.toString());
+      // Naya updated data sabse upar daal do (WhatsApp ki tarah)
+      return [updatedChat, ...filtered];
+    });
+  });
+    // Listen for user online/offline status updates
+    const handleStatusChange = ({ userId, status, lastSeen }) => {
+      setChats(prev => prev.map(chat => ({
+        ...chat,
+        participants: chat.participants.map(p => (p._id || p) === userId ? { ...p, isOnline: status === 'online', lastSeen } : p)
+      })));
+
+      setActiveChat(prev => {
+        if (!prev) return prev;
+        if (!prev.participants.some(p => (p._id || p) === userId)) return prev;
+        return {
+          ...prev,
+          participants: prev.participants.map(p => (p._id || p) === userId ? { ...p, isOnline: status === 'online', lastSeen } : p)
+        };
+      });
+    };
+    chatService.onUserStatusChanged?.(handleStatusChange);
+
     return () => {
       clearTimeout(timer);
       chatService.removeMessageListener?.();
+      chatService.removeStatusListener?.();
     };
   }, [myUserId]);
 
   // --- 2. ACTIVE CHAT SYNC ---
   useEffect(() => {
     if (activeChat?._id) {
+      // Update ref immediately
       activeChatIdRef.current = activeChat._id;
+      console.log("📝 Active chat updated to:", activeChat._id);
+      
       // Join the chat room for real-time updates
       chatService.joinChat?.(activeChat._id, myUserId);
+      console.log("🤝 Joined chat room:", activeChat._id);
+      
       // Load chat history
-      chatService.getChatHistory(activeChat._id).then(setMessages);
+      chatService.getChatHistory(activeChat._id).then(data => {
+        console.log("📥 Chat history loaded, messages:", data.length);
+        setMessages(data);
+      });
     }
-  }, [activeChat?._id]);
+  }, [activeChat?._id, myUserId]);
 
   // --- 3. SEND & EDIT ---
   const handleSend = () => {
@@ -512,7 +307,12 @@ const MessagesPage = () => {
           <>
             <header className="h-20 flex items-center px-8 bg-[#112217] border-b border-[#23482f]">
               <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
-              <div><h3 className="font-bold">{otherUser?.name}</h3><p className="text-[10px] text-[#13ec5b]">● Online</p></div>
+              <div>
+                <h3 className="font-bold">{otherUser?.name}</h3>
+                <p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
+                  {isRecentlyOnline(otherUser) ? '● Online' : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`}
+                </p>
+              </div>
             </header>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">

@@ -2,6 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut as LogOutIcon } from 'lucide-react';
 import LogOut from '../modals/LogOut';
+import { chatService } from '../../services/chatService';
+
+const getMyIdFromToken = () => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    return payload.id || payload._id;
+  } catch (e) { return null; }
+};
 
 const NavItem = ({ icon, label, to, badge = false, onClick }) => {
   const location = useLocation();
@@ -41,6 +53,11 @@ const UserSidebar = () => {
   }, [location]);
 
   const handleLogoutConfirm = () => {
+    const myId = getMyIdFromToken();
+    if (myId) {
+      // Tell server we're logging out so it can update lastSeen immediately
+      chatService.logout(myId);
+    }
     localStorage.removeItem('token');
     setIsLogoutModalOpen(false);
     navigate('/login');
