@@ -195,10 +195,34 @@ const MessagesPage = () => {
     window.open(link, '_blank');
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (file && activeChat) {
-      chatService.sendFile?.(activeChat._id, myUserId, file);
+    if (!file || !activeChat) return;
+
+    const tempId = "temp-file-" + Date.now();
+    const tempMsg = {
+      _id: tempId,
+      sender: myUserId,
+      text: file.name,
+      createdAt: new Date().toISOString(),
+      isTemp: true,
+      uploading: true,
+      file: { name: file.name, size: file.size }
+    };
+    setMessages(prev => [...prev, tempMsg]);
+
+    try {
+      // Upload and emit via chatService (backend upload + socket emit)
+      const fileMeta = await chatService.sendFile(activeChat._id, myUserId, file);
+
+      // Update temp message to final state
+      setMessages(prev => prev.map(m => m._id === tempId ? { ...m, isTemp: false, uploading: false, file: fileMeta, text: fileMeta.name || file.name } : m));
+      setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: { ...tempMsg, text: fileMeta.name || file.name, file: fileMeta }, lastMessageAt: new Date().toISOString() } : c));
+    } catch (err) {
+      console.error('File upload failed', err);
+      setMessages(prev => prev.filter(m => m._id !== tempId));
+    } finally {
+      e.target.value = null;
     }
   };
 
@@ -349,7 +373,20 @@ const MessagesPage = () => {
                           </div>
                         )}
                         <div className={`px-4 py-2 rounded-2xl shadow-sm ${isDeleted ? 'border border-[#23482f] italic text-gray-500' : isMe ? 'bg-[#13ec5b] text-black rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
-                          <p className="text-sm">{renderMessageText(m.text)}</p>
+                          {m.file ? (
+                            m.file.mimeType && m.file.mimeType.startsWith('image/') ? (
+                              <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="block">
+                                <img src={m.file.url} alt={m.file.name} className="max-w-[220px] rounded-xl border border-[#23482f]" />
+                              </a>
+                            ) : (
+                              <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline break-all hover:text-blue-200 text-sm">
+                                <Paperclip size={14} />
+                                <span>{m.file.name || m.file.url}</span>
+                              </a>
+                            )
+                          ) : (
+                            <p className="text-sm">{renderMessageText(m.text)}</p>
+                          )}
                           <div className="flex items-center justify-end gap-2 mt-1">
                               {!isDeleted && wasEdited && <span className="text-[8px] opacity-50 italic font-bold">edited</span>}
                               <p className="text-[9px] opacity-60">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>

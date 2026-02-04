@@ -94,18 +94,29 @@ export const chatService = {
     socket.emit("joinChat", { chatId, userId });
   },
 
-  // Message emit karne ke liye (Backend ki ChatService ko call karega)
-  sendMessage: (data) => {
-    // data = { chatId, senderId, text }
-    socket.emit("sendMessage", data);
-  },
 
   // Naye message "sunne" (listen) karne ke liye
   // services/chatService.js update karo
 
-  // Message emit karne ke liye 
-  sendMessage: (chatId, senderId, text) => {
-    socket.emit("sendMessage", { chatId, senderId, text });
+  // Message emit karne ke liye (supports both object and params)
+  sendMessage: (chatIdOrData, senderId, text) => {
+    if (!socket) return;
+    if (typeof chatIdOrData === 'object') {
+      socket.emit('sendMessage', chatIdOrData);
+    } else {
+      socket.emit('sendMessage', { chatId: chatIdOrData, senderId, text });
+    }
+  },
+
+  // Upload a file via HTTP and emit a file message over socket
+  sendFile: async (chatId, senderId, file) => {
+    if (!file) throw new Error('No file provided');
+    // Use the helper defined at bottom to upload
+    const res = await uploadFile(file);
+    const fileUrl = res?.url || res?.path || res?.data?.url || res?.data?.path;
+    const fileMeta = { url: fileUrl, name: file.name, mimeType: file.type, size: file.size };
+    if (socket) socket.emit('sendMessage', { chatId, senderId, text: '', file: fileMeta });
+    return fileMeta;
   },
   // ✅ Naya: Delete message ka signal bhejne ke liye
   deleteMessage: (messageId, chatId, type, userId) => {
