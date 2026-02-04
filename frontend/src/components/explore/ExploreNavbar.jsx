@@ -30,10 +30,46 @@
 // };
 
 // export default ExploreNavbar;
-import React from 'react';
+import React, { useState } from 'react';
 import UserNavbar from '../common/UserNavbar';
 
-const ExploreNavbar = ({ onSearch }) => {
+const ExploreNavbar = ({ onSearch, onFilter }) => {
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    experience: '',
+    skills: []
+  });
+
+  const experienceLevels = [
+    { value: '0-1', label: '0-1 years' },
+    { value: '1-3', label: '1-3 years' },
+    { value: '3-5', label: '3-5 years' },
+    { value: '5+', label: '5+ years' }
+  ];
+
+  const skillOptions = [
+    'JavaScript', 'Python', 'React', 'Node.js', 'Java', 'C++',
+    'HTML/CSS', 'MongoDB', 'SQL', 'Git', 'Docker', 'AWS'
+  ];
+
+  const handleSkillToggle = (skill) => {
+    setFilters(prev => ({
+      ...prev,
+      skills: prev.skills.includes(skill)
+        ? prev.skills.filter(s => s !== skill)
+        : [...prev.skills, skill]
+    }));
+  };
+
+  const applyFilters = () => {
+    onFilter && onFilter(filters);
+    setShowFilters(false);
+  };
+
+  const clearFilters = () => {
+    setFilters({ experience: '', skills: [] });
+    onFilter && onFilter({ experience: '', skills: [] });
+  };
   return (
     <div className="sticky top-0 z-20 w-full bg-[#102216]/95 backdrop-blur-xl border-b border-[#23482f]/50 shadow-2xl">
       {/* Main App Navbar */}
@@ -73,7 +109,10 @@ const ExploreNavbar = ({ onSearch }) => {
             </div>
 
             {/* Filter Button */}
-            <button className="flex items-center justify-center p-3.5 bg-[#112217] border border-[#23482f] rounded-2xl text-[#13ec5b] hover:bg-[#13ec5b]/10 hover:border-[#13ec5b]/50 transition-all duration-300 group">
+            <button 
+              onClick={() => setShowFilters(true)}
+              className="flex items-center justify-center p-3.5 bg-[#112217] border border-[#23482f] rounded-2xl text-[#13ec5b] hover:bg-[#13ec5b]/10 hover:border-[#13ec5b]/50 transition-all duration-300 group"
+            >
               <span className="material-symbols-outlined text-[22px]">tune</span>
               <span className="hidden lg:inline ml-2 text-[12px] font-bold uppercase tracking-widest">Filters</span>
             </button>
@@ -81,6 +120,77 @@ const ExploreNavbar = ({ onSearch }) => {
 
         </div>
       </div>
+
+      {/* Filter Modal */}
+      {showFilters && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-end p-4 pt-20">
+          <div className="bg-[#112217] border border-[#23482f] rounded-2xl p-6 w-full max-w-sm mr-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-white text-xl font-bold">Filters</h3>
+              <button 
+                onClick={() => setShowFilters(false)}
+                className="text-[#92c9a4] hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Experience Filter */}
+            <div className="mb-6">
+              <label className="block text-[#13ec5b] text-sm font-bold mb-3">Experience Level</label>
+              <div className="space-y-2">
+                {experienceLevels.map((level) => (
+                  <label key={level.value} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="experience"
+                      value={level.value}
+                      checked={filters.experience === level.value}
+                      onChange={(e) => setFilters(prev => ({ ...prev, experience: e.target.value }))}
+                      className="mr-3 accent-[#13ec5b]"
+                    />
+                    <span className="text-white text-sm">{level.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Skills Filter */}
+            <div className="mb-6">
+              <label className="block text-[#13ec5b] text-sm font-bold mb-3">Skills</label>
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                {skillOptions.map((skill) => (
+                  <label key={skill} className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.skills.includes(skill)}
+                      onChange={() => handleSkillToggle(skill)}
+                      className="mr-2 accent-[#13ec5b]"
+                    />
+                    <span className="text-white text-xs">{skill}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={clearFilters}
+                className="flex-1 py-2 px-4 bg-[#23482f] text-[#92c9a4] rounded-lg hover:bg-[#2a5436] transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                onClick={applyFilters}
+                className="flex-1 py-2 px-4 bg-[#13ec5b] text-black rounded-lg hover:bg-[#11d951] transition-colors font-bold"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

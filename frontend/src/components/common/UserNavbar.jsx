@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotificationModal from '../modals/NotificationModal';
 import { getMyProfile } from "../../services/authService.js";
-import Avatar from "../common/Avatar";
+
+// Vite environment variable for API URL
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const UserNavbar = ({ userName }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -12,7 +14,18 @@ const UserNavbar = ({ userName }) => {
   });
   const navigate = useNavigate();
 
-  // Profile data fetch karne ke liye useEffect
+  // --- IMAGE HELPER LOGIC START ---
+  const getImageUrl = (img, name) => {
+    if (img) {
+      if (img.startsWith('http')) return img;
+      // Backend relative path handling
+      return `${API_URL}${img.startsWith('/') ? '' : '/'}${img}`;
+    }
+    // Fallback if no image found
+    return `https://ui-avatars.com/api/?name=${name}&bg=13ec5b&color=000&bold=true`;
+  };
+  // --- IMAGE HELPER LOGIC END ---
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -39,8 +52,6 @@ const UserNavbar = ({ userName }) => {
       </div>
 
       <div className="flex items-center gap-6">
-       
-
         <div className="flex gap-3 items-center">
           {/* Notifications */}
           <div className="relative">
@@ -58,15 +69,21 @@ const UserNavbar = ({ userName }) => {
             />
           </div>
 
-          {/* Profile Image - Ab ye Account section se aa rahi hai */}
+          {/* Profile Image Logic */}
           <div className="group relative">
-            <Avatar 
-              src={userProfile.profileImage} 
-              name={userProfile.name} 
-              size="w-10 h-10" 
-              className="border-2 border-[#13ec5b] hover:scale-105 transition-transform cursor-pointer shadow-lg shadow-[#13ec5b]/10 ml-2"
+            <div 
               onClick={() => navigate('/my-profile')}
-            />
+              className="w-10 h-10 rounded-full border-2 border-[#13ec5b] overflow-hidden cursor-pointer hover:scale-105 transition-transform shadow-lg shadow-[#13ec5b]/10 ml-2 bg-slate-800"
+            >
+              <img 
+                src={getImageUrl(userProfile.profileImage, userProfile.name)} 
+                alt={userProfile.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { 
+                  e.target.src = `https://ui-avatars.com/api/?name=${userProfile.name}&bg=13ec5b&color=000&bold=true`; 
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

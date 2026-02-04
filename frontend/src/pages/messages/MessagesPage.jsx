@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services/chatService';
-import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle } from 'lucide-react';
+import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
 const getMyId = () => {
@@ -28,6 +27,7 @@ const MessagesPage = () => {
 
   const myUserId = getMyId();
   const scrollRef = useRef();
+  const fileInputRef = useRef();
   const activeChatIdRef = useRef(null);
 
   const formatMessageDate = (dateString) => {
@@ -68,7 +68,6 @@ const MessagesPage = () => {
       const otherUser = chat.participants.find(p => (p._id || p) !== myUserId);
       const otherId = otherUser?._id || otherUser;
       if (otherId) {
-        // If this user already exists, keep the one with the latest message
         const existing = uniqueMap.get(otherId);
         if (!existing || new Date(chat.lastMessageAt || 0) > new Date(existing.lastMessageAt || 0)) {
           uniqueMap.set(otherId, chat);
@@ -78,10 +77,8 @@ const MessagesPage = () => {
     return Array.from(uniqueMap.values());
   };
 
-  // --- 1. SOCKET & INITIAL DATA ---
   useEffect(() => {
     if (!myUserId) return;
-
     const loadInitialData = async () => {
       const data = await chatService.getMyChats();
       // Normalize participant online flags by checking lastSeen recency
@@ -96,16 +93,8 @@ const MessagesPage = () => {
       const uniqueChats = getUniqueChats(normalized);
       setChats(uniqueChats);
     };
-
-    // Connect socket and setup listener
     chatService.connectSocket(myUserId);
-    
-    // Wait a bit for socket to connect, then load data
-    const timer = setTimeout(() => {
-      loadInitialData();
-    }, 100);
-
-    // Setup listener for incoming messages
+    const timer = setTimeout(() => { loadInitialData(); }, 100);
     const handleNewMessage = (newMsg) => {
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       
@@ -117,12 +106,8 @@ const MessagesPage = () => {
         const updated = prev.map(c => 
           (c._id.toString() === msgChatId.toString()) ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt } : c
         );
-        // Sort by latest message
-        const sorted = updated.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
-        return sorted;
+        return updated.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
       });
-
-      // Real-time Chat window update - only if viewing this chat
       const currentId = activeChatIdRef.current;
       // Compare as strings to handle ObjectId vs string
       const isSameChat = currentId && msgChatId && 
@@ -144,8 +129,6 @@ const MessagesPage = () => {
         console.log("⚠️ Message is for different chat - currentId:", currentId, "msgChatId:", msgChatId);
       }
     };
-    
-    // Register the listener
     chatService.onMessageReceived?.(handleNewMessage);
 
     chatService.onSidebarUpdate?.((updatedChat) => {
@@ -182,7 +165,6 @@ const MessagesPage = () => {
     };
   }, [myUserId]);
 
-  // --- 2. ACTIVE CHAT SYNC ---
   useEffect(() => {
     if (activeChat?._id) {
       // Update ref immediately
@@ -201,10 +183,8 @@ const MessagesPage = () => {
     }
   }, [activeChat?._id, myUserId]);
 
-  // --- 3. SEND & EDIT ---
   const handleSend = () => {
     if (!inputText.trim() || !activeChat) return;
-
     if (editingMessage) {
       chatService.editMessage?.(editingMessage.id, inputText.trim(), activeChat._id);
       setMessages(prev => prev.map(m => 
@@ -228,6 +208,14 @@ const MessagesPage = () => {
     setShowEmojiPicker(false);
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && activeChat) {
+      chatService.sendFile?.(activeChat._id, myUserId, file);
+      // Optional: Add temporary UI message for "Sending file..."
+    }
+  };
+
   const finalDeleteExecute = async () => {
     chatService.deleteMessage(deleteTarget.msgId, activeChat._id, tempDeleteMode, myUserId);
     if (tempDeleteMode === 'me') {
@@ -245,6 +233,14 @@ const MessagesPage = () => {
   return (
     <div className="relative flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
       
+      {/* Scrollbar Fix for Emoji Picker */}
+      <style>
+        {`
+          .EmojiPickerReact .epr-body::-webkit-scrollbar { display: none !important; }
+          .EmojiPickerReact .epr-body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        `}
+      </style>
+
       {/* DELETE MODAL */}
       {deleteStep !== 'none' && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -305,13 +301,31 @@ const MessagesPage = () => {
       <main className="flex-1 flex flex-col bg-[#0d1a11]">
         {activeChat ? (
           <>
-            <header className="h-20 flex items-center px-8 bg-[#112217] border-b border-[#23482f]">
-              <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
-              <div>
-                <h3 className="font-bold">{otherUser?.name}</h3>
-                <p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
+            <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
+              <div className="flex items-center">
+                <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
+                <div><h3 className="font-bold">{otherUser?.name}</h3><p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
                   {isRecentlyOnline(otherUser) ? '● Online' : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`}
-                </p>
+                </p></div>
+              </div>
+
+              {/* VIDEO CALL HOVER DROPDOWN */}
+              <div className="relative group">
+                <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+                  <Video size={24} />
+                </button>
+                
+                {/* Options appear on Hover */}
+                <div className="absolute right-0 top-10 w-40 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
+                  <button onClick={() => window.open('https://zoom.us/start/videohost', '_blank')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                    <div className="w-6 h-6 bg-[#2D8CFF] rounded flex items-center justify-center text-[14px] font-black italic">Z</div>
+                    <span className="text-xs font-bold">Zoom</span>
+                  </button>
+                  <button onClick={() => window.open('https://meet.google.com/new', '_blank')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-[#23482f]">
+                    <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-blue-500 text-[14px]">M</div>
+                    <span className="text-xs font-bold">Google Meet</span>
+                  </button>
+                </div>
               </div>
             </header>
 
@@ -320,8 +334,6 @@ const MessagesPage = () => {
                 const isMe = (m.sender?._id || m.sender) === myUserId;
                 const isDeleted = m.isDeleted || m.text === "This message was deleted";
                 const wasEdited = m.isEdited || (m.updatedAt && m.updatedAt !== m.createdAt);
-
-                // --- Date Header Check ---
                 const showDateHeader = idx === 0 || formatMessageDate(messages[idx-1].createdAt) !== formatMessageDate(m.createdAt);
 
                 return (
@@ -365,11 +377,20 @@ const MessagesPage = () => {
                 </div>
               )}
               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
-                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4]"><Smile size={22} /></button>
+                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]"><Smile size={22} /></button>
+                
+                {/* FILE UPLOAD ICON */}
+                <button onClick={() => fileInputRef.current.click()} className="text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+                  <Paperclip size={20} />
+                </button>
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+
                 <input value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
+                
                 <button onClick={handleSend} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
                   {editingMessage ? <Check size={18}/> : <Send size={18}/>}
                 </button>
+
                 {showEmojiPicker && (
                   <div className="absolute bottom-16 left-0 z-50">
                     <EmojiPicker onEmojiClick={(e) => setInputText(p => p + e.emoji)} theme="dark" width={300} height={400} />
