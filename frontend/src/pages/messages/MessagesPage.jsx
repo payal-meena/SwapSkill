@@ -41,7 +41,6 @@ const MessagesPage = () => {
     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  // --- Format last seen nicely ---
   const formatLastSeen = (dateString) => {
     if (!dateString) return "unknown";
     const d = new Date(dateString);
@@ -57,11 +56,9 @@ const MessagesPage = () => {
 
   const isRecentlyOnline = (user) => {
     if (!user) return false;
-    // Show online whenever server reports isOnline === true
     return !!user.isOnline;
   };
 
-  // --- Get Unique Chats (One user only once in sidebar) ---
   const getUniqueChats = (allChats) => {
     const uniqueMap = new Map();
     allChats.forEach(chat => {
@@ -81,12 +78,10 @@ const MessagesPage = () => {
     if (!myUserId) return;
     const loadInitialData = async () => {
       const data = await chatService.getMyChats();
-      // Normalize participant online flags by checking lastSeen recency
       const normalized = data.map(chat => ({
         ...chat,
         participants: chat.participants.map(p => ({
           ...(p || {}),
-          // Keep server-provided isOnline as authoritative
           isOnline: !!p?.isOnline
         }))
       }));
@@ -98,10 +93,6 @@ const MessagesPage = () => {
     const handleNewMessage = (newMsg) => {
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       
-      console.log("📨 Message received from socket:", newMsg._id, "for chat:", msgChatId);
-      console.log("Current open chat:", activeChatIdRef.current);
-      
-      // Update sidebar with latest message (ALWAYS update, regardless of which chat is open)
       setChats(prev => {
         const updated = prev.map(c => 
           (c._id.toString() === msgChatId.toString()) ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt } : c
@@ -109,38 +100,26 @@ const MessagesPage = () => {
         return updated.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
       });
       const currentId = activeChatIdRef.current;
-      // Compare as strings to handle ObjectId vs string
       const isSameChat = currentId && msgChatId && 
         currentId.toString() === msgChatId.toString();
       
       if (isSameChat) {
-        console.log("✅ Message is for current chat, adding to messages");
         setMessages(prev => {
-          // Don't add if already exists
-          if (prev.find(m => m._id === newMsg._id)) {
-            console.log("Message already exists, skipping");
-            return prev;
-          }
-          // Remove temp message with same text
+          if (prev.find(m => m._id === newMsg._id)) return prev;
           const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.text);
           return [...filtered, newMsg];
         });
-      } else {
-        console.log("⚠️ Message is for different chat - currentId:", currentId, "msgChatId:", msgChatId);
       }
     };
     chatService.onMessageReceived?.(handleNewMessage);
 
     chatService.onSidebarUpdate?.((updatedChat) => {
-    console.log("update sidebar data aaya:", updatedChat);
-    setChats(prev => {
-      // Is chat ko purani list se nikalo (ID check karke)
-      const filtered = prev.filter(c => c._id.toString() !== updatedChat._id.toString());
-      // Naya updated data sabse upar daal do (WhatsApp ki tarah)
-      return [updatedChat, ...filtered];
+      setChats(prev => {
+        const filtered = prev.filter(c => c._id.toString() !== updatedChat._id.toString());
+        return [updatedChat, ...filtered];
+      });
     });
-  });
-    // Listen for user online/offline status updates
+
     const handleStatusChange = ({ userId, status, lastSeen }) => {
       setChats(prev => prev.map(chat => ({
         ...chat,
@@ -167,28 +146,23 @@ const MessagesPage = () => {
 
   useEffect(() => {
     if (activeChat?._id) {
-      // Update ref immediately
       activeChatIdRef.current = activeChat._id;
-      console.log("📝 Active chat updated to:", activeChat._id);
-      
-      // Join the chat room for real-time updates
       chatService.joinChat?.(activeChat._id, myUserId);
-      console.log("🤝 Joined chat room:", activeChat._id);
-      
-      // Load chat history
       chatService.getChatHistory(activeChat._id).then(data => {
-        console.log("📥 Chat history loaded, messages:", data.length);
         setMessages(data);
       });
     }
   }, [activeChat?._id, myUserId]);
 
-  const handleSend = () => {
-    if (!inputText.trim() || !activeChat) return;
-    if (editingMessage) {
-      chatService.editMessage?.(editingMessage.id, inputText.trim(), activeChat._id);
+  // Modified handleSend to support auto-sending links
+  const handleSend = (overrideText = null) => {
+    const textToProcess = (typeof overrideText === 'string') ? overrideText : inputText.trim();
+    if (!textToProcess || !activeChat) return;
+
+    if (editingMessage && !overrideText) {
+      chatService.editMessage?.(editingMessage.id, textToProcess, activeChat._id);
       setMessages(prev => prev.map(m => 
-        m._id === editingMessage.id ? { ...m, text: inputText.trim(), isEdited: true, updatedAt: new Date().toISOString() } : m
+        m._id === editingMessage.id ? { ...m, text: textToProcess, isEdited: true, updatedAt: new Date().toISOString() } : m
       ));
       setEditingMessage(null);
     } else {
@@ -196,23 +170,34 @@ const MessagesPage = () => {
       const newMessage = {
         _id: tempId,
         sender: myUserId,
-        text: inputText.trim(),
+        text: textToProcess,
         createdAt: new Date().toISOString(),
         isTemp: true 
       };
       setMessages(prev => [...prev, newMessage]);
-      chatService.sendMessage(activeChat._id, myUserId, inputText.trim());
+      chatService.sendMessage(activeChat._id, myUserId, textToProcess);
       setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: newMessage } : c));
     }
-    setInputText("");
+    if (!overrideText) setInputText("");
     setShowEmojiPicker(false);
+  };
+
+  // Video Call Link Generation Logic
+  const handleVideoCallAction = (type) => {
+    const meetingId = Math.random().toString(36).substring(7);
+    const link = type === 'zoom' 
+      ? `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}` 
+      : `https://meet.google.com/new`;
+    
+    const messageBody = `Let's have a video call on ${type === 'zoom' ? 'Zoom' : 'Google Meet'}. Join here: ${link}`;
+    handleSend(messageBody);
+    window.open(link, '_blank');
   };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file && activeChat) {
       chatService.sendFile?.(activeChat._id, myUserId, file);
-      // Optional: Add temporary UI message for "Sending file..."
     }
   };
 
@@ -230,14 +215,26 @@ const MessagesPage = () => {
 
   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
 
+  // Helper to detect and render links in messages
+  const renderMessageText = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, i) => {
+      if (part.match(urlRegex)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-blue-200">{part}</a>;
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="relative flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
       
-      {/* Scrollbar Fix for Emoji Picker */}
       <style>
         {`
           .EmojiPickerReact .epr-body::-webkit-scrollbar { display: none !important; }
           .EmojiPickerReact .epr-body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+          .hide-scrollbar::-webkit-scrollbar { display: none; }
+          .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `}
       </style>
 
@@ -284,7 +281,7 @@ const MessagesPage = () => {
             return (
               <div key={chat._id} onClick={() => setActiveChat(chat)} 
                 className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}`}>
-                <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" />
+                <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" alt="" />
                 <div className="flex-1 truncate">
                     <h4 className="text-sm font-bold">{p?.name}</h4>
                     <p className="text-xs truncate text-[#92c9a4]">
@@ -303,27 +300,24 @@ const MessagesPage = () => {
           <>
             <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
               <div className="flex items-center">
-                <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" />
+                <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" alt="" />
                 <div><h3 className="font-bold">{otherUser?.name}</h3><p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
                   {isRecentlyOnline(otherUser) ? '● Online' : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`}
                 </p></div>
               </div>
 
-              {/* VIDEO CALL HOVER DROPDOWN */}
               <div className="relative group">
                 <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
                   <Video size={24} />
                 </button>
-                
-                {/* Options appear on Hover */}
-                <div className="absolute right-0 top-10 w-40 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
-                  <button onClick={() => window.open('https://zoom.us/start/videohost', '_blank')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
-                    <div className="w-6 h-6 bg-[#2D8CFF] rounded flex items-center justify-center text-[14px] font-black italic">Z</div>
-                    <span className="text-xs font-bold">Zoom</span>
+                <div className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
+                  <button onClick={() => handleVideoCallAction('zoom')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                    <div className="w-6 h-6 bg-[#2D8CFF] rounded flex items-center justify-center text-[10px] font-black text-white italic">Z</div>
+                    <span className="text-xs font-bold">Send Zoom Link</span>
                   </button>
-                  <button onClick={() => window.open('https://meet.google.com/new', '_blank')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-[#23482f]">
-                    <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-blue-500 text-[14px]">M</div>
-                    <span className="text-xs font-bold">Google Meet</span>
+                  <button onClick={() => handleVideoCallAction('meet')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-[#23482f]">
+                    <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-blue-500 text-[10px]">M</div>
+                    <span className="text-xs font-bold">Send Meet Link</span>
                   </button>
                 </div>
               </div>
@@ -354,7 +348,7 @@ const MessagesPage = () => {
                           </div>
                         )}
                         <div className={`px-4 py-2 rounded-2xl shadow-sm ${isDeleted ? 'border border-[#23482f] italic text-gray-500' : isMe ? 'bg-[#13ec5b] text-black rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
-                          <p className="text-sm">{m.text}</p>
+                          <p className="text-sm">{renderMessageText(m.text)}</p>
                           <div className="flex items-center justify-end gap-2 mt-1">
                               {!isDeleted && wasEdited && <span className="text-[8px] opacity-50 italic font-bold">edited</span>}
                               <p className="text-[9px] opacity-60">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -379,7 +373,6 @@ const MessagesPage = () => {
               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
                 <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]"><Smile size={22} /></button>
                 
-                {/* FILE UPLOAD ICON */}
                 <button onClick={() => fileInputRef.current.click()} className="text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
                   <Paperclip size={20} />
                 </button>
@@ -387,7 +380,7 @@ const MessagesPage = () => {
 
                 <input value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
                 
-                <button onClick={handleSend} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
+                <button onClick={() => handleSend()} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
                   {editingMessage ? <Check size={18}/> : <Send size={18}/>}
                 </button>
 
