@@ -9,8 +9,10 @@ import { skillService } from '../../services/skillService';
 import ExpertisePage from './ExpertisePage';
 import api from "../../services/api";
 import Toast from '../../components/common/Toast';
-import Avatar from '../../components/common/Avatar';
 import LogOut from '../../components/modals/LogOut';
+
+// Vite environment variable
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -21,6 +23,15 @@ const Profile = () => {
     const [user, setUser] = useState({});
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+
+    // --- IMAGE HELPER LOGIC ---
+    const getImageUrl = (img, name) => {
+        if (img) {
+            if (img.startsWith('http')) return img;
+            return `${API_URL}${img.startsWith('/') ? '' : '/'}${img}`;
+        }
+        return `https://ui-avatars.com/api/?name=${name || 'User'}&bg=13ec5b&color=000&bold=true`;
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -112,9 +123,15 @@ const Profile = () => {
         return iconMap[category] || <Verified size={18} />;
     };
 
+    if (loading) return (
+        <div className="w-full h-screen flex justify-center items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13ec5b]"></div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-[#f6f8f6] dark:bg-[#102216] text-slate-900 dark:text-white font-['Lexend']">
-            {/* UPDATED HEADER: Solo Profile Title on the Left */}
+            {/* HEADER */}
             <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
                     <div className="flex items-center gap-3 text-[#13ec5b]">
@@ -132,21 +149,27 @@ const Profile = () => {
                         <div className="sticky top-24 flex flex-col gap-6">
                             <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
                                 <div className="flex flex-col items-center text-center gap-4">
-                                    <Avatar 
-                                        src={user?.profileImage} 
-                                        name={user?.name} 
-                                        size="w-24 h-24" 
-                                        textSize="text-2xl"
-                                        className="border-4 border-[#13ec5b]/20 shadow-xl"
-                                    />
+                                    {/* UPDATED PROFILE IMAGE LOGIC */}
+                                    <div className="w-24 h-24 rounded-full border-4 border-[#13ec5b]/20 shadow-xl overflow-hidden bg-slate-800">
+                                        <img 
+                                            src={getImageUrl(user?.profileImage, user?.name)} 
+                                            alt={user?.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { 
+                                                e.target.src = `https://ui-avatars.com/api/?name=${user?.name || 'User'}&bg=13ec5b&color=000&bold=true`; 
+                                            }}
+                                        />
+                                    </div>
+
                                     <div>
                                         <h1 className="text-2xl font-bold">{user?.name || "USER"}</h1>
-                                        <p className="text-[#13ec5b] font-medium tracking-wide">{user?.profession || "No fields available."}</p>
+                                        <p className="text-[#13ec5b] font-medium tracking-wide">{user?.profession || "Member"}</p>
                                     </div>
                                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                                         {user?.bio || "No bio available."}
                                     </p>
                                 </div>
+                                
                                 <div className="grid grid-cols-3 gap-2 mt-8">
                                     <StatBox label="Rating" value="5.0" />
                                     <StatBox label="Swaps" value="24" />
@@ -236,7 +259,6 @@ const TabButton = ({ active, onClick, icon, label }) => (
 
 const SkillCard = ({ skill, onDelete }) => (
     <div className="group relative bg-white dark:bg-[#1a2e1f] rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 hover:border-[#13ec5b]/50 transition-all shadow-lg hover:shadow-[#13ec5b]/5">
-        
         <div className="absolute top-3 right-3 z-20 flex gap-2 translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
             <button 
                 className="group/del p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-xl text-white/70 hover:text-white hover:bg-red-500/80 hover:border-red-500 transition-all shadow-xl hover:shadow-red-500/20 active:scale-90"
@@ -277,7 +299,6 @@ const SkillCard = ({ skill, onDelete }) => (
                 {skill.info}
             </div>
         </div>
-
         <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#13ec5b] group-hover:w-full transition-all duration-500"></div>
     </div>
 );
