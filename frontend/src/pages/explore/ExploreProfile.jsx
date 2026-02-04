@@ -51,7 +51,7 @@ const ExploreProfile = () => {
   // 3. Destructure values from profileData with defaults
   const { 
     name = "Sarah Jenkins", 
-    img = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200", 
+    img = null, 
     rating = 4.9, 
     reviews = 128,
     socials = {

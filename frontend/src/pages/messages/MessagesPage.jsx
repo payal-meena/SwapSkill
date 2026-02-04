@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services/chatService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import Avatar from '../../components/common/Avatar';
 
 const getMyId = () => {
   const token = localStorage.getItem('token');

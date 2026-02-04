@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Avatar from "../common/Avatar";
 
 const SkillCard = ({
   _id,
@@ -69,10 +70,12 @@ const SkillCard = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <img
-                alt={name}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-[#13ec5b]/20"
-                src={img}
+              <Avatar 
+                src={img} 
+                name={name} 
+                size="w-16 h-16" 
+                textSize="text-xl"
+                className="border-2 border-[#13ec5b]/20 rounded-2xl" // SkillCard ki styling ke liye rounded-2xl rakha hai
               />
               <span className={`absolute -bottom-1 -right-1 w-4 h-4 ${statusColor} border-2 border-[#193322] rounded-full`}></span>
             </div>

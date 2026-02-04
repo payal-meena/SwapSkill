@@ -13,24 +13,48 @@ const Avatar = ({
   };
 
   const getBackgroundColor = (name) => {
+    // Navbar wala look dene ke liye professional colors
     const colors = [
-      'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 
-      'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
+      'bg-slate-500', 'bg-blue-600', 'bg-emerald-600', 'bg-orange-500', 
+      'bg-purple-600', 'bg-rose-500', 'bg-indigo-600', 'bg-cyan-600'
     ];
     const index = name ? name.charCodeAt(0) % colors.length : 0;
     return colors[index];
   };
 
-  if (src && !src.includes('dicebear.com')) {
+  // ✅ Step 1: Check karo ki image valid hai ya nahi
+  // Agar link khali hai, ya bitmoji/dicebear wala hai, toh usse invalid maano
+  const isInvalidImage = !src || 
+                         src === "" || 
+                         src.includes('dicebear.com') || 
+                         src.includes('avatar');
+
+  // ✅ Step 2: Agar real image hai (like cloudinary, unsplash, ya uploaded file)
+  if (!isInvalidImage) {
     return (
-      <div className={`${size} rounded-full overflow-hidden ${className} ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}>
-        <img src={src} alt={name} className="w-full h-full object-cover" />
+      <div 
+        className={`${size} rounded-full overflow-hidden shrink-0 ${className} ${onClick ? 'cursor-pointer' : ''}`} 
+        onClick={onClick}
+      >
+        <img 
+          src={src} 
+          alt={name} 
+          className="w-full h-full object-cover" 
+          onError={(e) => {
+            // Agar image load hone mein fat jaye toh fallback to initials
+            e.target.parentElement.style.display = 'none';
+          }}
+        />
       </div>
     );
   }
 
+  // ✅ Step 3: Navbar jaisa Initial Circle (Default)
   return (
-    <div className={`${size} rounded-full flex items-center justify-center text-white font-bold ${textSize} ${getBackgroundColor(name)} ${className} ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}>
+    <div 
+      className={`${size} rounded-full flex items-center justify-center text-white font-bold shrink-0 ${textSize} ${getBackgroundColor(name)} ${className} ${onClick ? 'cursor-pointer' : ''}`} 
+      onClick={onClick}
+    >
       {getInitial(name)}
     </div>
   );
