@@ -152,14 +152,12 @@ exports.getMyChats = async (req, res) => {
   try {
     const userId = req.user;
 
-    const chats = await Chat.find({
-      participants: userId,
-    })
+    const chats = await Chat.find({ participants: userId })
       .populate("participants", "name profileImage isOnline lastSeen")
       .populate({
         path: "lastMessage",
-        model: "Message", // Explicitly model name dena safe hota hai
-        select: "text createdAt sender isDeleted"
+        model: "Message",
+        select: "text createdAt sender isDeleted file"
       })
       .sort({ updatedAt: -1 });
 

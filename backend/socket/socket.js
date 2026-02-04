@@ -216,16 +216,27 @@ module.exports = (io) => {
     });
 
     // --- 2. Send Message (Real-time Fix) ---
-    socket.on("sendMessage", async ({ chatId, senderId, text }) => {
+    socket.on("sendMessage", async ({ chatId, senderId, text, file }) => {
       try {
         const chat = await Chat.findById(chatId);
         if (!chat) return;
 
-        let message = await Message.create({
-          chat: chatId,
-          sender: senderId,
-          text,
-        });
+        // Prepare payload: support text-only, file-only, or both
+        const payload = { chat: chatId, sender: senderId };
+        if (file) {
+          payload.file = {
+            url: file.url,
+            name: file.name,
+            mimeType: file.mimeType,
+            size: file.size,
+          };
+          // If no text provided, set text to filename for preview/lastMessage
+          payload.text = file.name || '';
+        } else {
+          payload.text = text || '';
+        }
+
+        let message = await Message.create(payload);
 
         message = await Message.findById(message._id).populate("sender", "name profileImage");
 
@@ -242,7 +253,7 @@ module.exports = (io) => {
         // Sidebar update ke liye data taiyaar karo
         const updatedChat = await Chat.findById(chatId)
           .populate("participants", "name profileImage isOnline lastSeen")
-          .populate("lastMessage");
+          .populate({ path: 'lastMessage', select: 'text createdAt sender isDeleted file' });
 
         // Har participant ko sidebar update bhejo
         updatedChat.participants.forEach(participant => {

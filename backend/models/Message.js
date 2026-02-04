@@ -19,8 +19,15 @@ const messageSchema = new mongoose.Schema(
     
     text: {
       type: String,
-      required: true,
       trim: true,
+      default: ''
+    },
+
+    file: {
+      url: { type: String },
+      name: { type: String },
+      mimeType: { type: String },
+      size: { type: Number }
     },
 
    
