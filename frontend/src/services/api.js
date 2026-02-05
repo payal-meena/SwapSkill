@@ -32,8 +32,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      try {
+        localStorage.removeItem('token');
+      } catch (e) {}
+
+      // Emit a global event so UI can optionally respond (but do not auto-navigate)
+      try {
+        const evt = new CustomEvent('api:unauthorized', { detail: { status: 401 } });
+        window.dispatchEvent(evt);
+      } catch (e) {
+        console.warn('Could not dispatch unauthorized event', e);
+      }
     }
     return Promise.reject(error);
   }
