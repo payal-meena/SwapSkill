@@ -59,8 +59,10 @@ const UserSidebar = () => {
       chatService.logout(myId);
     }
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
     setIsLogoutModalOpen(false);
-    navigate('/login');
+    navigate('/auth');
   };
 
   // Sidebar Content Function

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
+import { blockService } from '../../services/blockService';
 import { SocketContext } from '../../context/SocketContext';
 import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
 import Avatar from '../../components/common/Avatar';
@@ -76,7 +77,7 @@ const ExploreProfile = () => {
   useEffect(() => {
     if (!socketCtx || !socketCtx.on || !profileData?.id) return;
 
-    const handler = (updatedRequest) => {
+    const handleRequestUpdated = (updatedRequest) => {
       try {
         const r = typeof updatedRequest.toObject === 'function' ? updatedRequest.toObject() : updatedRequest;
         const isRelevant = (r.receiver?._id === profileData.id && r.requester?._id === currentUserId) ||
@@ -91,10 +92,20 @@ const ExploreProfile = () => {
       }
     };
 
-    socketCtx.on('requestUpdated', handler);
+    const handleUserBlockedMe = (data) => {
+      // If current user is blocked, navigate back to explore
+      if (data.blockedBy === profileData?.id) {
+        alert('You have been blocked by this user');
+        navigate('/explore');
+      }
+    };
+
+    socketCtx.on('requestUpdated', handleRequestUpdated);
+    socketCtx.on('userBlockedMe', handleUserBlockedMe);
 
     return () => {
-      socketCtx.off('requestUpdated', handler);
+      socketCtx.off('requestUpdated', handleRequestUpdated);
+      socketCtx.off('userBlockedMe', handleUserBlockedMe);
     };
   }, [socketCtx, profileData?.id, currentUserId]);
 
@@ -197,12 +208,13 @@ const ExploreProfile = () => {
   const handleBlock = async () => {
     setActionLoading(true);
     try {
-      // For blocking, we can either implement block in Connection model
-      // Or just show a message for now
-      alert('Block feature coming soon!');
+      await blockService.blockUser(profileData.id);
+      alert('User blocked successfully');
+      // Go back to explore page
+      navigate('/explore');
     } catch (error) {
       console.error('Error blocking user:', error);
-      alert('Failed to block user');
+      alert(error.response?.data?.message || 'Failed to block user');
     } finally {
       setActionLoading(false);
     }

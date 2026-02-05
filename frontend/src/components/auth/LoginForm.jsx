@@ -15,8 +15,16 @@ const LoginForm = () => {
     try {
       const response = await axios.post("http://localhost:3000/api/users/login", { email, password });
       localStorage.setItem("token", response.data.token);
+      if (response.data.role) {
+        localStorage.setItem("role", response.data.role);
+      }
+      if (response.data.userId || response.data._id) {
+        localStorage.setItem("userId", response.data.userId || response.data._id);
+      }
       setMessage("Login successful! ✅");
-      navigate("/dashboard"); 
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 500);
     } catch (error) {
       setMessage(error.response?.data?.message || "Login failed ❌");
     }

@@ -292,6 +292,14 @@ const blockUser = async (req, res) => {
       await connection.save();
     }
 
+    // Emit socket event to notify the blocked user
+    if (req.io) {
+      req.io.to(userId.toString()).emit('userBlockedMe', {
+        blockedBy: currentUserId,
+        timestamp: new Date()
+      });
+    }
+
     res.json({
       success: true,
       message: "User blocked successfully",
@@ -332,6 +340,79 @@ const getConnectionStatus = async (req, res) => {
 };
 
 
+/* GET BLOCKED USERS */
+const getBlockedUsers = async (req, res) => {
+  try {
+    const currentUserId = req.user;
+
+    const blockedConnections = await Connection.find({
+      follower: currentUserId,
+      status: "blocked",
+    }).populate('following', 'name profileImage email');
+
+    const blockedUsers = blockedConnections.map(conn => ({
+      ...conn.following.toObject ? conn.following.toObject() : conn.following,
+      connectionId: conn._id,
+      blockedAt: conn.createdAt
+    }));
+
+    res.json({
+      success: true,
+      count: blockedUsers.length,
+      blockedUsers,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* UNBLOCK USER */
+const unblockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user;
+
+    const connection = await Connection.findOne({
+      follower: currentUserId,
+      following: userId,
+      status: "blocked",
+    });
+
+    if (!connection) {
+      return res.status(404).json({ message: "User not found in blocked list" });
+    }
+
+    await Connection.deleteOne({
+      follower: currentUserId,
+      following: userId,
+    });
+
+    // Emit socket event to notify the unblocked user
+    if (req.io) {
+      req.io.to(userId.toString()).emit('userUnblockedMe', {
+        unblockedBy: currentUserId,
+        timestamp: new Date()
+      });
+    }
+
+    // Emit to current user that unblock happened (for Explore refresh)
+    if (req.io) {
+      req.io.to(currentUserId.toString()).emit('userUnblocked', {
+        userId: userId,
+        timestamp: new Date()
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User unblocked successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 module.exports = {
   getMyProfile,
   updateProfile,
@@ -343,5 +424,7 @@ module.exports = {
   followUser,
   unfollowUser,
   blockUser,
-  getConnectionStatus
+  getConnectionStatus,
+  getBlockedUsers,
+  unblockUser
 };

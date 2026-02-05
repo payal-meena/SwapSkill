@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
-import Account from './Account';
-import Security from './Security';
-import Notifications from './Notifications';
-import Privacy from './Privacy';
+import React from 'react';
+import { Outlet } from 'react-router-dom';
 import UserSidebar from '../../components/common/UserSidebar';
 import UserNavbar from '../../components/common/UserNavbar';
 import SettingsSidebar from './SettingsSidebar';
 
 const SettingsLayout = () => {
-  const [activeTab, setActiveTab] = useState('account');
-
   return (
     <div className="flex h-screen bg-[#102216] text-white overflow-hidden font-['Lexend']">
       {/* 1. Main Left Sidebar - Bilkul left mein fixed, no gap */}
@@ -38,7 +33,7 @@ const SettingsLayout = () => {
             
             {/* Settings Sub-Sidebar (Fixed Width) */}
             <div className="md:w-80 flex-shrink-0 p-8 border-r border-[#23482f]/20 bg-[#0a1a11]/20">
-              <SettingsSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+              <SettingsSidebar />
             </div>
 
             {/* Dynamic Content Area - Full Width & Scrollable (No Scrollbar) */}
@@ -47,10 +42,7 @@ const SettingsLayout = () => {
               {/* Width badhane ke liye yahan max-w-full use kiya hai */}
               <div className="w-full max-w-full mx-auto min-h-full">
                 <div className="animate-fadeIn transition-all duration-500">
-                  {activeTab === 'account' && <Account />}
-                  {activeTab === 'security' && <Security />}
-                  {activeTab === 'notifications' && <Notifications />}
-                  {activeTab === 'privacy' && <Privacy />}
+                  <Outlet />
                 </div>
               </div>
 

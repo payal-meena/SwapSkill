@@ -3,6 +3,7 @@ import ExploreNavbar from '../../components/explore/ExploreNavbar';
 import SkillCard from '../../components/explore/SkillCard';
 import api from '../../services/api';
 import { requestService } from '../../services/requestService';
+import { blockService } from '../../services/blockService';
 import { SocketContext } from '../../context/SocketContext';
 import Toast from '../../components/common/Toast';
 
@@ -31,8 +32,19 @@ const Explore = () => {
       const myRequests = requestRes.requests || [];
       const currentUserId = requestRes.currentUser;
 
+      // Get blocked users list
+      let blockedUserIds = [];
+      try {
+        const blockedRes = await blockService.getBlockedUsers();
+        if (blockedRes.blockedUsers) {
+          blockedUserIds = blockedRes.blockedUsers.map(u => u._id || u);
+        }
+      } catch (err) {
+        console.log('Could not fetch blocked users list');
+      }
+
       const mentorsWithStatus = allMentors
-        .filter(mentor => mentor._id !== currentUserId)
+        .filter(mentor => mentor._id !== currentUserId && !blockedUserIds.includes(mentor._id))
         .map(mentor => {
           const foundRequest = myRequests.find(req => 
             (req.receiver?._id === mentor._id || req.requester?._id === mentor._id) &&
@@ -70,7 +82,7 @@ const Explore = () => {
   useEffect(() => {
     if (!socketCtx || !socketCtx.on) return;
 
-    const handler = (updatedRequest) => {
+    const handleRequestUpdated = (updatedRequest) => {
       try {
         const r = typeof updatedRequest.toObject === 'function' ? updatedRequest.toObject() : updatedRequest;
         const receiverId = r.receiver?._id || r.receiver;
@@ -89,10 +101,17 @@ const Explore = () => {
       }
     };
 
-    socketCtx.on('requestUpdated', handler);
+    const handleUserUnblocked = (data) => {
+      // When user is unblocked, refresh the mentor list
+      fetchData();
+    };
+
+    socketCtx.on('requestUpdated', handleRequestUpdated);
+    socketCtx.on('userUnblocked', handleUserUnblocked);
 
     return () => {
-      socketCtx.off('requestUpdated', handler);
+      socketCtx.off('requestUpdated', handleRequestUpdated);
+      socketCtx.off('userUnblocked', handleUserUnblocked);
     };
   }, [socketCtx]);
 

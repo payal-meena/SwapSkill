@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import React from "react";
 import Home from "../pages/public/Home";
 import Auth from "../pages/public/Auth";
 import Dashboard from "../pages/dashboard/Dashboard";
@@ -9,6 +10,8 @@ import MessagesPage from "../pages/messages/MessagesPage";
 import SettingsLayout from "../pages/settings/SettingLayout";
 import Account from "../pages/settings/Account";
 import Security from "../pages/settings/Security";
+import Notifications from "../pages/settings/Notifications";
+import BlockedUsers from "../pages/settings/BlockedUsers";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import Explore from "../pages/explore/Explore";
@@ -26,12 +29,40 @@ const isAdmin = () => localStorage.getItem("role") === "admin";
 
 // Wrapper Component for User Routes
 const ProtectedRoute = () => {
-  return isAuthenticated() ? <Outlet /> : <Navigate to="/auth" replace />;
+  const [isAuth, setIsAuth] = React.useState(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Check authentication state
+    setIsAuth(isAuthenticated());
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return null;
+  }
+
+  return isAuth ? <Outlet /> : <Navigate to="/auth" replace />;
 };
 
 // Wrapper Component for Admin Routes
 const AdminRoute = () => {
-  return isAuthenticated() && isAdmin() ? <Outlet /> : <Navigate to="/" replace />;
+  const [isAuth, setIsAuth] = React.useState(null);
+  const [isAdminUser, setIsAdminUser] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Check authentication and admin status
+    setIsAuth(isAuthenticated());
+    setIsAdminUser(isAdmin());
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return null;
+  }
+
+  return isAuth && isAdminUser ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 function AppRoutes() {
@@ -58,6 +89,8 @@ function AppRoutes() {
           <Route index element={<Navigate to="/settings/account" replace />} />
           <Route path="account" element={<Account />} />
           <Route path="security" element={<Security />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="blocked-users" element={<BlockedUsers />} />
         </Route>
       </Route>
 

@@ -1,13 +1,19 @@
 import React from 'react';
-import { User, Shield, Bell, Lock } from 'lucide-react';
+import { User, Shield, Bell, Ban } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const SettingsSidebar = ({ activeTab, setActiveTab }) => {
+const SettingsSidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const tabs = [
-    { id: 'account', label: 'Account', icon: <User size={18} /> },
-    { id: 'security', label: 'Security', icon: <Shield size={18} /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> },
-    { id: 'privacy', label: 'Privacy', icon: <Lock size={18} /> },
+    { id: 'account', label: 'Account', path: '/settings/account', icon: <User size={18} /> },
+    { id: 'security', label: 'Security', path: '/settings/security', icon: <Shield size={18} /> },
+    { id: 'notifications', label: 'Notifications', path: '/settings/notifications', icon: <Bell size={18} /> },
+    { id: 'blocked', label: 'Blocked Users', path: '/settings/blocked-users', icon: <Ban size={18} /> },
   ];
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <aside className="w-full md:w-60 shrink-0">
@@ -15,9 +21,9 @@ const SettingsSidebar = ({ activeTab, setActiveTab }) => {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => navigate(tab.path)}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium text-left ${
-              activeTab === tab.id 
+              isActive(tab.path) 
               ? 'bg-[#13ec5b] text-[#102216] font-bold shadow-lg shadow-[#13ec5b]/20' 
               : 'text-[#92c9a4] hover:bg-[#23482f] hover:text-white'
             }`}

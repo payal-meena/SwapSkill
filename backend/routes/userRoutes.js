@@ -17,7 +17,9 @@ const {
   followUser,
   unfollowUser,
   blockUser,
-  getConnectionStatus
+  getConnectionStatus,
+  getBlockedUsers,
+  unblockUser
 } = require("../controllers/userController.js");
 
 const {
@@ -60,6 +62,8 @@ router.delete("/profile-image",protect,profileImageRemove);
 router.post("/:userId/follow", protect, followUser);
 router.post("/:userId/unfollow", protect, unfollowUser);
 router.post("/:userId/block", protect, blockUser);
+router.delete("/:userId/block", protect, unblockUser);
+router.get("/me/blocked", protect, getBlockedUsers);
 router.get("/:userId/connection-status", protect, getConnectionStatus);
 
 
