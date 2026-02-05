@@ -13,7 +13,11 @@ const {
   updateProfileImage,
   deleteMyAccount ,
   getPublicProfile,
-  profileImageRemove
+  profileImageRemove,
+  followUser,
+  unfollowUser,
+  blockUser,
+  getConnectionStatus
 } = require("../controllers/userController.js");
 
 const {
@@ -51,6 +55,12 @@ router.put(
 router.post("/skill", protect, addSkill);
 router.delete("/skill/:id", protect, deleteSkill);
 router.delete("/profile-image",protect,profileImageRemove);
+
+// Connection Routes
+router.post("/:userId/follow", protect, followUser);
+router.post("/:userId/unfollow", protect, unfollowUser);
+router.post("/:userId/block", protect, blockUser);
+router.get("/:userId/connection-status", protect, getConnectionStatus);
 
 
 module.exports = router;

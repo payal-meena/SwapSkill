@@ -187,6 +187,7 @@
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
 const User = require("../models/User");
+const Notification = require("../models/notification");
 
 module.exports = (io) => {
   io.on("connection", async (socket) => {
@@ -216,16 +217,27 @@ module.exports = (io) => {
     });
 
     // --- 2. Send Message (Real-time Fix) ---
-    socket.on("sendMessage", async ({ chatId, senderId, text }) => {
+    socket.on("sendMessage", async ({ chatId, senderId, text, file }) => {
       try {
         const chat = await Chat.findById(chatId);
         if (!chat) return;
 
-        let message = await Message.create({
-          chat: chatId,
-          sender: senderId,
-          text,
-        });
+        // Prepare payload: support text-only, file-only, or both
+        const payload = { chat: chatId, sender: senderId };
+        if (file) {
+          payload.file = {
+            url: file.url,
+            name: file.name,
+            mimeType: file.mimeType,
+            size: file.size,
+          };
+          // If no text provided, set text to filename for preview/lastMessage
+          payload.text = file.name || '';
+        } else {
+          payload.text = text || '';
+        }
+
+        let message = await Message.create(payload);
 
         message = await Message.findById(message._id).populate("sender", "name profileImage");
 
@@ -242,13 +254,40 @@ module.exports = (io) => {
         // Sidebar update ke liye data taiyaar karo
         const updatedChat = await Chat.findById(chatId)
           .populate("participants", "name profileImage isOnline lastSeen")
-          .populate("lastMessage");
+          .populate({ path: 'lastMessage', select: 'text createdAt sender isDeleted file' });
 
         // Har participant ko sidebar update bhejo
         updatedChat.participants.forEach(participant => {
           const pId = participant._id.toString();
           io.to(pId).emit("sidebarUpdate", updatedChat);
         });
+
+        // 7. Send notification to other participant
+        const otherParticipant = updatedChat.participants.find(p => p._id.toString() !== senderId.toString());
+        if (otherParticipant) {
+          try {
+            await Notification.create({
+              userId: senderId,
+              type: 'message',
+              title: 'New Message',
+              message: `${message.sender.name}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+              receiverId: otherParticipant._id,
+              senderId: senderId,
+              relatedId: message._id,
+              priority: 'normal'
+            });
+
+            // Emit real-time notification
+            io.to(otherParticipant._id.toString()).emit('newNotification', {
+              type: 'message',
+              title: 'New Message',
+              message: `${message.sender.name} sent you a message`,
+              createdAt: new Date()
+            });
+          } catch (notifError) {
+            console.log('Error sending message notification:', notifError);
+          }
+        }
       } catch (err) {
         console.error("Socket SendMessage Error:", err);
       }
@@ -341,6 +380,22 @@ module.exports = (io) => {
     });
 
     // --- 5. Disconnect Logic (With 5s Delay) ---
+    // Notification events
+    socket.on("sendNotification", async (notificationData) => {
+      try {
+        const notification = await Notification.create(notificationData);
+        const populatedNotification = await Notification.findById(notification._id)
+          .populate('sender', 'name profilePicture')
+          .populate('recipient', 'name');
+        
+        // Send to specific user
+        io.to(notificationData.recipient).emit("newNotification", populatedNotification);
+      } catch (error) {
+        console.error('Error sending notification:', error);
+      }
+    });
+
+    // Is block ko replace kar apne disconnect wale block se
     socket.on("disconnect", async () => {
       if (userId && userId !== "null") {
         setTimeout(async () => {

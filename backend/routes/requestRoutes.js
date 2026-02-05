@@ -8,7 +8,8 @@ const  {
     acceptRequest,
     rejectRequest,
     completeRequest,
-    withdrawRequest
+    withdrawRequest,
+    unfriendUser
 } =require("../controllers/requestController.js");
 const router = express.Router();
 
@@ -26,6 +27,7 @@ router.put("/:id/reject", protect, rejectRequest);
 
 router.put("/:id/complete", protect, completeRequest);
 router.put("/withdraw/:id", protect, withdrawRequest);
+router.put("/:id/unfriend", protect, unfriendUser);
 
 
 module.exports = router;

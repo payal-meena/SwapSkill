@@ -1,4 +1,5 @@
 const Request = require("../models/Request");
+const Notification = require("../models/notification");
 
 
 const sendRequest = async (req, res) => {
@@ -52,6 +53,32 @@ const sendRequest = async (req, res) => {
     if (requestedSkill) requestData.requestedSkill = requestedSkill;
 
     const request = await Request.create(requestData);
+
+    // Send notification to receiver
+    try {
+      await Notification.create({
+        userId: requester,
+        type: 'CONNECTION_REQUEST',
+        title: 'New Connection Request',
+        message: `Someone wants to connect with you for skill exchange!`,
+        receiverId: receiver,
+        senderId: requester,
+        relatedId: request._id,
+        priority: 'normal'
+      });
+
+      // Emit real-time notification if socket is available
+      if (req.io) {
+        req.io.to(receiver.toString()).emit('newNotification', {
+          type: 'CONNECTION_REQUEST',
+          title: 'New Connection Request',
+          message: 'Someone wants to connect with you!',
+          createdAt: new Date()
+        });
+      }
+    } catch (notifError) {
+      console.log('Error sending notification:', notifError);
+    }
 
     res.status(201).json({
       success: true,
@@ -118,6 +145,32 @@ const sendRequest = async (req, res) => {
 
     await request.save();
 
+    // Send notification to requester
+    try {
+      await Notification.create({
+        userId: req.user,
+        type: 'CONNECTION_ACCEPTED',
+        title: 'Request Accepted!',
+        message: `Your connection request has been accepted!`,
+        receiverId: request.requester,
+        senderId: req.user,
+        relatedId: request._id,
+        priority: 'high'
+      });
+
+      // Emit real-time notification
+      if (req.io) {
+        req.io.to(request.requester.toString()).emit('newNotification', {
+          type: 'CONNECTION_ACCEPTED',
+          title: 'Request Accepted!',
+          message: 'Your connection request has been accepted!',
+          createdAt: new Date()
+        });
+      }
+    } catch (notifError) {
+      console.log('Error sending notification:', notifError);
+    }
+
     res.status(200).json({
       success: true,
       message: "Request accepted",
@@ -167,6 +220,52 @@ const withdrawRequest = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Request withdrawn successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Unfriend/Cancel an accepted request
+const unfriendUser = async (req, res) => {
+  try {
+    const userId = req.user;
+    const { id } = req.params;
+
+    const request = await Request.findById(id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Either requester or receiver can unfriend
+    if (request.requester.toString() !== userId && request.receiver.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to unfriend this user",
+      });
+    }
+
+    // Only accepted requests can be unfriended
+    if (request.status !== "accepted") {
+      return res.status(400).json({
+        success: false,
+        message: "Only accepted requests can be unfriended",
+      });
+    }
+
+    request.status = "cancelled";
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Unfriended successfully",
     });
   } catch (error) {
     res.status(500).json({
@@ -260,4 +359,5 @@ module.exports = {
   rejectRequest,
   completeRequest,
   withdrawRequest,
+  unfriendUser,
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { skillService } from '../../services/skillService';
+import { requestService } from '../../services/requestService';
 import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
 import Avatar from '../../components/common/Avatar';
 
@@ -8,29 +9,65 @@ const ExploreProfile = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Get current user ID from token
+  const getCurrentUserId = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+      return JSON.parse(window.atob(token.split('.')[1])).id;
+    } catch (err) {
+      console.error('Error parsing token:', err);
+      return null;
+    }
+  };
+
+  const currentUserId = getCurrentUserId();
+  
   // 1. Pehle profileData ko location.state se nikaalein
   const profileData = location.state;
 
   const [offeredSkillsState, setOfferedSkillsState] = useState(profileData?.offeredSkills || []);
   const [wantedSkillsState, setWantedSkillsState] = useState(profileData?.wantedSkills || []);
+  const [requestStatus, setRequestStatus] = useState('none'); // none, pending, accepted, rejected
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     // If state exists and already has skills, keep them. Otherwise fetch by id if available.
     const fetchIfNeeded = async () => {
-      if ((offeredSkillsState.length === 0 && wantedSkillsState.length === 0) && profileData?.id) {
-        try {
+      try {
+        if ((offeredSkillsState.length === 0 && wantedSkillsState.length === 0) && profileData?.id) {
           const res = await skillService.getUserSkills(profileData.id);
           const offered = res?.offered || res?.skills || res?.offeredSkills || [];
           const wanted = res?.wanted || res?.wantedSkills || [];
           setOfferedSkillsState(offered);
           setWantedSkillsState(wanted);
-        } catch (err) {
-          console.error('Failed to fetch user skills for profile view', err);
         }
+
+        // Check request status only if user is logged in
+        if (currentUserId && profileData?.id && currentUserId !== profileData.id) {
+          try {
+            const requestRes = await requestService.getMyRequests();
+            const myRequests = requestRes.requests || [];
+            const foundRequest = myRequests.find(req => 
+              (req.receiver?._id === profileData.id || req.requester?._id === profileData.id) &&
+              req.status !== 'cancelled'
+            );
+            // If request is rejected, treat it as 'none' so user can send request again
+            const status = foundRequest ? foundRequest.status : 'none';
+            setRequestStatus(status === 'rejected' ? 'none' : status);
+          } catch (err) {
+            console.error('Error checking request status:', err);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch user skills or request status', err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchIfNeeded();
-  }, [profileData]);
+  }, [profileData, currentUserId]);
 
   // 2. Agar profileData nahi hai (matlab direct URL access), toh error handling
   if (!profileData) {
@@ -65,6 +102,80 @@ const ExploreProfile = () => {
   const openSocial = (url) => {
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleFollow = async () => {
+    setActionLoading(true);
+    try {
+      await requestService.sendRequest({ receiver: profileData.id });
+      setRequestStatus('pending');
+      // Update the location state so it reflects on going back
+      window.history.replaceState(
+        { ...location.state, requestStatus: 'pending' },
+        ''
+      );
+    } catch (error) {
+      console.error('Error sending request:', error);
+      alert('Failed to send connection request');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    setActionLoading(true);
+    try {
+      // Find and withdraw/unfriend the request
+      const requestRes = await requestService.getMyRequests();
+      const myRequests = requestRes.requests || [];
+      const foundRequest = myRequests.find(req => 
+        (req.receiver?._id === profileData.id || req.requester?._id === profileData.id) &&
+        req.status !== 'cancelled'
+      );
+      
+      if (!foundRequest) {
+        console.warn('No request found to withdraw');
+        setRequestStatus('none');
+        return;
+      }
+
+      console.log('Withdrawing/Unfriending request:', foundRequest._id, 'Status:', foundRequest.status);
+      
+      // For pending requests, withdraw them
+      if (foundRequest.status === 'pending') {
+        await requestService.withdrawRequest(foundRequest._id);
+      } 
+      // For accepted requests, unfriend
+      else if (foundRequest.status === 'accepted') {
+        await requestService.unfriendUser(foundRequest._id);
+      }
+      
+      setRequestStatus('none');
+      // Update the location state so it reflects on going back
+      window.history.replaceState(
+        { ...location.state, requestStatus: 'none' },
+        ''
+      );
+    } catch (error) {
+      console.error('Error unfollowing user:', error.response?.data || error.message);
+      alert(error.response?.data?.message || 'Failed to unfollow user. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    setActionLoading(true);
+    try {
+      // For blocking, we can either implement block in Connection model
+      // Or just show a message for now
+      alert('Block feature coming soon!');
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      alert('Failed to block user');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -175,9 +286,44 @@ const ExploreProfile = () => {
               {/* ACTION AREA */}
               <div className="bg-[#1a2e21] p-5 rounded-[2.5rem] border border-white/10 shadow-xl">
                 <div className="mb-6">
-                  <button className="w-full py-4 bg-[#13ec5b] text-[#05160e] font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(19,236,91,0.3)]">
-                    CONNECT NOW
-                  </button>
+                  {requestStatus === 'none' && (
+                    <button 
+                      onClick={handleFollow}
+                      disabled={actionLoading}
+                      className="w-full py-4 bg-[#13ec5b] text-[#05160e] font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(19,236,91,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {actionLoading ? 'SENDING...' : 'CONNECT NOW'}
+                    </button>
+                  )}
+                  
+                  {requestStatus === 'pending' && (
+                    <button 
+                      disabled
+                      className="w-full py-4 bg-slate-400 text-white font-black text-md rounded-2xl opacity-70 cursor-not-allowed shadow-[0_10px_25px_rgba(148,163,184,0.3)]"
+                    >
+                      PENDING - WAITING FOR RESPONSE
+                    </button>
+                  )}
+                  
+                  {requestStatus === 'accepted' && (
+                    <div className="space-y-3">
+                      <button 
+                        onClick={handleUnfollow}
+                        disabled={actionLoading}
+                        className="w-full py-4 bg-amber-500 text-white font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(217,119,6,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {actionLoading ? 'PROCESSING...' : 'UNFOLLOW'}
+                      </button>
+                      <button 
+                        onClick={handleBlock}
+                        disabled={actionLoading}
+                        className="w-full py-4 bg-red-600 text-white font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(220,38,38,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {actionLoading ? 'PROCESSING...' : 'BLOCK'}
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                     <span className="w-2 h-2 rounded-full bg-[#13ec5b] animate-pulse"></span>
                     Active Now
