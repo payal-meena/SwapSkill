@@ -6,6 +6,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const skillRoutes = require("./routes/skillRoutes");
 const exploreRoutes = require("./routes/exploreRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const notificationRoutes = require("./routes/notification")
 const cors = require("cors");
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/skills", skillRoutes);
 app.use("/api/explore", exploreRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/notifications",notificationRoutes)
 
 
 module.exports = app;
