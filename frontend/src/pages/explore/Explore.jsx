@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import ExploreNavbar from '../../components/explore/ExploreNavbar';
 import SkillCard from '../../components/explore/SkillCard';
 import api from '../../services/api';
 import { requestService } from '../../services/requestService';
+import { SocketContext } from '../../context/SocketContext';
 import Toast from '../../components/common/Toast';
 
 const Explore = () => {
@@ -62,6 +63,38 @@ const Explore = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Listen for real-time request updates to sync UI across mentor cards
+  const socketCtx = useContext(SocketContext);
+
+  useEffect(() => {
+    if (!socketCtx || !socketCtx.on) return;
+
+    const handler = (updatedRequest) => {
+      try {
+        const r = typeof updatedRequest.toObject === 'function' ? updatedRequest.toObject() : updatedRequest;
+        const receiverId = r.receiver?._id || r.receiver;
+        const requesterId = r.requester?._id || r.requester;
+
+        setMentors(prev => prev.map(mentor => {
+          const isInvolved = (mentor._id === receiverId || mentor._id === requesterId);
+          if (isInvolved) {
+            const newStatus = r.status === 'rejected' ? 'none' : r.status === 'cancelled' ? 'none' : r.status;
+            return { ...mentor, connectionStatus: newStatus };
+          }
+          return mentor;
+        }));
+      } catch (err) {
+        console.error('Error handling requestUpdated socket event in Explore', err);
+      }
+    };
+
+    socketCtx.on('requestUpdated', handler);
+
+    return () => {
+      socketCtx.off('requestUpdated', handler);
+    };
+  }, [socketCtx]);
 
   // --- FILTERING LOGIC ---
   const filteredMentors = mentors.filter((mentor) => {

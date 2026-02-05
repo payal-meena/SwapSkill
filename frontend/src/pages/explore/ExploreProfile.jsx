@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
+import { SocketContext } from '../../context/SocketContext';
 import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
 import Avatar from '../../components/common/Avatar';
 
@@ -31,6 +32,8 @@ const ExploreProfile = () => {
   const [requestStatus, setRequestStatus] = useState('none'); // none, pending, accepted, rejected
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const socketCtx = useContext(SocketContext);
 
   useEffect(() => {
     // If state exists and already has skills, keep them. Otherwise fetch by id if available.
@@ -68,6 +71,32 @@ const ExploreProfile = () => {
     };
     fetchIfNeeded();
   }, [profileData, currentUserId]);
+
+  // Listen for real-time request updates
+  useEffect(() => {
+    if (!socketCtx || !socketCtx.on || !profileData?.id) return;
+
+    const handler = (updatedRequest) => {
+      try {
+        const r = typeof updatedRequest.toObject === 'function' ? updatedRequest.toObject() : updatedRequest;
+        const isRelevant = (r.receiver?._id === profileData.id && r.requester?._id === currentUserId) ||
+                           (r.requester?._id === profileData.id && r.receiver?._id === currentUserId);
+
+        if (!isRelevant) return;
+
+        const newStatus = r.status === 'rejected' ? 'none' : r.status === 'cancelled' ? 'none' : r.status;
+        setRequestStatus(newStatus);
+      } catch (err) {
+        console.error('Error handling requestUpdated socket event in ExploreProfile', err);
+      }
+    };
+
+    socketCtx.on('requestUpdated', handler);
+
+    return () => {
+      socketCtx.off('requestUpdated', handler);
+    };
+  }, [socketCtx, profileData?.id, currentUserId]);
 
   // 2. Agar profileData nahi hai (matlab direct URL access), toh error handling
   if (!profileData) {

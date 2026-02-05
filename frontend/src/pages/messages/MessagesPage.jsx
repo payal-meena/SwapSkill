@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services/chatService';
+import { skillService } from '../../services/skillService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import Avatar from '../../components/common/Avatar';
@@ -28,6 +29,8 @@ const MessagesPage = () => {
   const [tempDeleteMode, setTempDeleteMode] = useState(null);
 
   const myUserId = getMyId();
+  const location = useLocation();
+  const navigate = useNavigate();
   const scrollRef = useRef();
   const fileInputRef = useRef();
   const activeChatIdRef = useRef(null);
@@ -183,6 +186,16 @@ const MessagesPage = () => {
     }
   }, [activeChat?._id, myUserId]);
 
+  // Auto-select chat from location state if coming from requests page
+  useEffect(() => {
+    if (location.state?.chatId && chats.length > 0) {
+      const targetChat = chats.find(c => c._id === location.state.chatId);
+      if (targetChat && (!activeChat || activeChat._id !== targetChat._id)) {
+        setActiveChat(targetChat);
+      }
+    }
+  }, [location.state?.chatId, chats, activeChat]);
+
   // Modified handleSend to support auto-sending links
   const handleSend = (overrideText = null) => {
     const textToProcess = (typeof overrideText === 'string') ? overrideText : inputText.trim();
@@ -336,7 +349,13 @@ const MessagesPage = () => {
   return (
     <div key={chat._id} className="relative group/item"> {/* group/item lagaya taaki menu handle ho sake */}
       <div 
-        onClick={() => setActiveChat(chat)} 
+        onClick={() => {
+          setActiveChat(chat);
+          // Scroll to top when switching chats
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          }
+        }} 
         className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] transition-all ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}`}
       >
         <div className="relative">
@@ -372,9 +391,41 @@ const MessagesPage = () => {
           
           <div className="absolute right-0 top-8 w-40 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all z-50 overflow-hidden">
             <button 
-              onClick={(e) => {
-                e.stopPropagation(); // Chat select na ho jaye
-                navigate("/explore-profile", { state: { ...p, id: p._id } });
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  // Fetch user skills to get complete profile data
+                  const skillsRes = await skillService.getUserSkills(p._id);
+                  const offered = skillsRes?.offered || skillsRes?.skills || skillsRes?.offeredSkills || [];
+                  const wanted = skillsRes?.wanted || skillsRes?.wantedSkills || [];
+                  
+                  // Navigate to ExploreProfile with complete user data
+                  navigate("/explore-profile", { 
+                    state: { 
+                      id: p._id,
+                      name: p.name,
+                      img: p.profileImage,
+                      offeredSkills: offered,
+                      wantedSkills: wanted,
+                      rating: p.rating || 4.9,
+                      reviews: p.reviews || 0
+                    } 
+                  });
+                } catch (err) {
+                  console.error('Error fetching user skills:', err);
+                  // Fallback: navigate with basic data
+                  navigate("/explore-profile", { 
+                    state: { 
+                      id: p._id,
+                      name: p.name,
+                      img: p.profileImage,
+                      offeredSkills: [],
+                      wantedSkills: [],
+                      rating: p.rating || 4.9,
+                      reviews: p.reviews || 0
+                    } 
+                  });
+                }
               }} 
               className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#13ec5b] hover:text-black transition-colors flex items-center gap-2"
             >
