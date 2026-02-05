@@ -35,6 +35,16 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Whether the message content was edited by the sender
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+    // Whether the message was seen/read by the recipient
+    seen: {
+      type: Boolean,
+      default: false,
+    },
     isDeleted: {
        type: Boolean, default: false 
       }, // Delete for Everyone

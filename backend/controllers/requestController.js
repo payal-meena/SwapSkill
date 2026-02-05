@@ -1,5 +1,7 @@
 const Request = require("../models/Request");
 const Notification = require("../models/notification");
+const Chat = require("../models/Chat");
+const User = require("../models/User");
 
 
 const sendRequest = async (req, res) => {
@@ -159,6 +161,28 @@ const sendRequest = async (req, res) => {
 
     await request.save();
 
+    // Create Chat if doesn't exist
+    let chat;
+    try {
+      chat = await Chat.findOne({ request: request._id });
+      if (!chat) {
+        chat = await Chat.create({
+          request: request._id,
+          participants: [request.requester, request.receiver],
+          unreadCount: [
+            { userId: request.requester, count: 0 },
+            { userId: request.receiver, count: 0 }
+          ]
+        });
+        // Populate participants
+        chat = await Chat.findById(chat._id)
+          .populate('participants', 'name profileImage')
+          .populate('lastMessage');
+      }
+    } catch (chatErr) {
+      console.log('Error creating/finding chat:', chatErr);
+    }
+
     // Send notification to requester
     try {
       await Notification.create({
@@ -185,11 +209,27 @@ const sendRequest = async (req, res) => {
       console.log('Error sending notification:', notifError);
     }
 
+    // Emit new chat created event to both users
+    try {
+      if (req.io && chat) {
+        const chatWithPopulated = {
+          ...chat.toObject(),
+          isNew: true // Flag to show visual indicator
+        };
+        req.io.to(request.requester.toString()).emit('chatCreated', chatWithPopulated);
+        req.io.to(request.receiver.toString()).emit('chatCreated', chatWithPopulated);
+      }
+    } catch (emitErr) {
+      console.log('Error emitting chatCreated:', emitErr);
+    }
+
     res.status(200).json({
       success: true,
       message: "Request accepted",
       request,
+      chat
     });
+
     // Emit requestUpdated to both parties
     try {
       if (req.io) {

@@ -23,13 +23,63 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     if (socket) {
+      // Listen for new notifications
       socket.on('newNotification', (notification) => {
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+
+      // Listen for request updates and convert to notifications
+      socket.on('requestUpdated', (request) => {
+        // Auto-add to notifications if relevant
+        const notification = {
+          _id: request._id,
+          type: 'REQUEST_UPDATE',
+          title: 'Request Updated',
+          message: `A connection request status has changed`,
+          relatedId: request._id,
+          createdAt: new Date(),
+          isRead: false
+        };
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+
+      // Listen for new chats
+      socket.on('chatCreated', (chat) => {
+        const notification = {
+          _id: chat._id,
+          type: 'CHAT',
+          title: 'New Chat Created',
+          message: 'You have a new conversation',
+          relatedId: chat._id,
+          createdAt: new Date(),
+          isRead: false
+        };
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+
+      // Listen for messages
+      socket.on('messageReceived', (message) => {
+        const notification = {
+          _id: message._id,
+          type: 'MESSAGE',
+          title: 'New Message',
+          message: 'You have a new message',
+          relatedId: message.chat || message._id,
+          createdAt: new Date(),
+          isRead: false
+        };
         setNotifications(prev => [notification, ...prev]);
         setUnreadCount(prev => prev + 1);
       });
 
       return () => {
         socket.off('newNotification');
+        socket.off('requestUpdated');
+        socket.off('chatCreated');
+        socket.off('messageReceived');
       };
     }
   }, [socket]);

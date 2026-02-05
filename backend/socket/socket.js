@@ -262,6 +262,29 @@ module.exports = (io) => {
         io.to(chatId.toString()).emit("messageReceived", messageObj);
         console.log(`✉️ Message emitted to chat room ${chatId}:`, messageObj._id);
 
+        // Also emit directly to each participant's personal room so clients
+        // receive the message even if they haven't joined the chat room yet.
+        if (chat.participants && chat.participants.length > 0) {
+          chat.participants.forEach(participant => {
+            const pId = participant._id ? participant._id.toString() : participant.toString();
+            io.to(pId).emit('messageReceived', messageObj);
+            console.log(`✉️ Message also emitted to participant room ${pId}:`, messageObj._id);
+          });
+        }
+
+        // Increment unreadCount for the other participant(s)
+        const otherParticipantId = chat.participants.find(p => p.toString() !== senderId.toString());
+        if (otherParticipantId) {
+          const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === otherParticipantId.toString());
+          if (unreadEntry) {
+            unreadEntry.count = (unreadEntry.count || 0) + 1;
+          } else {
+            chat.unreadCount.push({ userId: otherParticipantId, count: 1 });
+          }
+          await chat.save();
+          console.log(`📬 Unread count incremented for user ${otherParticipantId} in chat ${chatId}`);
+        }
+
         // Sidebar update ke liye poora chat populate karo
         const updatedChat = await Chat.findById(chatId)
           .populate("participants", "name profileImage isOnline lastSeen")
@@ -326,13 +349,101 @@ module.exports = (io) => {
       }
     });
 
-    // --- 4. Mark As Read (Purana Function) ---
+    // --- 3.1 Edit Message (new) ---
+    socket.on('editMessage', async ({ messageId, newText, chatId, userId }) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return;
+        // Only sender can edit their message
+        if (message.sender.toString() !== userId.toString()) return;
+
+        message.text = newText;
+        message.isEdited = true;
+        message.updatedAt = new Date();
+        await message.save();
+
+        // Populate sender for frontend
+        const populated = await Message.findById(message._id).populate('sender', 'name profileImage');
+        const msgObj = populated.toObject ? populated.toObject() : populated;
+        msgObj.chat = chatId;
+
+        // Emit updated message to chat room and each participant personal room
+        io.to(chatId.toString()).emit('messageUpdated', msgObj);
+        const chat = await Chat.findById(chatId).populate('participants', '_id');
+        if (chat && chat.participants) {
+          chat.participants.forEach(p => {
+            const pId = p._id ? p._id.toString() : p.toString();
+            io.to(pId).emit('messageUpdated', msgObj);
+          });
+        }
+
+        // Update lastMessage if this was the lastMessage
+        const fullChat = await Chat.findById(chatId).populate({ path: 'lastMessage', select: 'text file createdAt sender isDeleted seen isEdited' }).populate('participants', 'name profileImage isOnline lastSeen');
+        if (fullChat) {
+          fullChat.participants.forEach(participant => {
+            io.to(participant._id.toString()).emit('sidebarUpdate', fullChat);
+          });
+        }
+      } catch (err) {
+        console.error('editMessage handler error', err);
+      }
+    });
+
+    // --- 4. Mark As Read (Updated to clear unreadCount) ---
     socket.on("markAsRead", async ({ chatId, userId }) => {
-      await Message.updateMany(
-        { chat: chatId, sender: { $ne: userId }, isRead: false },
-        { $set: { isRead: true } }
-      );
-      io.to(chatId).emit("messagesMarkedAsRead", { chatId });
+      try {
+        // Mark all messages as read
+        await Message.updateMany(
+          { chat: chatId, sender: { $ne: userId }, isRead: false },
+          { $set: { isRead: true } }
+        );
+        
+        // Clear unreadCount for this user in this chat
+        const chat = await Chat.findById(chatId);
+        if (chat) {
+          const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === userId.toString());
+          if (unreadEntry) {
+            unreadEntry.count = 0;
+          } else {
+            chat.unreadCount.push({ userId, count: 0 });
+          }
+          await chat.save();
+          console.log(`✅ Chat ${chatId} marked as read for user ${userId}`);
+        }
+        
+        io.to(chatId).emit("messagesMarkedAsRead", { chatId, userId });
+        io.to(userId).emit('unreadCountUpdated', { chatId, count: 0 });
+      } catch (err) {
+        console.error('markAsRead error:', err);
+      }
+    });
+
+    // --- Message Seen (read receipt) ---
+    socket.on('messageSeen', async ({ messageId, chatId, userId }) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return;
+        // Mark this message as seen
+        message.seen = true;
+        await message.save();
+
+        // Notify sender that message was seen
+        const senderId = message.sender.toString();
+        io.to(senderId).emit('messageSeen', { messageId, chatId, seenBy: userId });
+
+        // If this was the lastMessage, emit sidebar update so UI shows seen state
+        const chat = await Chat.findById(chatId);
+        if (chat && chat.lastMessage && chat.lastMessage.toString() === messageId.toString()) {
+          const updatedChat = await Chat.findById(chatId)
+            .populate("participants", "name profileImage isOnline lastSeen")
+            .populate({ path: 'lastMessage', select: 'text file createdAt sender isDeleted seen' });
+          updatedChat.participants.forEach(participant => {
+            io.to(participant._id.toString()).emit("sidebarUpdate", updatedChat);
+          });
+        }
+      } catch (err) {
+        console.error('messageSeen handler error', err);
+      }
     });
 
     // Clear chat (delete messages, keep chat)
