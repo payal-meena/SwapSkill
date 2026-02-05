@@ -116,6 +116,7 @@ import UserSidebar from "../../components/common/UserSidebar";
 import ExchangeCard from '../../components/exchange/ExchangeCard';
 import UserNavbar from '../../components/common/UserNavbar';
 import PendingRequests from '../../components/requests/PendingRequests';
+import TestNotification from '../../components/common/TestNotification';
 import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
 
@@ -262,6 +263,11 @@ const Dashboard = () => {
               icon="verified"
               onClick={() => setShowConnectionsModal(true)}
             />
+          </div>
+
+          {/* Test Notification */}
+          <div className="mb-8">
+            <TestNotification />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

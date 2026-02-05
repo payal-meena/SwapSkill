@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import NotificationModal from '../modals/NotificationModal';
 import { getMyProfile } from "../../services/authService.js";
 import Avatar from "../common/Avatar";
+import { useNotifications } from '../../context/NotificationContext';
 
 const UserNavbar = ({ userName }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -10,6 +11,7 @@ const UserNavbar = ({ userName }) => {
     name: userName || "User",
     profileImage: null
   });
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   // Profile data fetch karne ke liye useEffect
@@ -49,7 +51,11 @@ const UserNavbar = ({ userName }) => {
               className="flex items-center justify-center rounded-xl h-10 w-10 bg-slate-100 dark:bg-[#23482f] text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-[#326744] transition-colors relative cursor-pointer"
             >
               <span className="material-symbols-outlined">notifications</span>
-              <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-[#13ec5b]"></span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#13ec5b] text-[#102216] text-xs font-bold">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             <NotificationModal 

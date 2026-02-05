@@ -126,6 +126,7 @@
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
 const User = require("../models/User");
+const Notification = require("../models/notification");
 
 module.exports = (io) => {
   io.on("connection", async (socket) => {
@@ -208,6 +209,33 @@ module.exports = (io) => {
         updatedChat.participants.forEach(participant => {
           io.to(participant._id.toString()).emit(`sidebarUpdate`, updatedChat);
         });
+
+        // 7. Send notification to other participant
+        const otherParticipant = updatedChat.participants.find(p => p._id.toString() !== senderId.toString());
+        if (otherParticipant) {
+          try {
+            await Notification.create({
+              userId: senderId,
+              type: 'message',
+              title: 'New Message',
+              message: `${message.sender.name}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+              receiverId: otherParticipant._id,
+              senderId: senderId,
+              relatedId: message._id,
+              priority: 'normal'
+            });
+
+            // Emit real-time notification
+            io.to(otherParticipant._id.toString()).emit('newNotification', {
+              type: 'message',
+              title: 'New Message',
+              message: `${message.sender.name} sent you a message`,
+              createdAt: new Date()
+            });
+          } catch (notifError) {
+            console.log('Error sending message notification:', notifError);
+          }
+        }
       } catch (err) {
         console.error("Socket SendMessage Error:", err);
       }
@@ -247,6 +275,21 @@ module.exports = (io) => {
       );
       // Optional: Doosre user ko notify karo ki message padh liya gaya hai
       io.to(chatId).emit("messagesMarkedAsRead", { chatId });
+    });
+
+    // Notification events
+    socket.on("sendNotification", async (notificationData) => {
+      try {
+        const notification = await Notification.create(notificationData);
+        const populatedNotification = await Notification.findById(notification._id)
+          .populate('sender', 'name profilePicture')
+          .populate('recipient', 'name');
+        
+        // Send to specific user
+        io.to(notificationData.recipient).emit("newNotification", populatedNotification);
+      } catch (error) {
+        console.error('Error sending notification:', error);
+      }
     });
 
     // Is block ko replace kar apne disconnect wale block se

@@ -17,6 +17,13 @@ const io = new Server(server, {
   cors: { origin: "*" },
   transports: ["websocket"]
 });
+
+// Make io available in routes
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 socketHandler(io);
 const User = require('./models/User'); // Path check kar lena
 
