@@ -7,6 +7,8 @@ import UserLayout from "../layouts/UserLayout";
 import Requests from "../pages/requests/Requests";
 import MessagesPage from "../pages/messages/MessagesPage";
 import SettingsLayout from "../pages/settings/SettingLayout";
+import Notifications from "../pages/settings/Notifications";
+import BlockedUsers from "../pages/settings/BlockedUsers";
 import Account from "../pages/settings/Account";
 import Security from "../pages/settings/Security";
 import AdminLayout from "../layouts/AdminLayout";
@@ -44,6 +46,8 @@ function AppRoutes() {
         <Route index element={<Navigate to="/settings/account" replace />} />
         <Route path="account" element={<Account />} />
         <Route path="security" element={<Security />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="blocked-users" element={<BlockedUsers />} />
       </Route>
 
       {/* Admin Routes */}
