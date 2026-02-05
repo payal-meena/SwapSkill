@@ -133,6 +133,11 @@ const MessagesPage = () => {
         const filtered = prev.filter(c => c._id.toString() !== updatedChat._id.toString());
         return [updatedChat, ...filtered];
       });
+      
+      // Update activeChat if it's the same chat
+      if (activeChat?._id === updatedChat._id) {
+        setActiveChat(updatedChat);
+      }
     });
 
     const handleStatusChange = ({ userId, status, lastSeen }) => {
@@ -199,15 +204,17 @@ const MessagesPage = () => {
     }
   }, [activeChat?._id, myUserId]);
 
-  // Auto-select chat from location state if coming from requests page
+  // Auto-select chat from location state if coming from requests page (only once on first load)
   useEffect(() => {
-    if (location.state?.chatId && chats.length > 0) {
+    if (location.state?.chatId && chats.length > 0 && !activeChat) {
       const targetChat = chats.find(c => c._id === location.state.chatId);
-      if (targetChat && (!activeChat || activeChat._id !== targetChat._id)) {
+      if (targetChat) {
         setActiveChat(targetChat);
       }
+      // Clear location state after using it so it doesn't interfere with chat switching
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [location.state?.chatId, chats, activeChat]);
+  }, [chats.length, activeChat]);
 
   // Modified handleSend to support auto-sending links
   const handleSend = async (overrideText = null) => {
@@ -491,11 +498,19 @@ const MessagesPage = () => {
         {activeChat ? (
           <>
             <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
-              <div className="flex items-center">
-                <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full mr-4" alt="" />
-                <div><h3 className="font-bold">{otherUser?.name}</h3><p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
-                  {isRecentlyOnline(otherUser) ? '● Online' : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`}
-                </p></div>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full" alt="" />
+                  {activeChat?.mutedBy?.includes(myUserId) && (
+                    <div className="absolute -bottom-1 -right-1 bg-[#92c9a4] text-[#102216] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">🔕</div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-bold">{otherUser?.name}</h3>
+                  <p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
+                    {activeChat?.mutedBy?.includes(myUserId) ? '🔕 Muted' : isRecentlyOnline(otherUser) ? '● Online' : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`}
+                  </p>
+                </div>
               </div>
 
               <div className="flex items-center gap-4">
@@ -632,15 +647,32 @@ const MessagesPage = () => {
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
 
-                <input value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
+                <input value={inputText} onChange={(e) => {
+                  setInputText(e.target.value);
+                  // Auto-close emoji picker when typing
+                  if (showEmojiPicker && e.target.value.length > 0) {
+                    setShowEmojiPicker(false);
+                  }
+                }} onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSend();
+                    setShowEmojiPicker(false);
+                  }
+                }} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
                 
-                <button onClick={() => handleSend()} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
+                <button onClick={() => {
+                  handleSend();
+                  setShowEmojiPicker(false);
+                }} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
                   {editingMessage ? <Check size={18}/> : <Send size={18}/>}
                 </button>
 
                 {showEmojiPicker && (
                   <div className="absolute bottom-16 left-0 z-50">
-                    <EmojiPicker onEmojiClick={(e) => setInputText(p => p + e.emoji)} theme="dark" width={300} height={400} />
+                    <EmojiPicker onEmojiClick={(e) => {
+                      setInputText(p => p + e.emoji);
+                      // Keep emoji picker open for more emojis
+                    }} theme="dark" width={300} height={400} />
                   </div>
                 )}
               </div>
