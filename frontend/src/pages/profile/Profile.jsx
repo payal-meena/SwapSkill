@@ -175,8 +175,17 @@ const Profile = () => {
                                     <StatBox label="Swaps" value="24" />
                                     <StatBox label="Skills" value={skills.length} />
                                 </div>
-                                <div className="mt-8">
-                                    <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#13ec5b]/10 text-[#13ec5b] border border-[#13ec5b]/20 hover:bg-[#13ec5b] hover:text-[#102216] transition-all font-bold text-sm">
+                                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        onClick={() => navigate('/settings/account')}
+                                        className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#13ec5b] text-[#102216] border border-[#13ec5b]/20 hover:bg-[#10b84a] hover:text-white transition-all font-bold text-sm"
+                                    >
+                                        <Edit size={18} /> Edit Profile
+                                    </button>
+
+                                    <button
+                                        className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/0 text-[#13ec5b] border border-[#13ec5b]/20 hover:bg-[#13ec5b] hover:text-[#102216] transition-all font-bold text-sm"
+                                    >
                                         <Share2 size={18} /> Share Profile
                                     </button>
                                 </div>
