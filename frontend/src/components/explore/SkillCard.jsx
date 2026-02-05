@@ -10,6 +10,7 @@ const SkillCard = ({
   rating,
   reviews,
   img,
+  bio,
   requestId,
   offeredSkills = [],
   wantedSkills = [],
@@ -39,6 +40,7 @@ const SkillCard = ({
       state: {
         name,
         img,
+        bio,
         rating,
         reviews,
         offeredSkills,
