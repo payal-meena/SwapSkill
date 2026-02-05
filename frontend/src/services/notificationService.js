@@ -6,7 +6,17 @@ export const notificationService = {
     console.log("=== FRONTEND: GET NOTIFICATIONS ===");
     const response = await api.get('/notifications');
     console.log("Get notifications response:", response.data);
-    return response.data;
+    
+    // Transform senderId to sender for consistency
+    const transformedNotifications = {
+      ...response.data,
+      notifications: response.data.notifications?.map(notif => ({
+        ...notif,
+        sender: notif.senderId || null
+      })) || []
+    };
+    
+    return transformedNotifications;
   },
 
   // Create new notification
