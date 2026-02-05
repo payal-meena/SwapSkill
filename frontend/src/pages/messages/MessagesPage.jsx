@@ -21,6 +21,7 @@ const MessagesPage = () => {
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [pendingFile, setPendingFile] = useState(null);
   const [inputText, setInputText] = useState("");
   const [editingMessage, setEditingMessage] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -110,7 +111,16 @@ const MessagesPage = () => {
       
       if (isSameChat) {
         setMessages(prev => {
-          if (prev.find(m => m._id === newMsg._id)) return prev;
+          // Avoid duplicates: check if message already exists
+          if (prev.find(m => m._id === newMsg._id)) {
+            return prev;
+          }
+          // Remove temp message with same text if file message
+          if (newMsg.file) {
+            const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.file?.name);
+            return [...filtered, newMsg];
+          }
+          // For text messages, remove temp message with same text
           const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.text);
           return [...filtered, newMsg];
         });
@@ -179,7 +189,10 @@ const MessagesPage = () => {
   useEffect(() => {
     if (activeChat?._id) {
       activeChatIdRef.current = activeChat._id;
-      chatService.joinChat?.(activeChat._id, myUserId);
+      // Wait a bit to ensure socket is connected
+      setTimeout(() => {
+        chatService.joinChat?.(activeChat._id, myUserId);
+      }, 100);
       chatService.getChatHistory(activeChat._id).then(data => {
         setMessages(data);
       });
@@ -197,8 +210,37 @@ const MessagesPage = () => {
   }, [location.state?.chatId, chats, activeChat]);
 
   // Modified handleSend to support auto-sending links
-  const handleSend = (overrideText = null) => {
+  const handleSend = async (overrideText = null) => {
     const textToProcess = (typeof overrideText === 'string') ? overrideText : inputText.trim();
+    
+    // Agar pending file hai toh pehle file send karo
+    if (pendingFile && activeChat) {
+      try {
+        const tempId = "temp-file-" + Date.now();
+        const tempMsg = {
+          _id: tempId,
+          sender: myUserId,
+          text: pendingFile.name,
+          createdAt: new Date().toISOString(),
+          isTemp: true,
+          uploading: true,
+          file: { name: pendingFile.name, size: pendingFile.size }
+        };
+        
+        setMessages(prev => [...prev, tempMsg]);
+        const fileMeta = await chatService.sendFile(activeChat._id, myUserId, pendingFile);
+        setMessages(prev => prev.map(m => m._id === tempId ? { ...m, isTemp: false, uploading: false, file: fileMeta } : m));
+        setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: fileMeta, lastMessageAt: new Date().toISOString() } : c));
+        setPendingFile(null);
+      } catch (err) {
+        console.error('File send failed', err);
+        setPendingFile(null);
+        alert('File send failed');
+        return;
+      }
+    }
+    
+    // Phir text message send karo
     if (!textToProcess || !activeChat) return;
 
     if (editingMessage && !overrideText) {
@@ -238,33 +280,11 @@ const MessagesPage = () => {
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file || !activeChat) return;
-
-    const tempId = "temp-file-" + Date.now();
-    const tempMsg = {
-      _id: tempId,
-      sender: myUserId,
-      text: file.name,
-      createdAt: new Date().toISOString(),
-      isTemp: true,
-      uploading: true,
-      file: { name: file.name, size: file.size }
-    };
-    setMessages(prev => [...prev, tempMsg]);
-
-    try {
-      // Upload and emit via chatService (backend upload + socket emit)
-      const fileMeta = await chatService.sendFile(activeChat._id, myUserId, file);
-
-      // Update temp message to final state
-      setMessages(prev => prev.map(m => m._id === tempId ? { ...m, isTemp: false, uploading: false, file: fileMeta, text: fileMeta.name || file.name } : m));
-      setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: { ...tempMsg, text: fileMeta.name || file.name, file: fileMeta }, lastMessageAt: new Date().toISOString() } : c));
-    } catch (err) {
-      console.error('File upload failed', err);
-      setMessages(prev => prev.filter(m => m._id !== tempId));
-    } finally {
-      e.target.value = null;
-    }
+    if (!file) return;
+    
+    // Sirf file store karo, send nahi
+    setPendingFile(file);
+    e.target.value = null;
   };
 
   const finalDeleteExecute = async () => {
@@ -547,7 +567,7 @@ const MessagesPage = () => {
                             <button onClick={() => { setDeleteTarget({ msgId: m._id, isMe }); setDeleteStep('options'); }} className="p-2 hover:bg-red-500/20 text-red-400"><Trash2 size={14}/></button>
                           </div>
                         )}
-                        <div className={`px-4 py-2 rounded-2xl shadow-sm ${isDeleted ? 'border border-[#23482f] italic text-gray-500' : isMe ? 'bg-[#13ec5b] text-black rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
+                        <div className={`px-4 py-2 rounded-2xl shadow-sm ${isDeleted ? 'border border-[#23482f] italic text-gray-500' : isMe ? 'bg-[#193322] border border-[#13ec5b]/30 text-white rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
                           {m.file ? (
                             m.file.mimeType && m.file.mimeType.startsWith('image/') ? (
                               <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="block">
@@ -583,6 +603,27 @@ const MessagesPage = () => {
                   <button onClick={() => {setEditingMessage(null); setInputText("");}}><X size={12}/></button>
                 </div>
               )}
+              
+              {/* Pending file preview */}
+              {pendingFile && (
+                <div className="flex items-center gap-3 bg-[#193322] border border-[#23482f] p-3 rounded-xl mb-2">
+                  {pendingFile.type.startsWith('image/') ? (
+                    <>
+                      <img src={URL.createObjectURL(pendingFile)} alt="preview" className="h-12 w-12 rounded object-cover" />
+                      <span className="text-sm text-white flex-1">{pendingFile.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Paperclip size={20} className="text-[#92c9a4]" />
+                      <span className="text-sm text-white flex-1 truncate">{pendingFile.name}</span>
+                    </>
+                  )}
+                  <button onClick={() => setPendingFile(null)} className="text-red-400 hover:text-red-300">
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
+              
               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
                 <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]"><Smile size={22} /></button>
                 

@@ -220,57 +220,68 @@ module.exports = (io) => {
     socket.on("sendMessage", async ({ chatId, senderId, text, file }) => {
       try {
         const chat = await Chat.findById(chatId);
-        if (!chat) return;
+        if (!chat) {
+          console.error('Chat not found:', chatId);
+          return;
+        }
 
         // Prepare payload: support text-only, file-only, or both
         const payload = { chat: chatId, sender: senderId };
-        if (file) {
+        if (file && file.url) {
           payload.file = {
             url: file.url,
-            name: file.name,
-            mimeType: file.mimeType,
-            size: file.size,
+            name: file.name || 'file',
+            mimeType: file.mimeType || '',
+            size: file.size || 0,
           };
-          // If no text provided, set text to filename for preview/lastMessage
+          // Set text to filename for display
           payload.text = file.name || '';
         } else {
           payload.text = text || '';
         }
 
+        // Create message in database
         let message = await Message.create(payload);
+        console.log('💾 Message created:', message._id, 'with file:', !!file);
 
+        // Populate sender info
         message = await Message.findById(message._id).populate("sender", "name profileImage");
 
+        // Update chat's last message
         chat.lastMessage = message._id;
         chat.lastMessageAt = new Date();
         await chat.save();
 
+        // Prepare message object for emit
         const messageObj = message.toObject ? message.toObject() : message;
         messageObj.chat = chatId;
         
-        // Chat room mein message bhejo (Laptop B ko yahan se milega)
+        console.log(`📤 Emitting message ${messageObj._id} to chat room`);
+        
+        // Emit to everyone in the chat room
         io.to(chatId.toString()).emit("messageReceived", messageObj);
+        console.log(`✉️ Message emitted to chat room ${chatId}:`, messageObj._id);
 
-        // Sidebar update ke liye data taiyaar karo
+        // Sidebar update ke liye poora chat populate karo
         const updatedChat = await Chat.findById(chatId)
           .populate("participants", "name profileImage isOnline lastSeen")
-          .populate({ path: 'lastMessage', select: 'text createdAt sender isDeleted file' });
+          .populate({ path: 'lastMessage', select: 'text file createdAt sender isDeleted' });
 
-        // Har participant ko sidebar update bhejo
         updatedChat.participants.forEach(participant => {
           const pId = participant._id.toString();
           io.to(pId).emit("sidebarUpdate", updatedChat);
         });
 
-        // 7. Send notification to other participant
+        // Send notification to other participant
         const otherParticipant = updatedChat.participants.find(p => p._id.toString() !== senderId.toString());
         if (otherParticipant) {
           try {
+            const msgPreview = file ? `📁 ${file.name}` : text.substring(0, 50);
             await Notification.create({
               userId: senderId,
               type: 'message',
               title: 'New Message',
-              message: `${message.sender.name}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+              message: `New message: ${msgPreview}${text.length > 50 ? '...' : ''}`,
               receiverId: otherParticipant._id,
               senderId: senderId,
               relatedId: message._id,
@@ -281,7 +292,7 @@ module.exports = (io) => {
             io.to(otherParticipant._id.toString()).emit('newNotification', {
               type: 'message',
               title: 'New Message',
-              message: `${message.sender.name} sent you a message`,
+              message: file ? `📁 ${file.name} sent` : `Message received`,
               createdAt: new Date()
             });
           } catch (notifError) {

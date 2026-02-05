@@ -91,6 +91,10 @@ export const chatService = {
 
   // Chat room join karne ke liye
   joinChat: (chatId, userId) => {
+    if (!socket || !socket.connected) {
+      console.warn('⚠️ Socket not connected, cannot join chat:', chatId);
+      return;
+    }
     socket.emit("joinChat", { chatId, userId });
   },
 
@@ -111,12 +115,40 @@ export const chatService = {
   // Upload a file via HTTP and emit a file message over socket
   sendFile: async (chatId, senderId, file) => {
     if (!file) throw new Error('No file provided');
-    // Use the helper defined at bottom to upload
-    const res = await uploadFile(file);
-    const fileUrl = res?.url || res?.path || res?.data?.url || res?.data?.path;
-    const fileMeta = { url: fileUrl, name: file.name, mimeType: file.type, size: file.size };
-    if (socket) socket.emit('sendMessage', { chatId, senderId, text: '', file: fileMeta });
-    return fileMeta;
+    try {
+      // Use the helper defined at bottom to upload
+      const res = await uploadFile(file);
+      const fileUrl = res?.url || res?.path || res?.data?.url || res?.data?.path;
+      
+      if (!fileUrl) {
+        throw new Error('File upload failed - no URL returned');
+      }
+      
+      const fileMeta = { 
+        url: fileUrl, 
+        name: file.name, 
+        mimeType: file.type, 
+        size: file.size 
+      };
+      
+      // Emit file message via socket
+      if (socket && socket.connected) {
+        socket.emit('sendMessage', { 
+          chatId, 
+          senderId, 
+          text: file.name,
+          file: fileMeta 
+        });
+        console.log('📁 File message emitted:', file.name);
+      } else {
+        console.warn('⚠️ Socket not connected, file message may not be sent');
+      }
+      
+      return fileMeta;
+    } catch (err) {
+      console.error('File send error:', err);
+      throw err;
+    }
   },
   // ✅ Naya: Delete message ka signal bhejne ke liye
   deleteMessage: (messageId, chatId, type, userId) => {
