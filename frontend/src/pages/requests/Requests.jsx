@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import UserNavbar from "../../components/common/UserNavbar";
 import IncomingRequestCard from "../../components/requests/IncomingRequestCard";
 import SentRequestStatus from "../../components/requests/SentRequestStatus";
 import { requestService } from "../../services/requestService";
 import Toast from "../../components/common/Toast";
+import { SocketContext } from "../../context/SocketContext";
 
 const Requests = () => {
   const [activeTab, setActiveTab] = useState("received");
@@ -23,6 +24,41 @@ const Requests = () => {
   useEffect(() => {
     fetchRequests();
   }, []);
+
+  const socketCtx = useContext(SocketContext);
+
+  useEffect(() => {
+    if (!socketCtx || !socketCtx.on || !currentUser) return;
+
+    const handler = (updatedRequest) => {
+      try {
+        // Ensure populated objects exist
+        const r = typeof updatedRequest.toObject === 'function' ? updatedRequest.toObject() : updatedRequest;
+
+        const isRelevant = (r.requester && r.requester._id && r.requester._id.toString() === currentUser.toString()) ||
+                           (r.receiver && r.receiver._id && r.receiver._id.toString() === currentUser.toString());
+
+        if (!isRelevant) return;
+
+        setRequests(prev => {
+          const exists = prev.find(p => p._id === r._id);
+          if (exists) {
+            return prev.map(p => p._id === r._id ? r : p);
+          }
+          // new request, prepend
+          return [r, ...prev];
+        });
+      } catch (err) {
+        console.error('Error handling requestUpdated socket event', err);
+      }
+    };
+
+    socketCtx.on('requestUpdated', handler);
+
+    return () => {
+      socketCtx.off('requestUpdated', handler);
+    };
+  }, [socketCtx, currentUser]);
 
   const fetchRequests = async () => {
     setLoading(true);

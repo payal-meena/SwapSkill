@@ -79,6 +79,20 @@ const sendRequest = async (req, res) => {
     } catch (notifError) {
       console.log('Error sending notification:', notifError);
     }
+    
+    // Emit request update to both parties so frontend can refresh without reload
+    try {
+      if (req.io) {
+        const populated = await Request.findById(request._id)
+          .populate("requester", "name email profileImage")
+          .populate("receiver", "name email profileImage");
+
+        req.io.to(receiver.toString()).emit('requestUpdated', populated);
+        req.io.to(requester.toString()).emit('requestUpdated', populated);
+      }
+    } catch (emitErr) {
+      console.log('Error emitting request update:', emitErr);
+    }
 
     res.status(201).json({
       success: true,
@@ -176,6 +190,19 @@ const sendRequest = async (req, res) => {
       message: "Request accepted",
       request,
     });
+    // Emit requestUpdated to both parties
+    try {
+      if (req.io) {
+        const populated = await Request.findById(request._id)
+          .populate("requester", "name email profileImage")
+          .populate("receiver", "name email profileImage");
+
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+      }
+    } catch (emitErr) {
+      console.log('Error emitting request update (accept):', emitErr);
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -217,6 +244,19 @@ const withdrawRequest = async (req, res) => {
     request.status = "cancelled";
     await request.save();
 
+    // Emit requestUpdated to both parties
+    try {
+      if (req.io) {
+        const populated = await Request.findById(request._id)
+          .populate("requester", "name email profileImage")
+          .populate("receiver", "name email profileImage");
+
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+      }
+    } catch (emitErr) {
+      console.log('Error emitting request update (withdraw):', emitErr);
+    }
     res.status(200).json({
       success: true,
       message: "Request withdrawn successfully",
@@ -267,6 +307,19 @@ const unfriendUser = async (req, res) => {
       success: true,
       message: "Unfriended successfully",
     });
+    // Emit requestUpdated to both parties
+    try {
+      if (req.io) {
+        const populated = await Request.findById(request._id)
+          .populate("requester", "name email profileImage")
+          .populate("receiver", "name email profileImage");
+
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+      }
+    } catch (emitErr) {
+      console.log('Error emitting request update (unfriend):', emitErr);
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -301,6 +354,19 @@ const unfriendUser = async (req, res) => {
       success: true,
       message: "Request rejected",
     });
+    // Emit requestUpdated to both parties
+    try {
+      if (req.io) {
+        const populated = await Request.findById(request._id)
+          .populate("requester", "name email profileImage")
+          .populate("receiver", "name email profileImage");
+
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+      }
+    } catch (emitErr) {
+      console.log('Error emitting request update (reject):', emitErr);
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
