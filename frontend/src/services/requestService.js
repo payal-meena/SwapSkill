@@ -75,5 +75,11 @@ export const requestService = {
   completeRequest: async (requestId) => {
     const response = await api.post(`/requests/${requestId}/complete`);
     return response.data;
+  },
+
+  unfriendUser: async (requestId) => {
+    // Unfriend/cancel an accepted request
+    const response = await api.put(`/requests/${requestId}/unfriend`);
+    return response.data;
   }
 };

@@ -12,7 +12,8 @@ const SkillCard = ({
   wantedSkills = [],
   statusColor = "bg-[#13ec5b]",
   connectionStatus = "none",
-  onConnect 
+  onConnect,
+  onDisconnect
 }) => {
   const navigate = useNavigate();
   const [showAllOffered, setShowAllOffered] = useState(false);
@@ -36,6 +37,7 @@ const SkillCard = ({
   };
 
   const renderActionButton = () => {
+    // Pending - waiting for other user to accept
     if (connectionStatus === "pending") {
       return (
         <button disabled className="py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 text-sm font-bold opacity-70 cursor-not-allowed">
@@ -43,19 +45,20 @@ const SkillCard = ({
         </button>
       );
     }
-    
+
+    // Accepted - show unfollow button
     if (connectionStatus === "accepted") {
       return (
-      <button 
-          onClick={() => navigate("/messages/:userId", {state: { userName: name, userImage: img }})}  
-          className="py-2.5 rounded-xl border-2 border-[#13ec5b] text-[#13ec5b] text-sm font-bold hover:bg-[#13ec5b] hover:text-[#112217] transition-all duration-300 flex items-center justify-center gap-2"
+        <button 
+          onClick={onDisconnect}
+          className="py-2.5 rounded-xl border-2 border-red-600 text-red-600 text-sm font-bold hover:bg-red-600 hover:text-white transition-all duration-300"
         >
-          <span className="material-symbols-outlined text-sm">chat_bubble</span>
-          Message
+          Unfollow
         </button>
       );
     }
 
+    // Not connected - show connect button
     return (
       <button onClick={onConnect} className="py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all">
         Connect

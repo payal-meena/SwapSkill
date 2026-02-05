@@ -176,6 +176,52 @@ const withdrawRequest = async (req, res) => {
   }
 };
 
+// Unfriend/Cancel an accepted request
+const unfriendUser = async (req, res) => {
+  try {
+    const userId = req.user;
+    const { id } = req.params;
+
+    const request = await Request.findById(id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Either requester or receiver can unfriend
+    if (request.requester.toString() !== userId && request.receiver.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to unfriend this user",
+      });
+    }
+
+    // Only accepted requests can be unfriended
+    if (request.status !== "accepted") {
+      return res.status(400).json({
+        success: false,
+        message: "Only accepted requests can be unfriended",
+      });
+    }
+
+    request.status = "cancelled";
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Unfriended successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
  const rejectRequest = async (req, res) => {
   try {
@@ -260,4 +306,5 @@ module.exports = {
   rejectRequest,
   completeRequest,
   withdrawRequest,
+  unfriendUser,
 };

@@ -1,4 +1,5 @@
 const User = require("../models/User.js");
+const Connection = require("../models/Connection.js");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const cloudinary = require("../config/cloudinary.js");
@@ -193,6 +194,142 @@ const  profileImageRemove = async (req, res) => {
   }
 };
 
+/* FOLLOW USER */
+const followUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user;
+
+    if (userId === currentUserId) {
+      return res.status(400).json({ message: "You cannot follow yourself" });
+    }
+
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingConnection = await Connection.findOne({
+      follower: currentUserId,
+      following: userId,
+    });
+
+    if (existingConnection) {
+      return res.status(400).json({ message: "Already connected with this user" });
+    }
+
+    const connection = new Connection({
+      follower: currentUserId,
+      following: userId,
+      status: "connected",
+    });
+
+    await connection.save();
+
+    res.status(201).json({
+      success: true,
+      message: "User followed successfully",
+      connection,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* UNFOLLOW USER */
+const unfollowUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user;
+
+    const connection = await Connection.findOneAndDelete({
+      follower: currentUserId,
+      following: userId,
+    });
+
+    if (!connection) {
+      return res.status(404).json({ message: "Connection not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "User unfollowed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* BLOCK USER */
+const blockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user;
+
+    if (userId === currentUserId) {
+      return res.status(400).json({ message: "You cannot block yourself" });
+    }
+
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let connection = await Connection.findOne({
+      follower: currentUserId,
+      following: userId,
+    });
+
+    if (connection) {
+      connection.status = "blocked";
+      await connection.save();
+    } else {
+      connection = new Connection({
+        follower: currentUserId,
+        following: userId,
+        status: "blocked",
+      });
+      await connection.save();
+    }
+
+    res.json({
+      success: true,
+      message: "User blocked successfully",
+      connection,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* GET CONNECTION STATUS */
+const getConnectionStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user;
+
+    const connection = await Connection.findOne({
+      follower: currentUserId,
+      following: userId,
+    });
+
+    if (!connection) {
+      return res.json({
+        success: true,
+        connected: false,
+        status: null,
+      });
+    }
+
+    res.json({
+      success: true,
+      connected: true,
+      status: connection.status,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 
 module.exports = {
@@ -202,5 +339,9 @@ module.exports = {
   updateProfileImage,
   deleteMyAccount ,
   getPublicProfile,
-  profileImageRemove
+  profileImageRemove,
+  followUser,
+  unfollowUser,
+  blockUser,
+  getConnectionStatus
 };

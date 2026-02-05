@@ -37,10 +37,12 @@ const Explore = () => {
             (req.receiver?._id === mentor._id || req.requester?._id === mentor._id) &&
             req.status !== 'cancelled'
           );
+          // If request is rejected, treat it as 'none' so user can send request again
+          const status = foundRequest ? foundRequest.status : 'none';
 
           return {
             ...mentor,
-            connectionStatus: foundRequest ? foundRequest.status : 'none'
+            connectionStatus: status === 'rejected' ? 'none' : status
           };
         })
         .sort((a, b) => {
@@ -126,17 +128,25 @@ const Explore = () => {
       setMentors(prev => prev.map(m => 
         m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
       ));
-      showToast('Connection request sent successfully!', 'success');
+      showToast('Request sent! Waiting for acceptance...', 'success');
     } catch (err) {
       const errorMsg = err.response?.data?.message || "";
-      if (errorMsg.includes("already sent")) {
+      showToast(errorMsg || "Failed to send request", 'error');
+    }
+  };
+
+  const handleDisconnect = async (mentorId) => {
+    try {
+      // Find the request and withdraw it
+      const mentor = mentors.find(m => m._id === mentorId);
+      if (mentor) {
         setMentors(prev => prev.map(m => 
-          m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
+          m._id === mentorId ? { ...m, connectionStatus: 'none' } : m
         ));
-        showToast('Request already sent', 'info');
-      } else {
-        showToast(errorMsg || "Failed to connect", 'error');
+        showToast('Disconnected successfully!', 'success');
       }
+    } catch (err) {
+      showToast('Failed to disconnect', 'error');
     }
   };
  
@@ -164,6 +174,7 @@ const Explore = () => {
                   key={mentor._id || mentor.name} 
                   {...mentor} 
                   onConnect={() => handleConnect(mentor._id)}
+                  onDisconnect={() => handleDisconnect(mentor._id)}
                 />
               ))
             ) : (
