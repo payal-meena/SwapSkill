@@ -4,14 +4,14 @@ import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
 import { blockService } from '../../services/blockService';
 import { SocketContext } from '../../context/SocketContext';
-import { Instagram, Facebook, Github, Ghost, ArrowLeft } from 'lucide-react';
+import { Instagram, Facebook, Github, Ghost, ArrowLeft, ShieldAlert } from 'lucide-react';
 import Avatar from '../../components/common/Avatar';
+import Toast from '../../components/common/Toast';
 
 const ExploreProfile = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Get current user ID from token
   const getCurrentUserId = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -24,20 +24,29 @@ const ExploreProfile = () => {
   };
 
   const currentUserId = getCurrentUserId();
-  
-  // 1. Pehle profileData ko location.state se nikaalein
   const profileData = location.state;
 
   const [offeredSkillsState, setOfferedSkillsState] = useState(profileData?.offeredSkills || []);
   const [wantedSkillsState, setWantedSkillsState] = useState(profileData?.wantedSkills || []);
-  const [requestStatus, setRequestStatus] = useState('none'); // none, pending, accepted, rejected
+  const [requestStatus, setRequestStatus] = useState('none'); 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+  
+  // State for the Block Confirmation Modal
+  const [showBlockModal, setShowBlockModal] = useState(false);
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
 
   const socketCtx = useContext(SocketContext);
 
   useEffect(() => {
-    // If state exists and already has skills, keep them. Otherwise fetch by id if available.
     const fetchIfNeeded = async () => {
       try {
         if ((offeredSkillsState.length === 0 && wantedSkillsState.length === 0) && profileData?.id) {
@@ -48,7 +57,6 @@ const ExploreProfile = () => {
           setWantedSkillsState(wanted);
         }
 
-        // Check request status only if user is logged in
         if (currentUserId && profileData?.id && currentUserId !== profileData.id) {
           try {
             const requestRes = await requestService.getMyRequests();
@@ -57,7 +65,6 @@ const ExploreProfile = () => {
               (req.receiver?._id === profileData.id || req.requester?._id === profileData.id) &&
               req.status !== 'cancelled'
             );
-            // If request is rejected, treat it as 'none' so user can send request again
             const status = foundRequest ? foundRequest.status : 'none';
             setRequestStatus(status === 'rejected' ? 'none' : status);
           } catch (err) {
@@ -73,7 +80,6 @@ const ExploreProfile = () => {
     fetchIfNeeded();
   }, [profileData, currentUserId]);
 
-  // Listen for real-time request updates
   useEffect(() => {
     if (!socketCtx || !socketCtx.on || !profileData?.id) return;
 
@@ -93,23 +99,29 @@ const ExploreProfile = () => {
     };
 
     const handleUserBlockedMe = (data) => {
-      // If current user is blocked, navigate back to explore
       if (data.blockedBy === profileData?.id) {
-        alert('You have been blocked by this user');
-        navigate('/explore');
+        showToast('Oh no — this user blocked you 💔', 'error');
+        setTimeout(() => navigate('/explore'), 900);
+      }
+    };
+
+    const handleUserUnblockedMe = (data) => {
+      if (data.unblockedBy === profileData?.id) {
+        showToast('Nice — this user unblocked you 😊', 'success');
       }
     };
 
     socketCtx.on('requestUpdated', handleRequestUpdated);
     socketCtx.on('userBlockedMe', handleUserBlockedMe);
+    socketCtx.on('userUnblockedMe', handleUserUnblockedMe);
 
     return () => {
       socketCtx.off('requestUpdated', handleRequestUpdated);
       socketCtx.off('userBlockedMe', handleUserBlockedMe);
+      socketCtx.off('userUnblockedMe', handleUserUnblockedMe);
     };
   }, [socketCtx, profileData?.id, currentUserId]);
 
-  // 2. Agar profileData nahi hai (matlab direct URL access), toh error handling
   if (!profileData) {
     return (
       <div className="min-h-screen bg-[#020a06] flex flex-col items-center justify-center text-white font-['Lexend'] p-4">
@@ -125,7 +137,6 @@ const ExploreProfile = () => {
     );
   }
 
-  // 3. Destructure values from profileData with defaults
   const { 
     name = "Sarah Jenkins", 
     img = null, 
@@ -150,14 +161,9 @@ const ExploreProfile = () => {
     try {
       await requestService.sendRequest({ receiver: profileData.id });
       setRequestStatus('pending');
-      // Update the location state so it reflects on going back
-      window.history.replaceState(
-        { ...location.state, requestStatus: 'pending' },
-        ''
-      );
+      window.history.replaceState({ ...location.state, requestStatus: 'pending' }, '');
     } catch (error) {
-      console.error('Error sending request:', error);
-      alert('Failed to send connection request');
+      showToast('Failed to send request', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -166,7 +172,6 @@ const ExploreProfile = () => {
   const handleUnfollow = async () => {
     setActionLoading(true);
     try {
-      // Find and withdraw/unfriend the request
       const requestRes = await requestService.getMyRequests();
       const myRequests = requestRes.requests || [];
       const foundRequest = myRequests.find(req => 
@@ -175,53 +180,68 @@ const ExploreProfile = () => {
       );
       
       if (!foundRequest) {
-        console.warn('No request found to withdraw');
         setRequestStatus('none');
         return;
       }
 
-      console.log('Withdrawing/Unfriending request:', foundRequest._id, 'Status:', foundRequest.status);
-      
-      // For pending requests, withdraw them
       if (foundRequest.status === 'pending') {
         await requestService.withdrawRequest(foundRequest._id);
-      } 
-      // For accepted requests, unfriend
-      else if (foundRequest.status === 'accepted') {
+      } else if (foundRequest.status === 'accepted') {
         await requestService.unfriendUser(foundRequest._id);
       }
       
       setRequestStatus('none');
-      // Update the location state so it reflects on going back
-      window.history.replaceState(
-        { ...location.state, requestStatus: 'none' },
-        ''
-      );
+      window.history.replaceState({ ...location.state, requestStatus: 'none' }, '');
     } catch (error) {
-      console.error('Error unfollowing user:', error.response?.data || error.message);
-      alert(error.response?.data?.message || 'Failed to unfollow user. Please try again.');
+      showToast('Action failed', 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleBlock = async () => {
+  const handleBlockConfirm = async () => {
     setActionLoading(true);
+    setShowBlockModal(false);
     try {
       await blockService.blockUser(profileData.id);
-      alert('User blocked successfully');
-      // Go back to explore page
-      navigate('/explore');
+      showToast('User blocked successfully 🔒', 'success');
+      setTimeout(() => navigate('/explore'), 800);
     } catch (error) {
-      console.error('Error blocking user:', error);
-      alert(error.response?.data?.message || 'Failed to block user');
+      showToast(error.response?.data?.message || 'Failed to block user', 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#112217] text-white p-4 md:p-8 font-['Lexend'] flex flex-col items-center">
+    <div className="min-h-screen bg-[#112217] text-white p-4 md:p-8 font-['Lexend'] flex flex-col items-center relative">
+
+      {/* Block Confirmation Modal Overlay */}
+      {showBlockModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#0a1a11] border-2 border-red-500/20 w-full max-w-xs p-6 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] text-center">
+            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="text-red-500" size={24} />
+            </div>
+            <h3 className="text-lg font-black uppercase tracking-tight mb-2">Block User?</h3>
+            <p className="text-slate-400 text-sm font-medium mb-6">You won't see their profile or skills anymore.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowBlockModal(false)}
+                className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-black uppercase transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBlockConfirm}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-black uppercase transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Back Button Container */}
       <div className="w-full max-w-3xl mb-4">
@@ -254,7 +274,6 @@ const ExploreProfile = () => {
         <div className="px-6 md:px-10 pt-16 pb-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
 
-            {/* Left Side: Info & Dynamic Skills */}
             <div className="md:col-span-7 space-y-8">
               <div>
                 <h1 className="text-4xl font-black tracking-tight mb-1 text-white uppercase">{name}</h1>
@@ -267,7 +286,6 @@ const ExploreProfile = () => {
                 </div>
               </div>
 
-              {/* BIO BOX */}
               <div className="bg-gradient-to-br from-white/[0.05] to-transparent p-5 rounded-2xl border border-white/10 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#13ec5b]"></div>
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-2 text-[#13ec5b]">Mentor Bio</h3>
@@ -276,7 +294,6 @@ const ExploreProfile = () => {
                 </p>
               </div>
 
-              {/* DYNAMIC SKILLS SECTION */}
               <div className="space-y-8">
                 <div className="group">
                   <div className="inline-flex items-center gap-2 mb-4 bg-[#13ec5b] px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(19,236,91,0.3)]">
@@ -311,7 +328,6 @@ const ExploreProfile = () => {
               </div>
             </div>
 
-            {/* Right Side: Action Cards */}
             <div className="md:col-span-5 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
@@ -324,7 +340,6 @@ const ExploreProfile = () => {
                 </div>
               </div>
 
-              {/* ACTION AREA */}
               <div className="bg-[#1a2e21] p-5 rounded-[2.5rem] border border-white/10 shadow-xl">
                 <div className="mb-6">
                   {requestStatus === 'none' && (
@@ -340,9 +355,9 @@ const ExploreProfile = () => {
                   {requestStatus === 'pending' && (
                     <button 
                       disabled
-                      className="w-full py-4 bg-slate-400 text-white font-black text-md rounded-2xl opacity-70 cursor-not-allowed shadow-[0_10px_25px_rgba(148,163,184,0.3)]"
+                      className="w-full py-4 border-2 border-white/20 text-slate-400 font-black text-md rounded-2xl cursor-not-allowed uppercase tracking-widest bg-white/5"
                     >
-                      PENDING - WAITING FOR RESPONSE
+                      PENDING
                     </button>
                   )}
                   
@@ -356,11 +371,11 @@ const ExploreProfile = () => {
                         {actionLoading ? 'PROCESSING...' : 'UNFOLLOW'}
                       </button>
                       <button 
-                        onClick={handleBlock}
+                        onClick={() => setShowBlockModal(true)}
                         disabled={actionLoading}
                         className="w-full py-4 bg-red-600 text-white font-black text-md rounded-2xl hover:scale-[1.02] transition-transform active:scale-95 shadow-[0_10px_25px_rgba(220,38,38,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {actionLoading ? 'PROCESSING...' : 'BLOCK'}
+                        BLOCK
                       </button>
                     </div>
                   )}
@@ -406,6 +421,12 @@ const ExploreProfile = () => {
           </div>
         </div>
       </div>
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 };
