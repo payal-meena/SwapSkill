@@ -1,22 +1,15 @@
 import './App.css'
 import { BrowserRouter } from 'react-router-dom'
-// import { AuthProvider } from './context/AuthContext'
-// import { SocketProvider } from './context/SocketContext'
 import AppRoutes from './routes/AppRoutes'
-// import { ChatProvider } from './context/ChatContext';
+import { NotificationProvider } from './context/NotificationContext'
 
 
 function App() {
-  
-
   return (
-    
     <BrowserRouter>
-      {/* <AuthProvider> */}
-        {/* <SocketProvider> */}
-          <AppRoutes />
-        {/* </SocketProvider> */}
-      {/* </AuthProvider> */}
+      <NotificationProvider>
+        <AppRoutes />
+      </NotificationProvider>
     </BrowserRouter>
   );
 }
