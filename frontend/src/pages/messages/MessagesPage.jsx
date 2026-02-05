@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services/chatService';
-import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip } from 'lucide-react';
+import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import Avatar from '../../components/common/Avatar';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const getMyId = () => {
   const token = localStorage.getItem('token');
@@ -137,6 +138,33 @@ const MessagesPage = () => {
       });
     };
     chatService.onUserStatusChanged?.(handleStatusChange);
+
+    // Listen for chat cleared
+    chatService.onChatCleared?.(() => {
+      setMessages([]);
+    });
+
+    // Listen for chat deleted
+    chatService.onChatDeleted?.(({ chatId }) => {
+      if (activeChat?._id === chatId) {
+        setActiveChat(null);
+      }
+      setChats(prev => prev.filter(c => c._id !== chatId));
+    });
+
+    // Listen for chat muted
+    chatService.onChatMuted?.(() => {
+      // UI will re-render to show muted state
+    });
+
+    // Listen for unread count updates
+    chatService.onUnreadCountUpdated?.(({ chatId, count }) => {
+      setChats(prev => prev.map(c => 
+        c._id === chatId 
+          ? { ...c, unreadCount: c.unreadCount?.map(u => (u.userId || u._id) === myUserId ? { ...u, count } : u) || [{ userId: myUserId, count }] }
+          : c
+      ));
+    });
 
     return () => {
       clearTimeout(timer);
@@ -276,22 +304,90 @@ const MessagesPage = () => {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto hide-scrollbar">
-          {chats.map((chat) => {
-            const p = chat.participants.find(u => (u._id || u) !== myUserId);
-            const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
-            return (
-              <div key={chat._id} onClick={() => setActiveChat(chat)} 
-                className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}`}>
-                <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" alt="" />
-                <div className="flex-1 truncate">
-                    <h4 className="text-sm font-bold">{p?.name}</h4>
-                    <p className="text-xs truncate text-[#92c9a4]">
-                      {isMeLast ? 'You: ' : ''}{chat.lastMessage?.text || "Chat now"}
-                    </p>
-                </div>
-              </div>
-            );
-          })}
+         
+{chats.map((chat) => {
+  const p = chat.participants.find(u => (u._id || u) !== myUserId);
+  const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
+  
+  return (
+    <div key={chat._id} className="relative group/item"> {/* group/item lagaya taaki menu handle ho sake */}
+      <div 
+        onClick={() => setActiveChat(chat)} 
+        className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] transition-all ${activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : 'hover:bg-white/5'}`}
+      >
+        <div className="relative">
+          <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className="h-11 w-11 rounded-full border border-[#23482f]" alt="" />
+          {chat.mutedBy?.includes(myUserId) && (
+            <div className="absolute -bottom-1 -right-1 bg-[#92c9a4] text-[#102216] text-[8px] rounded-full w-4 h-4 flex items-center justify-center font-bold">🔕</div>
+          )}
+        </div>
+
+        <div className="flex-1 truncate">
+          <div className="flex justify-between items-center gap-2">
+            <h4 className="text-sm font-bold">{p?.name}</h4>
+            <div className="flex items-center gap-2">
+               {chat.unreadCount && chat.unreadCount.find(u => (u.userId || u._id) === myUserId)?.count > 0 && (
+                <span className="text-[10px] font-bold bg-[#13ec5b] text-black px-2 py-0.5 rounded-full">
+                  {chat.unreadCount.find(u => (u.userId || u._id) === myUserId)?.count}
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="text-xs truncate text-[#92c9a4]">
+            {isMeLast ? 'You: ' : ''}{chat.lastMessage?.text || "Chat now"}
+          </p>
+        </div>
+      </div>
+
+      {/* --- NAYA SIDEBAR MENU (THREE DOTS) --- */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity z-30">
+        <div className="relative group/menu">
+          <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b]">
+            <MoreVertical size={16} />
+          </button>
+          
+          <div className="absolute right-0 top-8 w-40 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all z-50 overflow-hidden">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation(); // Chat select na ho jaye
+                navigate("/explore-profile", { state: { ...p, id: p._id } });
+              }} 
+              className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#13ec5b] hover:text-black transition-colors flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">person</span>
+              View Profile
+            </button>
+            
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                const isMuted = chat.mutedBy?.includes(myUserId);
+                chatService.muteChat(chat._id, myUserId, !isMuted);
+              }} 
+              className="w-full text-left px-4 py-2.5 text-[11px] hover:bg-white/5 border-t border-[#23482f] flex items-center gap-2"
+            >
+              <span>{chat.mutedBy?.includes(myUserId) ? '🔔' : '🔕'}</span>
+              {chat.mutedBy?.includes(myUserId) ? 'Unmute' : 'Mute'}
+            </button>
+
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm('Delete this chat?')) {
+                  chatService.deleteChat(chat._id, myUserId);
+                  if (activeChat?._id === chat._id) setActiveChat(null);
+                }
+              }} 
+              className="w-full text-left px-4 py-2.5 text-[11px] text-red-400 hover:bg-red-500/10 border-t border-[#23482f] flex items-center gap-2"
+            >
+              <span>🗑️</span> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})}
         </div>
       </aside>
 
@@ -307,19 +403,47 @@ const MessagesPage = () => {
                 </p></div>
               </div>
 
-              <div className="relative group">
-                <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
-                  <Video size={24} />
-                </button>
-                <div className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
-                  <button onClick={() => handleVideoCallAction('zoom')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
-                    <div className="w-6 h-6 bg-[#2D8CFF] rounded flex items-center justify-center text-[10px] font-black text-white italic">Z</div>
-                    <span className="text-xs font-bold">Send Zoom Link</span>
+              <div className="flex items-center gap-4">
+                {/* Unread badge */}
+                {activeChat?.unreadCount && activeChat.unreadCount.length > 0 && (
+                  <div className="px-3 py-1 bg-[#13ec5b]/20 border border-[#13ec5b] rounded-full text-[10px] font-bold text-[#13ec5b]">
+                    {activeChat.unreadCount.find(u => (u.userId || u._id) === myUserId)?.count || 0} unread
+                  </div>
+                )}
+
+                {/* Chat actions menu */}
+                <div className="relative group">
+                  <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+                    <MoreVertical size={24} />
                   </button>
-                  <button onClick={() => handleVideoCallAction('meet')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-[#23482f]">
-                    <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-blue-500 text-[10px]">M</div>
-                    <span className="text-xs font-bold">Send Meet Link</span>
+                  <div className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
+                    <button onClick={() => { const isMuted = activeChat?.mutedBy?.includes(myUserId); chatService.muteChat(activeChat._id, myUserId, !isMuted); }} className="w-full text-left px-4 py-2 text-xs hover:bg-white/5 border-b border-[#23482f]">
+                      {activeChat?.mutedBy?.includes(myUserId) ? '🔔 Unmute' : '🔕 Mute'}
+                    </button>
+                    <button onClick={() => { if (confirm('Clear all messages?')) chatService.clearChat(activeChat._id, myUserId); }} className="w-full text-left px-4 py-2 text-xs text-[#92c9a4] hover:bg-white/5 border-b border-[#23482f]">
+                      🗑️ Clear Chat
+                    </button>
+                    <button onClick={() => { if (confirm('Delete this chat?')) { chatService.deleteChat(activeChat._id, myUserId); setActiveChat(null); } }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950/20">
+                      ❌ Delete Chat
+                    </button>
+                  </div>
+                </div>
+
+                {/* Video call menu */}
+                <div className="relative group">
+                  <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+                    <Video size={24} />
                   </button>
+                  <div className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
+                    <button onClick={() => handleVideoCallAction('zoom')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                      <div className="w-6 h-6 bg-[#2D8CFF] rounded flex items-center justify-center text-[10px] font-black text-white italic">Z</div>
+                      <span className="text-xs font-bold">Zoom Link</span>
+                    </button>
+                    <button onClick={() => handleVideoCallAction('meet')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-[#23482f]">
+                      <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-blue-500 text-[10px]">M</div>
+                      <span className="text-xs font-bold">Meet Link</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </header>

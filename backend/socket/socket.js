@@ -285,6 +285,61 @@ module.exports = (io) => {
       io.to(chatId).emit("messagesMarkedAsRead", { chatId });
     });
 
+    // Clear chat (delete messages, keep chat)
+    socket.on('clearChat', async ({ chatId, userId }) => {
+      try {
+        await Message.deleteMany({ chat: chatId });
+        io.to(chatId).emit('chatCleared', { chatId, userId });
+        console.log(`Chat ${chatId} cleared by ${userId}`);
+      } catch (err) {
+        console.error('clearChat error:', err);
+      }
+    });
+
+    // Delete chat (remove from list)
+    socket.on('deleteChat', async ({ chatId, userId }) => {
+      try {
+        await Chat.findByIdAndDelete(chatId);
+        io.to(userId).emit('chatDeleted', { chatId });
+        console.log(`Chat ${chatId} deleted by ${userId}`);
+      } catch (err) {
+        console.error('deleteChat error:', err);
+      }
+    });
+
+    // Mute/Unmute chat
+    socket.on('muteChat', async ({ chatId, userId, isMuted }) => {
+      try {
+        const update = isMuted 
+          ? { $addToSet: { mutedBy: userId } }
+          : { $pull: { mutedBy: userId } };
+        await Chat.findByIdAndUpdate(chatId, update);
+        io.to(userId).emit('chatMuted', { chatId, isMuted });
+        console.log(`Chat ${chatId} ${isMuted ? 'muted' : 'unmuted'} by ${userId}`);
+      } catch (err) {
+        console.error('muteChat error:', err);
+      }
+    });
+
+    // Update unread count
+    socket.on('updateUnreadCount', async ({ chatId, userId, increment }) => {
+      try {
+        const chat = await Chat.findById(chatId);
+        if (!chat) return;
+        
+        const unread = chat.unreadCount.find(u => u.userId.toString() === userId.toString());
+        if (unread) {
+          unread.count = Math.max(0, unread.count + increment);
+        } else {
+          chat.unreadCount.push({ userId, count: Math.max(0, increment) });
+        }
+        await chat.save();
+        io.to(userId).emit('unreadCountUpdated', { chatId, count: unread?.count || 0 });
+      } catch (err) {
+        console.error('updateUnreadCount error:', err);
+      }
+    });
+
     // --- 5. Disconnect Logic (With 5s Delay) ---
     socket.on("disconnect", async () => {
       if (userId && userId !== "null") {

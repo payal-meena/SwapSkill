@@ -183,6 +183,46 @@ export const chatService = {
       console.warn('chatService.logout error', err);
     }
   },
+  // Clear all messages in a chat
+  clearChat: (chatId, userId) => {
+    if (socket && socket.connected) {
+      socket.emit('clearChat', { chatId, userId });
+    }
+  },
+  // Delete entire chat
+  deleteChat: (chatId, userId) => {
+    if (socket && socket.connected) {
+      socket.emit('deleteChat', { chatId, userId });
+    }
+  },
+  // Mute/unmute chat
+  muteChat: (chatId, userId, isMuted) => {
+    if (socket && socket.connected) {
+      socket.emit('muteChat', { chatId, userId, isMuted });
+    }
+  },
+  // Update unread count
+  updateUnreadCount: (chatId, userId, increment) => {
+    if (socket && socket.connected) {
+      socket.emit('updateUnreadCount', { chatId, userId, increment });
+    }
+  },
+  // Listen for chat cleared
+  onChatCleared: (callback) => {
+    socket.on('chatCleared', callback);
+  },
+  // Listen for chat deleted
+  onChatDeleted: (callback) => {
+    socket.on('chatDeleted', callback);
+  },
+  // Listen for chat muted
+  onChatMuted: (callback) => {
+    socket.on('chatMuted', callback);
+  },
+  // Listen for unread count update
+  onUnreadCountUpdated: (callback) => {
+    socket.on('unreadCountUpdated', callback);
+  },
   markAsRead: (chatId, userId) => {
     if (socket && socket.connected) {
       socket.emit("markAsRead", { chatId, userId });

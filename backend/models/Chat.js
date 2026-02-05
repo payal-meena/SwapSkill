@@ -23,6 +23,14 @@ const chatSchema = new mongoose.Schema(
       ref: "Message" 
     },
     lastMessageAt: Date,
+    mutedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }],
+    unreadCount: [{
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      count: { type: Number, default: 0 }
+    }]
   },
   { timestamps: true }
 );

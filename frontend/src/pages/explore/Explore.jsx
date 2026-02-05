@@ -40,7 +40,7 @@ const Explore = () => {
 
           return {
             ...mentor,
-            connectionStatus: foundRequest ? foundRequest.status : 'none'
+            connectionStatus: foundRequest ? foundRequest.status : 'none',requestId: foundRequest ? foundRequest._id : null
           };
         })
         .sort((a, b) => {
@@ -163,6 +163,7 @@ const Explore = () => {
                 <SkillCard 
                   key={mentor._id || mentor.name} 
                   {...mentor} 
+                  requestId={mentor.requestId}
                   onConnect={() => handleConnect(mentor._id)}
                 />
               ))

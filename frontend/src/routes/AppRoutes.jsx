@@ -32,8 +32,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-skills" element={<MySkills />} />
         <Route path="/requests" element={<Requests />} />
-        <Route path="/messages/:userId" element={<MessagesPage />} />
-        <Route path="/explore" element={<Explore />} />
+<Route path="/messages/:userId?" element={<MessagesPage />} />        <Route path="/explore" element={<Explore />} />
         
         {/* FIX: Yahan se :userId hata diya hai kyunki aap state use kar rahe hain */}
         <Route path="/explore-profile" element={<ExploreProfile />} />
