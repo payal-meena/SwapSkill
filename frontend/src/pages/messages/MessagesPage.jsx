@@ -324,24 +324,10 @@ const MessagesPage = () => {
           }
         } catch (err) {
           console.warn('post-history markAsRead failed', err);
-        
-        // Scroll to message if coming from notification
-        if (location.state?.scrollToMessageId) {
-          setTimeout(() => {
-            const messageElement = document.getElementById(`message-${location.state.scrollToMessageId}`);
-            if (messageElement) {
-              messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              messageElement.classList.add('highlight-message');
-              // Remove animation class after it completes
-              setTimeout(() => {
-                messageElement.classList.remove('highlight-message');
-              }, 3000);
-            }
-          }, 100);
         }
       });
     }
-  }, [activeChat?._id, myUserId, location.state?.scrollToMessageId]);
+  }, [activeChat?._id, myUserId]);
 
   // Auto-select chat from location state if coming from requests page (only once on first load)
   useEffect(() => {
@@ -781,7 +767,7 @@ const MessagesPage = () => {
                       </div>
                     )}
                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className="relative group max-w-[70%]" id={`message-${m._id}`}>
+                      <div className="relative group max-w-[70%]">
                         {!isDeleted && (
                           <div className={`absolute -top-8 flex bg-[#1a3322] border border-[#23482f] rounded-lg opacity-0 group-hover:opacity-100 transition-all z-20 ${isMe ? 'right-0' : 'left-0'}`}>
                             {isMe && <button onClick={() => { setEditingMessage({ id: m._id, text: m.text }); setInputText(m.text); }} className="p-2 hover:bg-white/10 text-[#92c9a4]"><Edit2 size={14} /></button>}
