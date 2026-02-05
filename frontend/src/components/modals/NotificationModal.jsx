@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../context/NotificationContext';
 
 const NotificationModal = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
 
@@ -127,7 +129,16 @@ const NotificationModal = ({ isOpen, onClose }) => {
                     {notif.type === 'message' && (
                       <div className="mt-3">
                         <button 
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (notif.senderId || notif.sender?._id) {
+                              const userId = notif.senderId || notif.sender._id;
+                              navigate(`/messages/${userId}`, { 
+                                state: { scrollToMessageId: notif.relatedId }
+                              });
+                              onClose();
+                            }
+                          }}
                           className="w-full border border-[#13ec5b4d] text-[#13ec5b] text-xs font-bold py-1.5 rounded-lg hover:bg-[#13ec5b1a] transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <span className="material-symbols-outlined text-xs">reply</span> Reply

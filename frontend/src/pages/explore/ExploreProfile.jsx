@@ -140,6 +140,7 @@ const ExploreProfile = () => {
   const { 
     name = "Sarah Jenkins", 
     img = null, 
+    bio = "No bio available",
     rating = 4.9, 
     reviews = 128,
     socials = {
@@ -290,7 +291,7 @@ const ExploreProfile = () => {
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#13ec5b]"></div>
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-2 text-[#13ec5b]">Mentor Bio</h3>
                 <p className="text-slate-200 leading-snug text-lg font-medium italic">
-                  "Senior professional with extensive experience in the field, passionate about sharing knowledge and skill-swapping with the community."
+                  {bio || "No bio available"}
                 </p>
               </div>
 

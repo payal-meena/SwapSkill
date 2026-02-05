@@ -10,6 +10,7 @@ import ExpertisePage from './ExpertisePage';
 import api from "../../services/api";
 import Toast from '../../components/common/Toast';
 import LogOut from '../../components/modals/LogOut';
+import DeleteSkillModal from '../../components/modals/DeleteSkillModal';
 
 // Vite environment variable
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -19,6 +20,8 @@ const Profile = () => {
     const [activeTab, setActiveTab] = useState('teaching');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const [isDeleteSkillModalOpen, setIsDeleteSkillModalOpen] = useState(false);
+    const [skillToDelete, setSkillToDelete] = useState(null);
     const [skills, setSkills] = useState([]);
     const [user, setUser] = useState({});
     const [loading, setLoading] = useState(true);
@@ -102,12 +105,23 @@ const Profile = () => {
         return true;
     };
 
-    const handleDeleteSkill = async (skillId) => {
+    const handleDeleteSkillClick = (skillId, skillName) => {
+        setSkillToDelete({ id: skillId, name: skillName });
+        setIsDeleteSkillModalOpen(true);
+    };
+
+    const handleDeleteSkill = async () => {
+        if (!skillToDelete) return;
+        
         try {
-            await skillService.deleteSkill(skillId);
-            setSkills(prev => prev.filter(s => s.id !== skillId));
+            await skillService.deleteSkill(skillToDelete.id);
+            setSkills(prev => prev.filter(s => s.id !== skillToDelete.id));
+            showToast('Skill deleted successfully!', 'success');
+            setIsDeleteSkillModalOpen(false);
+            setSkillToDelete(null);
         } catch (error) {
             console.error('Error deleting skill:', error);
+            showToast('Failed to delete skill', 'error');
         }
     };
 
@@ -205,7 +219,7 @@ const Profile = () => {
                                 <SkillCard
                                     key={skill.id}
                                     skill={skill}
-                                    onDelete={() => handleDeleteSkill(skill.id)}
+                                    onDelete={() => handleDeleteSkillClick(skill.id, skill.title)}
                                 />
                             ))}
 
@@ -240,6 +254,16 @@ const Profile = () => {
                 isOpen={isLogoutModalOpen} 
                 onClose={() => setIsLogoutModalOpen(false)} 
                 onConfirm={handleLogoutConfirm}
+            />
+
+            <DeleteSkillModal
+                isOpen={isDeleteSkillModalOpen}
+                onClose={() => {
+                    setIsDeleteSkillModalOpen(false);
+                    setSkillToDelete(null);
+                }}
+                onConfirm={handleDeleteSkill}
+                skillName={skillToDelete?.name}
             />
             
             <Toast 

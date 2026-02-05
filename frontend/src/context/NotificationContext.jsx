@@ -25,7 +25,12 @@ export const NotificationProvider = ({ children }) => {
     if (socket) {
       // Listen for new notifications
       socket.on('newNotification', (notification) => {
-        setNotifications(prev => [notification, ...prev]);
+        // Transform senderId to sender for consistency
+        const transformedNotification = {
+          ...notification,
+          sender: notification.senderId || null
+        };
+        setNotifications(prev => [transformedNotification, ...prev]);
         setUnreadCount(prev => prev + 1);
       });
 

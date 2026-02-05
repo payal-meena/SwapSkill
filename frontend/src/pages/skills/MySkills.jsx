@@ -9,6 +9,7 @@ import AddSkillModal from '../../components/modals/AddSkillModal';
 import CurriculumModal from '../../components/modals/CurriculumModal';
 import EditCurriculumModal from '../../components/modals/EditCurriculumModal';
 import Toast from '../../components/common/Toast';
+import DeleteSkillModal from '../../components/modals/DeleteSkillModal';
 import { skillService } from '../../services/skillService';
 
 const MySkills = () => {
@@ -30,6 +31,9 @@ const MySkills = () => {
   const [isEditWantedOpen, setIsEditWantedOpen] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteWantedModalOpen, setIsDeleteWantedModalOpen] = useState(false);
+  const [skillToDelete, setSkillToDelete] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -157,21 +161,43 @@ const MySkills = () => {
     return true;
   };
 
-  const handleDeleteSkill = async (skillId) => {
+  const handleDeleteSkillClick = (skillId, skillName) => {
+    setSkillToDelete({ id: skillId, name: skillName });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDeleteSkill = async () => {
+    if (!skillToDelete) return;
+    
     try {
-      await skillService.deleteSkill(skillId);
+      await skillService.deleteSkill(skillToDelete.id);
       fetchMySkills();
+      showToast('Skill deleted successfully!', 'success');
+      setIsDeleteModalOpen(false);
+      setSkillToDelete(null);
     } catch (error) {
       console.error('Error deleting skill:', error);
+      showToast('Failed to delete skill', 'error');
     }
   };
 
-  const handleDeleteWantedSkill = async (skillId) => {
+  const handleDeleteWantedSkillClick = (skillId, skillName) => {
+    setSkillToDelete({ id: skillId, name: skillName });
+    setIsDeleteWantedModalOpen(true);
+  };
+
+  const handleConfirmDeleteWantedSkill = async () => {
+    if (!skillToDelete) return;
+    
     try {
-      await skillService.deleteWantedSkill(skillId);
+      await skillService.deleteWantedSkill(skillToDelete.id);
       fetchMyWantedSkills();
+      showToast('Skill deleted successfully!', 'success');
+      setIsDeleteWantedModalOpen(false);
+      setSkillToDelete(null);
     } catch (error) {
       console.error('Error deleting wanted skill:', error);
+      showToast('Failed to delete skill', 'error');
     }
   };
 
@@ -295,7 +321,7 @@ const MySkills = () => {
                         isOffer={true}
                         onEdit={() => handleEditClick(skill)}
                         onViewCurriculum={() => handleViewCurriculum(skill.title)}
-                        onDelete={() => handleDeleteSkill(skill.id)}
+                        onDelete={() => handleDeleteSkillClick(skill.id, skill.title)}
                       />
                     ))
                   ) : (
@@ -338,7 +364,7 @@ const MySkills = () => {
                       {...skill}
                       isOffer={false}
                       onEdit={() => handleEditWantedClick(skill)}
-                      onDelete={() => handleDeleteWantedSkill(skill.id)}
+                      onDelete={() => handleDeleteWantedSkillClick(skill.id, skill.title)}
                     />
                   ))}
 
@@ -429,6 +455,26 @@ const MySkills = () => {
           </div>
         </div>
       )}
+      
+      <DeleteSkillModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSkillToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteSkill}
+        skillName={skillToDelete?.name}
+      />
+
+      <DeleteSkillModal
+        isOpen={isDeleteWantedModalOpen}
+        onClose={() => {
+          setIsDeleteWantedModalOpen(false);
+          setSkillToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteWantedSkill}
+        skillName={skillToDelete?.name}
+      />
       
       {/* Toast Notification */}
       <Toast 
