@@ -173,6 +173,7 @@ const Explore = () => {
                 <SkillCard 
                   key={mentor._id || mentor.name} 
                   {...mentor} 
+                  requestId={mentor.requestId}
                   onConnect={() => handleConnect(mentor._id)}
                   onDisconnect={() => handleDisconnect(mentor._id)}
                 />

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Avatar from "../common/Avatar";
+import { chatService } from "../../services/chatService";
+import Toast from "../common/Toast";
 
 const SkillCard = ({
   _id,
@@ -8,6 +10,7 @@ const SkillCard = ({
   rating,
   reviews,
   img,
+  requestId,
   offeredSkills = [],
   wantedSkills = [],
   statusColor = "bg-[#13ec5b]",
@@ -16,10 +19,19 @@ const SkillCard = ({
   onDisconnect
 }) => {
   const navigate = useNavigate();
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
   const [showAllOffered, setShowAllOffered] = useState(false);
   const [showAllWanted, setShowAllWanted] = useState(false);
 
   const maxSkills = 3;
+
+  const showToast = (message, type = 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false });
+  };
 
   // Function to navigate and pass the data to ExploreProfile
   const handleViewProfile = () => {
@@ -35,6 +47,31 @@ const SkillCard = ({
       }
     });
   };
+
+const handleMessage = async () => {
+  try {
+    if (!requestId) {
+      showToast("Pehle connection accept hona chahiye", "error");
+      return;
+    }
+
+    // Backend se chat ID lekar aao
+    const chatData = await chatService.createOrGetChat({
+      otherUserId: _id,
+      requestId: requestId
+    });
+
+    if (chatData && chatData._id) {
+      // ✅ Yahan hum redirect kar rahe hain
+      navigate("/messages", { 
+        state: { activeChatId: chatData._id } 
+      });
+    }
+  } catch (error) {
+    console.error("Chat Error:", error);
+    showToast("Chat shuru nahi ho saki", "error");
+  }
+};
 
   const renderActionButton = () => {
     // Pending - waiting for other user to accept
@@ -67,6 +104,7 @@ const SkillCard = ({
   };
 
   return (
+    <>
     <div className="group bg-white dark:bg-[#193322] border border-slate-200 dark:border-[#23482f] rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-[#13ec5b]/5 transition-all duration-300 flex flex-col h-fit">
       <div className="p-6 flex-1 flex flex-col">
         {/* Profile Header */}
@@ -131,6 +169,15 @@ const SkillCard = ({
         </div>
       </div>
     </div>
+    
+    {/* Toast Notification */}
+    <Toast 
+      message={toast.message}
+      type={toast.type}
+      isVisible={toast.isVisible}
+      onClose={hideToast}
+    />
+    </>
   );
 };
 
