@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Shield, Bell, Ban } from 'lucide-react';
+import { User, Ban } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const SettingsSidebar = () => {
@@ -8,8 +8,6 @@ const SettingsSidebar = () => {
 
   const tabs = [
     { id: 'account', label: 'Account', path: '/settings/account', icon: <User size={18} /> },
-    { id: 'security', label: 'Security', path: '/settings/security', icon: <Shield size={18} /> },
-    { id: 'notifications', label: 'Notifications', path: '/settings/notifications', icon: <Bell size={18} /> },
     { id: 'blocked', label: 'Blocked Users', path: '/settings/blocked-users', icon: <Ban size={18} /> },
   ];
 

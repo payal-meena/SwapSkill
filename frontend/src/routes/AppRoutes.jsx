@@ -7,22 +7,12 @@ import UserLayout from "../layouts/UserLayout";
 import Requests from "../pages/requests/Requests";
 import MessagesPage from "../pages/messages/MessagesPage";
 import SettingsLayout from "../pages/settings/SettingLayout";
-import Notifications from "../pages/settings/Notifications";
 import BlockedUsers from "../pages/settings/BlockedUsers";
 import Account from "../pages/settings/Account";
-import Security from "../pages/settings/Security";
-import AdminLayout from "../layouts/AdminLayout";
-import AdminDashboard from "../pages/admin/AdminDashboard";
 import Explore from "../pages/explore/Explore";
 import Profile from "../pages/profile/Profile";
-import UserManagment from "../pages/admin/UserManagment";
-import SkillModeration from "../pages/admin/SkillModeration";
-import AdminProfile from "../pages/admin/settings/AdminProfile";
 import ExploreProfile from "../pages/explore/ExploreProfile";
 import MyConnection from "../pages/myconnection/MyConnection";
-
-// Monitoring component import
-import Monitoring from "../pages/admin/Monitoring";
 
 function AppRoutes() {
   return (
@@ -47,22 +37,7 @@ function AppRoutes() {
       <Route path="/settings" element={<SettingsLayout />}>
         <Route index element={<Navigate to="/settings/account" replace />} />
         <Route path="account" element={<Account />} />
-        <Route path="security" element={<Security />} />
-        <Route path="notifications" element={<Notifications />} />
         <Route path="blocked-users" element={<BlockedUsers />} />
-      </Route>
-
-      {/* Admin Routes */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="users" element={<UserManagment />} />
-        <Route path="skills" element={<SkillModeration />} />
-        <Route path="exchanges" element={<Monitoring />} />
-        
-        {/* Admin Settings */}
-        <Route path="settings" element={<AdminProfile />} />
-        <Route path="moderation" element={<div>Moderation Page</div>} />
       </Route>
 
       {/* 404 Redirect */}
