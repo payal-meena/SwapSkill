@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { chatService } from '../services/chatService';
 
 export const useSocket = () => {
   const [socket, setSocket] = useState(null);
@@ -9,15 +9,18 @@ export const useSocket = () => {
     const userId = localStorage.getItem('userId');
     
     if (token && userId) {
-      const newSocket = io('http://localhost:3000', {
-        query: { userId },
-        transports: ['websocket']
-      });
-
-      setSocket(newSocket);
+      // Use chatService to get the socket instance instead of creating a new one
+      // This ensures only one socket instance is used throughout the app
+      chatService.connectSocket(userId);
+      
+      // Get socket from chatService
+      const appSocket = chatService.socket;
+      if (appSocket) {
+        setSocket(appSocket);
+      }
 
       return () => {
-        newSocket.close();
+        // Don't close socket here, let chatService manage it
       };
     }
   }, []);

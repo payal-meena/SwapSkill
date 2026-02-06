@@ -26,6 +26,12 @@ const io = new Server(server, {
 // init socket
 socketHandler(io);
 
+// Make io available in all routes - ye line add ho gayi
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 // port
 const PORT = process.env.PORT || 3000;
 
