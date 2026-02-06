@@ -12,7 +12,10 @@ const initSocket = (userId) => {
   socket = io(SOCKET_URL, {
     autoConnect: false,
     reconnection: true,
-    transports: ['websocket'],
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 10,
+    transports: ['websocket', 'polling'],
     query: {
       userId: userId,
       token: token
@@ -83,14 +86,32 @@ export const chatService = {
 
     socket.on('connect', () => {
       console.log('✅ Connected to Socket. ID:', socket.id, 'userId:', userId);
+      // Emit that user is online
+      socket.emit('userOnline', { userId });
     });
 
     socket.on('connect_error', (err) => {
       console.error('❌ Socket Connection Error:', err?.message || err);
+      // Auto-retry after delay
+      setTimeout(() => {
+        if (socket && !socket.connected) {
+          console.log('🔄 Retrying socket connection...');
+          socket.connect();
+        }
+      }, 3000);
     });
 
     socket.on('disconnect', (reason) => {
       console.log('⚠️ Socket Disconnected:', reason);
+      // Auto-reconnect if not manually disconnected
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        setTimeout(() => {
+          if (socket && !socket.connected) {
+            console.log('🔄 Attempting to reconnect...');
+            socket.connect();
+          }
+        }, 2000);
+      }
     });
   },
 
@@ -178,9 +199,8 @@ export const chatService = {
     
     console.log("📡 Setting up messageReceived listener, socket connected:", socket.connected);
     
-    // Register the listener (allow multiple listeners so different parts of app
-    // can react to incoming messages). Callbacks should be removed explicitly
-    // via `removeMessageListener` when no longer needed.
+    // Don't remove previous listeners - multiple components can listen
+    // Just add this new listener
     socket.on("messageReceived", (message) => {
       console.log("🔔 chatService received message:", message._id, "chat:", message.chat);
       try { callback(message); } catch (err) { console.error('chatService callback error', err); }
@@ -212,7 +232,7 @@ export const chatService = {
 // Sidebar update ke liye backend se signal sunna
   onSidebarUpdate: (callback) => {
     if (!socket) return;
-    socket.off("sidebarUpdate"); // Purana listener hatao taaki duplicate na ho
+    // Don't remove previous listeners - just add this one
     socket.on("sidebarUpdate", (data) => {
       console.log("🔔 Sidebar Update Received:", data._id);
       callback(data);

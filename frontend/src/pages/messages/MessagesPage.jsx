@@ -39,6 +39,13 @@ const MessagesPage = () => {
   const activeChatIdRef = useRef(null);
   const activeChatRef = useRef(null);
 
+
+  const activeChatFromList = React.useMemo(() => {
+  if (!activeChat) return null;
+  return chats.find(c => c._id === activeChat._id) || activeChat;
+}, [chats, activeChat]);
+
+
   const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -119,22 +126,41 @@ const MessagesPage = () => {
     };
     chatService.connectSocket(myUserId);
     const timer = setTimeout(() => { loadInitialData(); }, 100);
+
+    // Real-time message listener - with better debugging
     const handleNewMessage = (newMsg) => {
+      console.log('📨 MessagesPage.handleNewMessage called with:', { msgId: newMsg._id, chat: newMsg.chat });
+
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       const isFromOther = (newMsg.sender?._id || newMsg.sender) !== myUserId;
       const currentId = activeChatIdRef.current;
-      const isSameChat = currentId && msgChatId &&
+      const currentActiveChat = activeChatRef.current;
+
+      // Multiple ways to check if this is the active chat
+      const isSameChatById = currentId && msgChatId &&
         currentId.toString() === msgChatId.toString();
+      const isSameChatByRef = currentActiveChat && msgChatId &&
+        currentActiveChat._id?.toString() === msgChatId.toString();
+      const isSameChat = isSameChatById || isSameChatByRef;
 
-      console.log('handleNewMessage:', { id: newMsg._id, msgChatId, activeChatId: currentId, isSameChat, isFromOther });
+      console.log('📨 handleNewMessage:', {
+        msgId: newMsg._id,
+        msgChatId,
+        activeChatIdRef: currentId,
+        activeChatRef: currentActiveChat?._id,
+        isSameChatById,
+        isSameChatByRef,
+        isSameChat,
+        isFromOther
+      });
 
+      // Update sidebar with new message
       setChats(prev => {
         const updated = prev.map(c =>
           (c._id.toString() === msgChatId.toString()) ? {
             ...c,
             lastMessage: newMsg,
             lastMessageAt: newMsg.createdAt,
-            // If message is from other user AND not active chat, increment unread
             unreadCount: isFromOther && !isSameChat
               ? (c.unreadCount || []).some(u => (u.userId || u._id || u.id) === myUserId)
                 ? c.unreadCount.map(u => (u.userId || u._id || u.id) === myUserId ? { ...u, count: (u.count || 0) + 1 } : u)
@@ -146,45 +172,53 @@ const MessagesPage = () => {
       });
 
       // If the chat currently open is the same chat, append the message and scroll
-      const activeFull = activeChatRef.current;
-      const isSameChatByRef = activeFull && msgChatId && (activeFull._id?.toString() === msgChatId.toString());
-      if (isSameChat || isSameChatByRef) {
+      if (isSameChat) {
+        console.log('✅ MessagesPage: Adding message to active chat');
         setMessages(prev => {
-          // Avoid duplicates: check if message already exists
+          // Avoid duplicates
           if (prev.find(m => m._id === newMsg._id)) {
+            console.log('⚠️ Message already exists, skipping');
             return prev;
           }
           // Remove temp message with same text if file message
           if (newMsg.file) {
             const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.file?.name);
-            return [...filtered, newMsg];
+            const next = [...filtered, newMsg];
+            setTimeout(() => {
+              if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }, 30);
+            console.log('✅ File message added, total messages:', next.length);
+            return next;
           }
           // For text messages, remove temp message with same text
           const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.text);
-          // Append and schedule scroll
           const next = [...filtered, newMsg];
           setTimeout(() => {
             if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
           }, 30);
+          console.log('✅ Text message added, total messages:', next.length);
           return next;
         });
-        // If message is from the other user, mark as read and seen immediately
+
+        // Mark as read immediately if from other user
         if (isFromOther) {
           try {
-            // update local chats state to clear unread for this chat
             setChats(prev => prev.map(c => c._id?.toString() === msgChatId.toString() ? ({
               ...c,
               unreadCount: (c.unreadCount || []).map(u => (u.userId || u._id || u.id) === myUserId ? { ...u, count: 0 } : u)
             }) : c));
             chatService.markAsRead?.(msgChatId, myUserId);
-            // emit a seen/read-receipt for this specific message
             chatService.markMessageSeen?.(newMsg._id, msgChatId, myUserId);
           } catch (err) {
             console.warn('markAsRead/markMessageSeen failed', err);
           }
         }
+      } else {
+        console.log('❌ Message is for different chat, not adding to messages');
       }
     };
+
+    console.log('📡 MessagesPage: Registering messageReceived listener');
     chatService.onMessageReceived?.(handleNewMessage);
 
     chatService.onSidebarUpdate?.((updatedChat) => {
@@ -197,6 +231,7 @@ const MessagesPage = () => {
       // Update activeChat if it's the same chat
       if (activeChat?._id === updatedChat._id) {
         setActiveChat(updatedChat);
+        activeChatRef.current = updatedChat;
       }
     });
 
@@ -204,10 +239,8 @@ const MessagesPage = () => {
     chatService.onChatCreated?.((newChat) => {
       console.log('🆕 New chat created:', newChat._id);
       setChats(prev => {
-        // Check if chat already exists
         const exists = prev.find(c => c._id === newChat._id);
         if (exists) return prev;
-        // Add at the top with isNew flag
         return [{ ...newChat, isNew: true }, ...prev];
       });
     });
@@ -221,10 +254,12 @@ const MessagesPage = () => {
       setActiveChat(prev => {
         if (!prev) return prev;
         if (!prev.participants.some(p => (p._id || p) === userId)) return prev;
-        return {
+        const updated = {
           ...prev,
           participants: prev.participants.map(p => (p._id || p) === userId ? { ...p, isOnline: status === 'online', lastSeen } : p)
         };
+        activeChatRef.current = updated;
+        return updated;
       });
     };
     chatService.onUserStatusChanged?.(handleStatusChange);
@@ -232,7 +267,6 @@ const MessagesPage = () => {
     // Listen for message seen/read receipts
     chatService.onMessageSeen?.(({ messageId, chatId, seenBy }) => {
       setMessages(prev => prev.map(m => m._id === messageId ? { ...m, seen: true } : m));
-      // Also update chats list lastMessage seen flag if applicable
       setChats(prev => prev.map(c => c._id?.toString() === chatId?.toString() ? ({
         ...c,
         lastMessage: c.lastMessage && (c.lastMessage._id === messageId || c.lastMessage === messageId) ? { ...c.lastMessage, seen: true } : c.lastMessage
@@ -248,7 +282,6 @@ const MessagesPage = () => {
     chatService.onMessageUpdated?.((updatedMsg) => {
       try {
         setMessages(prev => prev.map(m => m._id === updatedMsg._id ? { ...m, ...updatedMsg } : m));
-        // Update lastMessage in chats if applicable
         setChats(prev => prev.map(c => c._id?.toString() === (updatedMsg.chat?._id || updatedMsg.chat)?.toString() ? ({
           ...c,
           lastMessage: c.lastMessage && (c.lastMessage._id === updatedMsg._id || c.lastMessage === updatedMsg._id) ? { ...c.lastMessage, ...updatedMsg } : c.lastMessage
@@ -293,12 +326,18 @@ const MessagesPage = () => {
     if (activeChat?._id) {
       activeChatIdRef.current = activeChat._id;
       activeChatRef.current = activeChat;
+
+      console.log('🔄 Active chat updated:', activeChat._id, 'loading history...');
+
       // Wait a bit to ensure socket is connected
       setTimeout(() => {
         chatService.joinChat?.(activeChat._id, myUserId);
       }, 100);
+
       chatService.getChatHistory(activeChat._id).then(data => {
         setMessages(data);
+        console.log('💬 Chat history loaded:', data.length, 'messages');
+
         // After history loads, consider this chat viewed — clear unread and inform server
         try {
           const unreadNow = getUnreadCount(activeChat) || 0;
@@ -325,6 +364,8 @@ const MessagesPage = () => {
         } catch (err) {
           console.warn('post-history markAsRead failed', err);
         }
+      }).catch(err => {
+        console.error('Error loading chat history:', err);
       });
     }
   }, [activeChat?._id, myUserId]);
@@ -515,19 +556,22 @@ const MessagesPage = () => {
                 {openSidebarMenuId === chat._id && (
                   <div className="fixed inset-0 z-20" onClick={() => setOpenSidebarMenuId(null)} />
                 )}
-                
+
                 <div
                   onClick={() => {
                     setActiveChat(chat);
+                    // Update refs immediately (not async like setActiveChat)
+                    activeChatIdRef.current = chat._id;
+                    activeChatRef.current = chat;
+
                     // Remove isNew flag when user opens the chat
                     if (chat.isNew) {
                       setChats(prev => prev.map(c => c._id === chat._id ? { ...c, isNew: false } : c));
                     }
-                    // Immediately set active ref and join chat room for real-time
-                    activeChatIdRef.current = chat._id;
+                    // Immediately join chat room for real-time
                     chatService.joinChat?.(chat._id, myUserId);
-                    // Do NOT mark as read here — mark only after history loads and user can actually view messages
-                    // Scroll to top when switching chats
+
+                    // Scroll to bottom
                     if (scrollRef.current) {
                       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
                     }
@@ -684,19 +728,21 @@ const MessagesPage = () => {
                 <div>
                   <h3 className="font-bold">{otherUser?.name}</h3>
                   <p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
-                    {isRecentlyOnline(otherUser) 
-      ? '● Online' 
-      : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`
-    }
+                    {isRecentlyOnline(otherUser)
+                      ? '● Online'
+                      : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`
+                    }
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 {/* Unread badge */}
-                {getUnreadCount(activeChat) > 0 && (
+                
+
+                {getUnreadCount(activeChatFromList) > 0 && (
                   <div className="px-3 py-1 bg-[#13ec5b]/20 border border-[#13ec5b] rounded-full text-[10px] font-bold text-[#13ec5b]">
-                    {getUnreadCount(activeChat)} unread
+                    {getUnreadCount(activeChatFromList)} unread
                   </div>
                 )}
 
@@ -725,7 +771,7 @@ const MessagesPage = () => {
                         <X size={14} />
                         <span>Delete Chat</span>
                       </button>
-                      
+
                     </div>
                   )}
                 </div>
@@ -845,13 +891,13 @@ const MessagesPage = () => {
                   if (showEmojiPicker && e.target.value.length > 0) {
                     setShowEmojiPicker(false);
                   }
-                }}onFocus={() => setShowEmojiPicker(false)}
-                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSend();
-                    setShowEmojiPicker(false);
-                  }
-                }} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
+                }} onFocus={() => setShowEmojiPicker(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSend();
+                      setShowEmojiPicker(false);
+                    }
+                  }} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
 
                 <button onClick={() => {
                   handleSend();

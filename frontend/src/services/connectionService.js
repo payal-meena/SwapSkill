@@ -1,6 +1,16 @@
 import api from './api';
 
 export const connectionService = {
+  // Get my connections
+  getMyConnections: async () => {
+    try {
+      const response = await api.get('/users/me/connections');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Follow a user
   followUser: async (userId) => {
     try {
