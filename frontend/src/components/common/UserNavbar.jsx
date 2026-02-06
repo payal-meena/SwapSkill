@@ -47,7 +47,7 @@ const UserNavbar = ({ userName }) => {
   }, [userName]);
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-[#23482f] bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md px-8 py-4 font-['Lexend']">
+    <header className="sticky top-0 z-[100] flex items-center justify-between border-b border-slate-200 dark:border-[#23482f] bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md px-8 py-4 font-['Lexend']">
       <div className="flex items-center gap-4">
         <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">
           Welcome back, <span className="text-[#13ec5b]">{userProfile.name}</span>!
@@ -57,7 +57,7 @@ const UserNavbar = ({ userName }) => {
       <div className="flex items-center gap-6">
         <div className="flex gap-3 items-center">
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative z-20">
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="flex items-center justify-center rounded-xl h-10 w-10 bg-slate-100 dark:bg-[#23482f] text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-[#326744] transition-colors relative cursor-pointer"

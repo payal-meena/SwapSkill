@@ -37,9 +37,9 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose}></div>
+      <div className="fixed inset-0 z-40 " onClick={onClose}></div>
       
-      <div className="absolute right-0 mt-3 w-96 bg-[#1a1c1ae6] backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden border border-[#13ec5b33] font-['Lexend'] animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
+      <div className="absolute right-0 mt-3 w-96 bg-[#1a1c1ae6] backdrop-blur-xl rounded-2xl shadow-2xl z-50 overflow-hidden border border-[#13ec5b33] font-['Lexend'] animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right scrollbar-hide ">
         
         <div className="px-5 py-4 flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
+        <div className="max-h-[420px] overflow-y-auto scrollbar-hide ">
           {loading ? (
             <div className="p-10 text-center text-white/40 text-sm">
               <span className="material-symbols-outlined text-4xl mb-2 block animate-spin">refresh</span>
