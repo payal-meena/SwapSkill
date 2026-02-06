@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { notificationService } from '../services/notificationService';
-import { useSocket } from '../hooks/useSocket';
+import { chatService } from '../services/chatService';
 
 const NotificationContext = createContext();
 
@@ -15,16 +15,29 @@ export const useNotifications = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const socket = useSocket();
 
   useEffect(() => {
     fetchNotifications();
   }, []);
 
   useEffect(() => {
+    // Initialize socket connection
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    
+    if (token && userId) {
+      chatService.connectSocket(userId);
+    }
+
+    // Get socket from chatService (singleton instance)
+    const socket = chatService.socket;
+    
     if (socket) {
+      console.log('NotificationContext: Setting up socket listeners');
+      
       // Listen for new notifications
       socket.on('newNotification', (notification) => {
+        console.log('🔔 New notification:', notification);
         // Transform senderId to sender for consistency
         const transformedNotification = {
           ...notification,
@@ -36,6 +49,7 @@ export const NotificationProvider = ({ children }) => {
 
       // Listen for request updates and convert to notifications
       socket.on('requestUpdated', (request) => {
+        console.log('📋 Request updated:', request);
         // Auto-add to notifications if relevant
         const notification = {
           _id: request._id,
@@ -52,6 +66,7 @@ export const NotificationProvider = ({ children }) => {
 
       // Listen for new chats
       socket.on('chatCreated', (chat) => {
+        console.log('💬 Chat created:', chat);
         const notification = {
           _id: chat._id,
           type: 'CHAT',
@@ -67,6 +82,7 @@ export const NotificationProvider = ({ children }) => {
 
       // Listen for messages
       socket.on('messageReceived', (message) => {
+        console.log('✉️ Message received:', message._id);
         const notification = {
           _id: message._id,
           type: 'MESSAGE',
@@ -87,7 +103,7 @@ export const NotificationProvider = ({ children }) => {
         socket.off('messageReceived');
       };
     }
-  }, [socket]);
+  }, []);
 
   const fetchNotifications = async () => {
     try {

@@ -390,33 +390,68 @@ module.exports = (io) => {
     });
 
     // --- 4. Mark As Read (Updated to clear unreadCount) ---
+    // socket.on("markAsRead", async ({ chatId, userId }) => {
+    //   try {
+    //     // Mark all messages as read
+    //     await Message.updateMany(
+    //       { chat: chatId, sender: { $ne: userId }, isRead: false },
+    //       { $set: { isRead: true } }
+    //     );
+        
+    //     // Clear unreadCount for this user in this chat
+    //     const chat = await Chat.findById(chatId);
+    //     if (chat) {
+    //       const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === userId.toString());
+    //       if (unreadEntry) {
+    //         unreadEntry.count = 0;
+    //       } else {
+    //         chat.unreadCount.push({ userId, count: 0 });
+    //       }
+    //       await chat.save();
+    //       console.log(`✅ Chat ${chatId} marked as read for user ${userId}`);
+    //     }
+        
+    //     io.to(chatId).emit("messagesMarkedAsRead", { chatId, userId });
+    //     io.to(userId).emit('unreadCountUpdated', { chatId, count: 0 });
+    //   } catch (err) {
+    //     console.error('markAsRead error:', err);
+    //   }
+    // });
     socket.on("markAsRead", async ({ chatId, userId }) => {
-      try {
-        // Mark all messages as read
-        await Message.updateMany(
-          { chat: chatId, sender: { $ne: userId }, isRead: false },
-          { $set: { isRead: true } }
-        );
-        
-        // Clear unreadCount for this user in this chat
-        const chat = await Chat.findById(chatId);
-        if (chat) {
-          const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === userId.toString());
-          if (unreadEntry) {
-            unreadEntry.count = 0;
-          } else {
-            chat.unreadCount.push({ userId, count: 0 });
-          }
-          await chat.save();
-          console.log(`✅ Chat ${chatId} marked as read for user ${userId}`);
-        }
-        
-        io.to(chatId).emit("messagesMarkedAsRead", { chatId, userId });
-        io.to(userId).emit('unreadCountUpdated', { chatId, count: 0 });
-      } catch (err) {
-        console.error('markAsRead error:', err);
-      }
-    });
+  try {
+    // 1. Messages read mark
+    await Message.updateMany(
+      { chat: chatId, sender: { $ne: userId }, isRead: false },
+      { $set: { isRead: true } }
+    );
+
+    // 2. Unread count reset
+    const chat = await Chat.findById(chatId);
+    if (!chat) return;
+
+    const unread = chat.unreadCount.find(
+      u => u.userId.toString() === userId.toString()
+    );
+
+    if (unread) unread.count = 0;
+    else chat.unreadCount.push({ userId, count: 0 });
+
+    await chat.save();
+
+    // 3. 🔥 SIDEBAR REAL-TIME UPDATE
+    const updatedChat = await Chat.findById(chatId)
+      .populate("participants", "name profileImage isOnline lastSeen");
+
+    io.to(userId.toString()).emit("sidebarUpdate", updatedChat);
+
+    // optional (agar chat open hai)
+    io.to(chatId.toString()).emit("messagesMarkedAsRead", { chatId, userId });
+
+  } catch (err) {
+    console.error("markAsRead error:", err);
+  }
+});
+
 
     // --- Message Seen (read receipt) ---
     socket.on('messageSeen', async ({ messageId, chatId, userId }) => {
