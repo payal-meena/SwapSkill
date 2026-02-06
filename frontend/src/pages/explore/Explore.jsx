@@ -55,6 +55,7 @@ const Explore = () => {
 
           return {
             ...mentor,
+            requestId: foundRequest?._id || null,
             connectionStatus: status === 'rejected' ? 'none' : status
           };
         })
@@ -176,9 +177,9 @@ const Explore = () => {
 
   const handleConnect = async (mentorId) => {
     try {
-      await requestService.sendRequest({ receiver: mentorId });
+      const response = await requestService.sendRequest({ receiver: mentorId });
       setMentors(prev => prev.map(m => 
-        m._id === mentorId ? { ...m, connectionStatus: 'pending' } : m
+        m._id === mentorId ? { ...m, connectionStatus: 'pending', requestId: response.data?.request?._id } : m
       ));
       showToast('Request sent! Waiting for acceptance...', 'success');
     } catch (err) {
@@ -189,16 +190,24 @@ const Explore = () => {
 
   const handleDisconnect = async (mentorId) => {
     try {
-      // Find the request and withdraw it
+      // Find the mentor and their request ID
       const mentor = mentors.find(m => m._id === mentorId);
-      if (mentor) {
-        setMentors(prev => prev.map(m => 
-          m._id === mentorId ? { ...m, connectionStatus: 'none' } : m
-        ));
-        showToast('Disconnected successfully!', 'success');
+      if (!mentor || !mentor.requestId) {
+        showToast('Connection not found', 'error');
+        return;
       }
+
+      // Call unfriend API immediately
+      await requestService.unfriendUser(mentor.requestId);
+
+      // Update local state immediately
+      setMentors(prev => prev.map(m => 
+        m._id === mentorId ? { ...m, connectionStatus: 'none', requestId: null } : m
+      ));
+      showToast('Unfollowed successfully!', 'success');
     } catch (err) {
-      showToast('Failed to disconnect', 'error');
+      console.error('Disconnect error:', err);
+      showToast(err.message || 'Failed to unfollow', 'error');
     }
   };
  

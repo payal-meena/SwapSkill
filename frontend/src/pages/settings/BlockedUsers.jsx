@@ -58,7 +58,7 @@ const BlockedUsers = () => {
             onClick={() => navigate(-1)}
             className="text-[#13ec5b] hover:brightness-125 flex items-center gap-2 transition-all font-black text-sm uppercase tracking-widest"
           >
-            <ArrowLeft size={18} /> Back
+           
           </button>
         </div>
 
