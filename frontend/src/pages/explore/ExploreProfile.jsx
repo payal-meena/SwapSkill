@@ -7,6 +7,7 @@ import { SocketContext } from '../../context/SocketContext';
 import { Instagram, Facebook, Github, Ghost, ArrowLeft, ShieldAlert } from 'lucide-react';
 import Avatar from '../../components/common/Avatar';
 import Toast from '../../components/common/Toast';
+import { getSkillIcon } from '../../utils/skillIcons';
 
 const ExploreProfile = () => {
   const location = useLocation();
@@ -302,6 +303,7 @@ const ExploreProfile = () => {
                   <div className="flex flex-wrap gap-2">
                     {offeredSkillsState.length > 0 ? offeredSkillsState.map((skill, index) => (
                       <div key={index} className="px-4 py-2 bg-white/5 border border-[#13ec5b]/30 rounded-xl flex items-center gap-3">
+                        <span className="text-lg">{getSkillIcon(skill.name || skill.skillName || skill.title)}</span>
                         <span className="font-bold text-white text-md">{skill.name || skill.skillName || skill.title}</span>
                         <span className="text-[9px] font-black bg-[#13ec5b] text-[#05160e] px-1.5 py-0.5 rounded uppercase">
                           {skill.level || skill.leval || skill.levelName}
@@ -318,8 +320,9 @@ const ExploreProfile = () => {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {wantedSkillsState.length > 0 ? wantedSkillsState.map((skill, index) => (
-                      <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl text-amber-400 font-bold text-md">
-                        {typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.title)}
+                      <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl flex items-center gap-3">
+                        <span className="text-lg">{getSkillIcon(typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.title))}</span>
+                        <span className="text-amber-400 font-bold text-md">{typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.title)}</span>
                       </div>
                     )) : <div className="p-3 bg-amber-500/10 border-2 border-amber-500/30 rounded-xl"><p className="text-amber-400 text-sm font-bold uppercase tracking-wide">Not Added Yet</p></div>}
                   </div>

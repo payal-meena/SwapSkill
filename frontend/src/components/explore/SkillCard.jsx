@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Avatar from "../common/Avatar";
 import { chatService } from "../../services/chatService";
 import Toast from "../common/Toast";
+import { getSkillIcon } from "../../utils/skillIcons";
 
 const SkillCard = ({
   _id,
@@ -107,8 +108,8 @@ const handleMessage = async () => {
 
   return (
     <>
-    <div className="group bg-white dark:bg-[#193322] border border-slate-200 dark:border-[#23482f] rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-[#13ec5b]/5 transition-all duration-300 flex flex-col h-fit">
-      <div className="p-6 flex-1 flex flex-col">
+    <div className="group bg-white dark:bg-[#193322] border border-slate-200 dark:border-[#23482f] rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-[#13ec5b]/5 transition-all duration-300 flex flex-col h-full">
+      <div className="p-6 flex-1 flex flex-col justify-between">
         {/* Profile Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
@@ -134,29 +135,48 @@ const handleMessage = async () => {
         </div>
 
         {/* Offered Skills */}
-        <div className="mb-4">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-[#92c9a4] font-bold mb-2">Can Teach</p>
-          <div className={`flex flex-wrap gap-2 ${showAllOffered ? "" : "max-h-[90px] overflow-hidden"}`}>
-            {offeredSkills.length > 0 ? offeredSkills.map((skill, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#102216]/50 p-2 rounded-xl border border-slate-100 dark:border-[#23482f]">
-                <span className="text-slate-900 dark:text-white font-semibold mr-2">{skill.name}</span>
-                <span className="bg-[#13ec5b]/20 text-[#13ec5b] text-[10px] font-bold px-2 py-1 rounded">{skill.level || skill.leval}</span>
-              </div>
-            )) : <div className="p-2 bg-[#13ec5b]/10 border border-[#13ec5b]/30 rounded-xl w-full text-center"><p className="text-[#13ec5b] text-xs font-bold uppercase tracking-wide">Not Added Yet</p></div>}
+        <div className="mb-5 pb-5 border-b border-slate-100 dark:border-[#23482f]">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="material-symbols-outlined text-[#13ec5b] text-lg">school</span>
+            <p className="text-[11px] uppercase tracking-wider text-slate-600 dark:text-[#92c9a4] font-bold">Can Teach</p>
           </div>
+          {offeredSkills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {offeredSkills.map((skill, idx) => (
+                <div key={idx} className="inline-flex items-center gap-2 bg-[#13ec5b]/5 dark:bg-[#13ec5b]/10 px-3 py-2 rounded-lg border border-[#13ec5b]/30 hover:border-[#13ec5b]/60 transition-all">
+                  <span className="text-lg">{getSkillIcon(skill.name)}</span>
+                  <span className="text-slate-900 dark:text-white font-semibold text-sm">{skill.name}</span>
+                  <span className="bg-[#13ec5b]/40 text-[#13ec5b] dark:text-[#13ec5b] text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">{skill.level || skill.leval}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-3 bg-[#13ec5b]/5 border border-[#13ec5b]/20 rounded-lg text-center">
+              <p className="text-[#13ec5b] text-xs font-bold uppercase tracking-wide">Not Added</p>
+            </div>
+          )}
         </div>
 
         {/* Wanted Skills */}
         <div className="mb-4">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-[#92c9a4] font-bold mb-2">Wants to Learn</p>
-          <div className={`flex flex-wrap gap-2 ${showAllWanted ? "" : "max-h-[90px] overflow-hidden"}`}>
-            {wantedSkills.length > 0 ? wantedSkills.map((skill, idx) => (
-              <div key={idx} className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
-                <span className="material-symbols-outlined text-[#13ec5b] text-lg">search</span>
-                <span className="font-medium text-slate-900 dark:text-white text-sm">{skill.name}</span>
-              </div>
-            )) : <div className="p-2 bg-blue-50/10 border border-blue-400/30 rounded-xl w-full text-center"><p className="text-blue-400 text-xs font-bold uppercase tracking-wide">Not Added Yet</p></div>}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="material-symbols-outlined text-[#60a5fa] text-lg">lightbulb</span>
+            <p className="text-[11px] uppercase tracking-wider text-slate-600 dark:text-blue-300 font-bold">Wants to Learn</p>
           </div>
+          {wantedSkills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {wantedSkills.map((skill, idx) => (
+                <div key={idx} className="inline-flex items-center gap-2 bg-blue-500/5 dark:bg-blue-500/10 px-3 py-2 rounded-lg border border-blue-300/30 hover:border-blue-300/60 transition-all">
+                  <span className="text-lg">{getSkillIcon(typeof skill === 'string' ? skill : skill.name)}</span>
+                  <span className="font-medium text-slate-900 dark:text-white text-sm">{typeof skill === 'string' ? skill : skill.name}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-3 bg-blue-500/5 border border-blue-300/20 rounded-lg text-center">
+              <p className="text-blue-500 text-xs font-bold uppercase tracking-wide">Not Added</p>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons - Dono Buttons Green style mein */}

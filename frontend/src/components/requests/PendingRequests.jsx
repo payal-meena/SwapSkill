@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { requestService } from '../../services/requestService';
 import Toast from '../common/Toast';
+import { getSkillIcon } from '../../utils/skillIcons';
 
 const RequestItem = ({ name, skill, message, img, onAccept, onDecline }) => (
   <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#193322] border border-slate-100 dark:border-[#23482f]">
@@ -9,8 +10,8 @@ const RequestItem = ({ name, skill, message, img, onAccept, onDecline }) => (
       <img className="h-10 w-10 rounded-lg object-cover" src={img} alt={name} />
       <div>
         <p className="text-slate-900 dark:text-white text-sm font-bold">{name}</p>
-        <p className="text-slate-500 dark:text-[#92c9a4] text-xs">
-          wants to learn <span className="text-[#13ec5b] font-medium">{skill}</span>
+        <p className="text-slate-500 dark:text-[#92c9a4] text-xs flex items-center gap-1">
+          wants to learn <span className="text-[#13ec5b] font-medium inline-flex items-center gap-1"><span>{getSkillIcon(skill)}</span>{skill}</span>
         </p>
       </div>
     </div>
