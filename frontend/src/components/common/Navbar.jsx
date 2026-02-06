@@ -17,7 +17,7 @@ const Navbar = () => {
     </div>
     <div className="hidden md:flex flex-1 justify-end gap-8">
       <nav className="flex items-center gap-9">
-        <a className="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#browse-skills">Browse Skills</a>
+        <a className="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#browse-skills">Home</a>
         <a className="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#how-it-works">How it Works</a>
         <a className="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#about">About</a>
       </nav>
