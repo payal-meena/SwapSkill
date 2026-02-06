@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut as LogOutIcon } from 'lucide-react';
 import LogOut from '../modals/LogOut';
 import { chatService } from '../../services/chatService';
+import { requestService } from '../../services/requestService';
+import { useChat } from '../../context/ChatContext';
 
 const getMyIdFromToken = () => {
   const token = localStorage.getItem('token');
@@ -15,7 +17,7 @@ const getMyIdFromToken = () => {
   } catch (e) { return null; }
 };
 
-const NavItem = ({ icon, label, to, badge = false, onClick }) => {
+const NavItem = ({ icon, label, to, badge = false, badgeCount = 0, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
@@ -38,6 +40,11 @@ const NavItem = ({ icon, label, to, badge = false, onClick }) => {
       {badge && !isActive && (
         <span className="absolute right-4 top-1/2 -translate-y-1/2 flex h-2 w-2 rounded-full bg-[#13ec5b] animate-pulse"></span>
       )}
+      {badgeCount > 0 && !isActive && (
+        <span className={`absolute right-3 top-1/2 -translate-y-1/2 bg-[#13ec5b] text-[#102216] font-bold text-xs px-2 py-0.5 rounded-full shadow-sm ${badgeCount ? 'wiggle-badge' : ''}`}>
+          {badgeCount > 99 ? '99+' : badgeCount}
+        </span>
+      )}
     </Link>
   );
 };
@@ -45,12 +52,126 @@ const NavItem = ({ icon, label, to, badge = false, onClick }) => {
 const UserSidebar = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+  const { chats } = useChat();
+  const myId = getMyIdFromToken();
+  const getUnreadCountFor = (c) => {
+    if (!c) return 0;
+    const uc = c.unreadCount;
+    if (uc == null) return 0;
+    if (typeof uc === 'number') return uc;
+    if (Array.isArray(uc)) {
+      const it = uc.find(u => (u.userId || u._id || u.id) === myId);
+      return it?.count || 0;
+    }
+    if (typeof uc === 'object') {
+      if (uc[myId] != null) return uc[myId];
+      return uc.count || 0;
+    }
+    return 0;
+  };
 
+  const totalUnread = (chats || []).reduce((sum, c) => sum + getUnreadCountFor(c), 0);
+
+  // Log whenever chats change
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location]);
+    if (chats && chats.length > 0) {
+      console.log('💬 UserSidebar - Chats updated:', {
+        count: chats.length,
+        totalUnread,
+        chats: chats.map(c => ({ 
+          id: c._id, 
+          participant: c.participants?.[0]?.name,
+          unreadCount: c.unreadCount 
+        }))
+      });
+    }
+  }, [chats, totalUnread]);
+
+  // Listen for incoming connection requests
+  useEffect(() => {
+    if (!myId) return;
+
+    // Try to use socket from chatService
+    const socket = chatService.socket;
+    if (!socket) {
+      console.warn('⚠️ Socket not available for request notifications');
+      return;
+    }
+
+    const handleNewRequest = (request) => {
+      console.log('🔔 Incoming request notification:', request);
+      // Only increment if this is for current user (receiver)
+      if (request?.receiver?._id?.toString() === myId?.toString() || request?.receiver === myId) {
+        setIncomingRequestCount(prev => {
+          const newCount = prev + 1;
+          console.log('📥 Updated incoming request count:', newCount);
+          return newCount;
+        });
+      }
+    };
+
+    const handleRequestUpdated = (updatedRequest) => {
+      // If it's a new pending request for us, increment
+      if (updatedRequest?.status === 'pending' && (updatedRequest?.receiver?._id?.toString() === myId?.toString() || updatedRequest?.receiver === myId)) {
+        setIncomingRequestCount(prev => {
+          const newCount = prev + 1;
+          console.log('📥 Updated incoming request count (from requestUpdated):', newCount);
+          return newCount;
+        });
+      }
+    };
+
+    socket.on('newNotification', handleNewRequest);
+    socket.on('requestUpdated', handleRequestUpdated);
+
+    return () => {
+      socket.off('newNotification', handleNewRequest);
+      socket.off('requestUpdated', handleRequestUpdated);
+    };
+  }, [myId]);
+
+  // Reset incoming request count when user visits requests page
+  useEffect(() => {
+    if (location.pathname === '/requests') {
+      console.log('🔄 User opened Requests page, resetting counter');
+      setIncomingRequestCount(0);
+    }
+  }, [location.pathname]);
+
+  // Fetch incoming requests count on mount
+  useEffect(() => {
+    if (!myId) return;
+    
+    const fetchIncomingRequestsCount = async () => {
+      try {
+        console.log('📥 Fetching incoming requests count on mount...');
+        const res = await requestService.getMyRequests();
+        console.log('📥 API Response:', res);
+        
+        if (res?.requests && Array.isArray(res.requests)) {
+          const incomingCount = res.requests.filter(r => {
+            const isReceiverMatch = r.receiver?._id?.toString() === myId?.toString() || 
+                                    r.receiver === myId;
+            const isPending = r.status === 'pending';
+            console.log(`📥 Checking request - Receiver: ${isReceiverMatch}, Status: ${r.status}`);
+            return isReceiverMatch && isPending;
+          }).length;
+          
+          console.log('📥 Final incoming request count:', incomingCount);
+          setIncomingRequestCount(incomingCount);
+        } else {
+          console.warn('📥 No requests array in response or invalid format:', res);
+        }
+      } catch (err) {
+        console.error('❌ Error fetching incoming requests count:', err);
+      }
+    };
+    
+    fetchIncomingRequestsCount();
+  }, [myId]);
 
   const handleLogoutConfirm = () => {
     const myId = getMyIdFromToken();
@@ -94,8 +215,8 @@ const UserSidebar = () => {
           <NavItem to="/dashboard" icon="dashboard" label="Dashboard" />
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
-          <NavItem to="/requests" icon="handshake" label="Requests" badge />
-          <NavItem to="/messages/:userId" icon="chat_bubble" label="Messages" />
+          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} />
+          <NavItem to="/messages/:userId" icon="chat_bubble" label="Messages" badgeCount={totalUnread} />
         </nav>
       </div>
 

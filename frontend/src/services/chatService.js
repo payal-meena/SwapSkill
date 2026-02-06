@@ -30,6 +30,11 @@ export const chatService = {
     return res.data;
   },
 
+  // Get reference to socket (for external listeners)
+  get socket() {
+    return socket;
+  },
+
   // Kisi specific chat ki history load karne ke liye
   getChatHistory: async (chatId) => {
     const res = await api.get(`/chats/history/${chatId}`);
@@ -173,17 +178,21 @@ export const chatService = {
     
     console.log("📡 Setting up messageReceived listener, socket connected:", socket.connected);
     
-    // Remove any existing listener first to avoid duplicates
-    socket.off('messageReceived');
-    
-    // Register the listener
+    // Register the listener (allow multiple listeners so different parts of app
+    // can react to incoming messages). Callbacks should be removed explicitly
+    // via `removeMessageListener` when no longer needed.
     socket.on("messageReceived", (message) => {
       console.log("🔔 chatService received message:", message._id, "chat:", message.chat);
-      callback(message);
+      try { callback(message); } catch (err) { console.error('chatService callback error', err); }
     });
   },
-  removeMessageListener: () => {
-    socket.off('messageReceived');
+  removeMessageListener: (callback) => {
+    if (!socket) return;
+    if (typeof callback === 'function') {
+      socket.off('messageReceived', callback);
+    } else {
+      socket.off('messageReceived');
+    }
   },
   removeDeleteListener: () => {
     socket.off("messageDeleted");
@@ -208,6 +217,19 @@ export const chatService = {
       console.log("🔔 Sidebar Update Received:", data._id);
       callback(data);
     });
+  },
+
+  // Listen for new chat created (when connection accepted)
+  onChatCreated: (callback) => {
+    if (!socket) return;
+    socket.on('chatCreated', (data) => {
+      console.log('🆕 chatService received chatCreated:', data._id);
+      try { callback(data); } catch (err) { console.error('onChatCreated callback error', err); }
+    });
+  },
+
+  removeChatCreatedListener: () => {
+    if (socket) socket.off('chatCreated');
   },
 
   // Cleanup ke liye
@@ -250,6 +272,23 @@ export const chatService = {
       socket.emit('updateUnreadCount', { chatId, userId, increment });
     }
   },
+  // Edit an existing message (real-time via socket)
+  editMessage: (messageId, newText, chatId, userId) => {
+    if (!socket || !socket.connected) return;
+    socket.emit('editMessage', { messageId, newText, chatId, userId });
+  },
+  // Listen for message updates (edits)
+  onMessageUpdated: (callback) => {
+    if (!socket) return;
+    socket.on('messageUpdated', (data) => {
+      try { callback(data); } catch (err) { console.error('onMessageUpdated callback error', err); }
+    });
+  },
+  removeMessageUpdatedListener: (callback) => {
+    if (!socket) return;
+    if (typeof callback === 'function') socket.off('messageUpdated', callback);
+    else socket.off('messageUpdated');
+  },
   // Listen for chat cleared
   onChatCleared: (callback) => {
     socket.on('chatCleared', callback);
@@ -270,6 +309,24 @@ export const chatService = {
     if (socket && socket.connected) {
       socket.emit("markAsRead", { chatId, userId });
     }
+  },
+  // Mark a specific message as seen (read receipt)
+  markMessageSeen: (messageId, chatId, userId) => {
+    if (socket && socket.connected) {
+      socket.emit('messageSeen', { messageId, chatId, userId });
+    }
+  },
+  // Listen for seen receipts
+  onMessageSeen: (callback) => {
+    if (!socket) return;
+    socket.on('messageSeen', (data) => {
+      try { callback(data); } catch (err) { console.error('onMessageSeen callback error', err); }
+    });
+  },
+  removeMessageSeenListener: (callback) => {
+    if (!socket) return;
+    if (typeof callback === 'function') socket.off('messageSeen', callback);
+    else socket.off('messageSeen');
   },
   removeStatusListener: () => {
     socket.off("userStatusChanged");

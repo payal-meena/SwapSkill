@@ -116,7 +116,7 @@ const SentRequestStatus = ({ request, onWithdraw }) => {
           {isAccepted ? (
             <button onClick={handleMessageClick}
              className="block text-center lg:px-8 py-3.5 bg-[#13ec5b] text-black text-xs font-black rounded-2xl uppercase tracking-widest">
-          Enter Workspace
+          Start Swapping
             </button>
           ) : (
           <button
