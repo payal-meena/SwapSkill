@@ -154,10 +154,7 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Test Notification */}
-          <div className="mb-8">
-            <TestNotification />
-          </div>
+        
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             
