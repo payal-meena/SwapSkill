@@ -18,6 +18,7 @@ const {
   unfollowUser,
   blockUser,
   getConnectionStatus,
+  getMyConnections,
   getBlockedUsers,
   unblockUser
 } = require("../controllers/userController.js");
@@ -59,6 +60,7 @@ router.delete("/skill/:id", protect, deleteSkill);
 router.delete("/profile-image",protect,profileImageRemove);
 
 // Connection Routes
+router.get("/me/connections", protect, getMyConnections);
 router.post("/:userId/follow", protect, followUser);
 router.post("/:userId/unfollow", protect, unfollowUser);
 router.post("/:userId/block", protect, blockUser);

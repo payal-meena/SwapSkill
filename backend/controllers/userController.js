@@ -340,6 +340,32 @@ const getConnectionStatus = async (req, res) => {
 };
 
 
+/* GET MY CONNECTIONS */
+const getMyConnections = async (req, res) => {
+  try {
+    const currentUserId = req.user;
+
+    const connections = await Connection.find({
+      follower: currentUserId,
+      status: "connected",
+    }).populate('following', 'name profileImage email bio profession');
+
+    const connectedUsers = connections.map(conn => ({
+      ...conn.following.toObject ? conn.following.toObject() : conn.following,
+      connectionId: conn._id,
+      connectedAt: conn.createdAt
+    }));
+
+    res.json({
+      success: true,
+      count: connectedUsers.length,
+      connections: connectedUsers,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 /* GET BLOCKED USERS */
 const getBlockedUsers = async (req, res) => {
   try {
@@ -425,6 +451,7 @@ module.exports = {
   unfollowUser,
   blockUser,
   getConnectionStatus,
+  getMyConnections,
   getBlockedUsers,
   unblockUser
 };

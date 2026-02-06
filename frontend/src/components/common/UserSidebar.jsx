@@ -215,6 +215,7 @@ const UserSidebar = () => {
           <NavItem to="/dashboard" icon="dashboard" label="Dashboard" />
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
+          <NavItem to="/my-connection" icon="group" label="My Connection" />
           <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} />
           <NavItem to="/messages/:userId" icon="chat_bubble" label="Messages" badgeCount={totalUnread} />
         </nav>

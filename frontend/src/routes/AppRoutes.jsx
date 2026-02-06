@@ -19,6 +19,7 @@ import UserManagment from "../pages/admin/UserManagment";
 import SkillModeration from "../pages/admin/SkillModeration";
 import AdminProfile from "../pages/admin/settings/AdminProfile";
 import ExploreProfile from "../pages/explore/ExploreProfile";
+import MyConnection from "../pages/myconnection/MyConnection";
 
 // Monitoring component import
 import Monitoring from "../pages/admin/Monitoring";
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route element={<UserLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-skills" element={<MySkills />} />
+        <Route path="/my-connection" element={<MyConnection />} />
         <Route path="/requests" element={<Requests />} />
         <Route path="/messages/:userId" element={<MessagesPage />} />
         <Route path="/explore" element={<Explore />} />
