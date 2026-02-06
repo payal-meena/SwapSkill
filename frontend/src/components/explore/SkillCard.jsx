@@ -137,12 +137,12 @@ const handleMessage = async () => {
         <div className="mb-4">
           <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-[#92c9a4] font-bold mb-2">Can Teach</p>
           <div className={`flex flex-wrap gap-2 ${showAllOffered ? "" : "max-h-[90px] overflow-hidden"}`}>
-            {offeredSkills.map((skill, idx) => (
+            {offeredSkills.length > 0 ? offeredSkills.map((skill, idx) => (
               <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#102216]/50 p-2 rounded-xl border border-slate-100 dark:border-[#23482f]">
                 <span className="text-slate-900 dark:text-white font-semibold mr-2">{skill.name}</span>
                 <span className="bg-[#13ec5b]/20 text-[#13ec5b] text-[10px] font-bold px-2 py-1 rounded">{skill.level || skill.leval}</span>
               </div>
-            ))}
+            )) : <div className="p-2 bg-[#13ec5b]/10 border border-[#13ec5b]/30 rounded-xl w-full text-center"><p className="text-[#13ec5b] text-xs font-bold uppercase tracking-wide">Not Added Yet</p></div>}
           </div>
         </div>
 
@@ -150,12 +150,12 @@ const handleMessage = async () => {
         <div className="mb-4">
           <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-[#92c9a4] font-bold mb-2">Wants to Learn</p>
           <div className={`flex flex-wrap gap-2 ${showAllWanted ? "" : "max-h-[90px] overflow-hidden"}`}>
-            {wantedSkills.map((skill, idx) => (
+            {wantedSkills.length > 0 ? wantedSkills.map((skill, idx) => (
               <div key={idx} className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
                 <span className="material-symbols-outlined text-[#13ec5b] text-lg">search</span>
                 <span className="font-medium text-slate-900 dark:text-white text-sm">{skill.name}</span>
               </div>
-            ))}
+            )) : <div className="p-2 bg-blue-50/10 border border-blue-400/30 rounded-xl w-full text-center"><p className="text-blue-400 text-xs font-bold uppercase tracking-wide">Not Added Yet</p></div>}
           </div>
         </div>
 

@@ -244,15 +244,13 @@ const ExploreProfile = () => {
         </div>
       )}
 
-      {/* Back Button Container */}
-      <div className="w-full max-w-3xl mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-[#13ec5b] hover:brightness-125 flex items-center gap-2 transition-all font-black text-sm uppercase tracking-widest"
-        >
-          <ArrowLeft size={18} /> Back
-        </button>
-      </div>
+      {/* Back Button - Fixed Position */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-20 left-80 z-50 text-[#13ec5b] hover:brightness-125 flex items-center gap-2 transition-all font-black text-sm uppercase tracking-widest bg-[#0a1a11]/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-[#13ec5b]/20"
+      >
+        <ArrowLeft size={18} /> Back
+      </button>
 
       {/* Main Profile Card */}
       <div className="w-full max-w-3xl bg-[#0a1a11] rounded-[2rem] border-2 border-white/5 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -309,7 +307,7 @@ const ExploreProfile = () => {
                           {skill.level || skill.leval || skill.levelName}
                         </span>
                       </div>
-                    )) : <p className="text-slate-500 text-sm italic">No teaching skills listed</p>}
+                    )) : <div className="p-3 bg-[#13ec5b]/10 border-2 border-[#13ec5b]/30 rounded-xl"><p className="text-[#13ec5b] text-sm font-bold uppercase tracking-wide">Not Added Yet</p></div>}
                   </div>
                 </div>
 
@@ -323,7 +321,7 @@ const ExploreProfile = () => {
                       <div key={index} className="px-4 py-2 bg-white/5 border border-amber-500/30 rounded-xl text-amber-400 font-bold text-md">
                         {typeof skill === 'string' ? skill : (skill.name || skill.skillName || skill.title)}
                       </div>
-                    )) : <p className="text-slate-500 text-sm italic">No learning goals listed</p>}
+                    )) : <div className="p-3 bg-amber-500/10 border-2 border-amber-500/30 rounded-xl"><p className="text-amber-400 text-sm font-bold uppercase tracking-wide">Not Added Yet</p></div>}
                   </div>
                 </div>
               </div>
