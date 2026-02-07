@@ -13,7 +13,7 @@ const RegisterForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:3000/api/users/signup", { name, email, password });
+      await axios.post("https://swapskill-backend-4ovd.onrender.com/api/users/signup", { name, email, password });
       setMessage("Registration successful ✅");
       navigate("/dashboard"); 
     } catch (error) {
