@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const RegisterForm = () => {
@@ -13,7 +13,7 @@ const RegisterForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/signup`, { name, email, password });
+      await api.post('/users/signup', { name, email, password });
       setMessage("Registration successful ✅");
       navigate("/dashboard"); 
     } catch (error) {
