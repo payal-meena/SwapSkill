@@ -16,9 +16,13 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
+ useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (token) {
     fetchNotifications();
-  }, []);
+  }
+}, []);
+
 
   useEffect(() => {
     // Initialize socket connection
@@ -106,6 +110,12 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   const fetchNotifications = async () => {
+      const token = localStorage.getItem('token');
+  
+  // Agar token nahi hai to silently return karo
+  if (!token) {
+    return;
+  }
     try {
       const data = await notificationService.getNotifications();
       setNotifications(data.notifications || []);
