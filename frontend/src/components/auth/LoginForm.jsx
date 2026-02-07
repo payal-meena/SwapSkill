@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -13,7 +13,7 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/login`, { email, password });
+      const response = await api.post('/users/login', { email, password });
       localStorage.setItem("token", response.data.token);
       if (response.data.role) {
         localStorage.setItem("role", response.data.role);
