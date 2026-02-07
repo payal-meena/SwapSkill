@@ -13,7 +13,7 @@ connectDB();
 
 // HTTP + Socket.IO
 const server = http.createServer(app);
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL;
 const io = new Server(server, {
   cors: { 
     origin: FRONTEND_URL,
@@ -47,7 +47,7 @@ const fixDatabaseOnce = async () => {
 fixDatabaseOnce();
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 server.listen(PORT, () => {
   console.log(`🚀 Server + Socket.IO running on port ${PORT}`);
 });

@@ -33,7 +33,7 @@ app.use((req, res, next) => {
 });
 
 // port
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 // start server
 server.listen(PORT, () => {
