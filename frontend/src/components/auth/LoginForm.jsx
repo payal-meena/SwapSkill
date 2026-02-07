@@ -13,7 +13,7 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("https://swapskill-backend-4ovd.onrender.com/api/users/login", { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/login`, { email, password });
       localStorage.setItem("token", response.data.token);
       if (response.data.role) {
         localStorage.setItem("role", response.data.role);
