@@ -11,12 +11,18 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+// ✅ CORS Configuration - Allow frontend to communicate with backend
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+const corsOptions = {
+  origin: FRONTEND_URL,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-}));
+};
+
+// Apply CORS to all routes (this automatically handles OPTIONS preflight)
+app.use(cors(corsOptions));
 
 
 app.use(express.json({ limit: '10mb' }));

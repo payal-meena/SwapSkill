@@ -13,8 +13,12 @@ connectDB();
 
 // HTTP + Socket.IO
 const server = http.createServer(app);
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: { 
+    origin: FRONTEND_URL,
+    credentials: true
+  },
   transports: ["websocket"]
 });
 
