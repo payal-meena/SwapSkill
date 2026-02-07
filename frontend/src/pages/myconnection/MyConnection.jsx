@@ -206,7 +206,7 @@ const MyConnection = () => {
                   {/* Action Buttons */}
                   <div className="flex gap-3 relative z-10">
                     <button 
-                      onClick={() => navigate('/messages')}
+                      onClick={() => navigate(`/messages/${user.id}`)}
                       className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#13ec5b]/10 hover:bg-[#13ec5b] text-[#13ec5b] hover:text-[#0a1a10] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300"
                     >
                       <span className="material-symbols-outlined !text-lg">chat</span>

@@ -4,7 +4,7 @@ import { skillService } from '../../services/skillService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import Avatar from '../../components/common/Avatar';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 const getMyId = () => {
   const token = localStorage.getItem('token');
@@ -381,6 +381,41 @@ const MessagesPage = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [chats.length, activeChat]);
+
+  // Auto-open chat when route contains a userId: /messages/:userId
+  const { userId } = useParams();
+
+  useEffect(() => {
+    if (!userId) return;
+    // Wait until chats are loaded to try to find existing chat
+    if (chats.length === 0) return;
+    if (activeChat) return;
+
+    // Try to find an existing chat that includes the userId
+    const existing = chats.find(c => c.participants.some(p => (p._id || p) === userId));
+    if (existing) {
+      setActiveChat(existing);
+      return;
+    }
+
+    // If no existing chat, create or get one from server
+    (async () => {
+      try {
+        const resp = await chatService.createOrGetChat({ otherUserId: userId });
+        if (resp && resp._id) {
+          // Prepend to sidebar and open
+          setChats(prev => {
+            const found = prev.find(p => p._id === resp._id);
+            if (found) return prev;
+            return [resp, ...prev];
+          });
+          setActiveChat(resp);
+        }
+      } catch (err) {
+        console.error('Failed to create/get chat for user', userId, err);
+      }
+    })();
+  }, [userId, chats.length, activeChat]);
 
   // Modified handleSend to support auto-sending links
   const handleSend = async (overrideText = null) => {
