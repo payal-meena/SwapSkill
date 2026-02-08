@@ -4,6 +4,7 @@ import { skillService } from '../../services/skillService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import Avatar from '../../components/common/Avatar';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const getMyId = () => {
@@ -30,6 +31,7 @@ const MessagesPage = () => {
   const [tempDeleteMode, setTempDeleteMode] = useState(null);
   const [openSidebarMenuId, setOpenSidebarMenuId] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
 
   const myUserId = getMyId();
   const location = useLocation();
@@ -674,12 +676,7 @@ const MessagesPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm('Clear all messages from this chat?')) {
-                              chatService.clearChat(chat._id, myUserId);
-                              if (activeChat?._id === chat._id) {
-                                setMessages([]);
-                              }
-                            }
+                            setChatConfirm({ isOpen: true, type: 'clear', chatId: chat._id });
                             setOpenSidebarMenuId(null);
                           }}
                           className="w-full text-left px-4 py-2.5 text-[11px] text-[#92c9a4] hover:bg-white/5 border-t border-[#23482f] flex items-center gap-2"
@@ -691,11 +688,7 @@ const MessagesPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm('Delete this chat?')) {
-                              chatService.deleteChat(chat._id, myUserId);
-                              setChats(prev => prev.filter(c => c._id !== chat._id));
-                              if (activeChat?._id === chat._id) setActiveChat(null);
-                            }
+                            setChatConfirm({ isOpen: true, type: 'delete', chatId: chat._id });
                             setOpenSidebarMenuId(null);
                           }}
                           className="w-full text-left px-4 py-2.5 text-[11px] text-red-400 hover:bg-red-500/10 border-t border-[#23482f] flex items-center gap-2"
@@ -763,11 +756,11 @@ const MessagesPage = () => {
                       }} className="w-full text-left px-4 py-2 text-xs hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
                         {activeChat?.mutedBy?.includes(myUserId) ? <><Bell size={16} /><span>Unmute</span></> : <><BellOff size={16} /><span>Mute</span></>}
                       </button>
-                      <button onClick={() => { if (confirm('Clear all messages?')) { chatService.clearChat(activeChat._id, myUserId); setMessages([]); } setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-[#92c9a4] hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
+                      <button onClick={() => { setChatConfirm({ isOpen: true, type: 'clear', chatId: activeChat?._id }); setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-[#92c9a4] hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
                         <Trash2 size={14} />
                         <span>Clear Chat</span>
                       </button>
-                      <button onClick={() => { if (confirm('Delete this chat?')) { chatService.deleteChat(activeChat._id, myUserId); setActiveChat(null); setChats(prev => prev.filter(c => c._id !== activeChat._id)); } setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950/20 flex items-center gap-2">
+                      <button onClick={() => { setChatConfirm({ isOpen: true, type: 'delete', chatId: activeChat?._id }); setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950/20 flex items-center gap-2">
                         <X size={14} />
                         <span>Delete Chat</span>
                       </button>
@@ -794,6 +787,36 @@ const MessagesPage = () => {
                 </div>
               </div>
             </header>
+
+            {/* Chat clear/delete confirmation modal */}
+            <ConfirmModal
+              isOpen={chatConfirm.isOpen}
+              title={chatConfirm.type === 'delete' ? 'Delete Chat' : 'Clear Chat'}
+              message={chatConfirm.type === 'delete' ? 'Delete this chat? This will remove it permanently.' : 'Clear all messages from this chat? This will remove messages only.'}
+              confirmLabel={chatConfirm.type === 'delete' ? 'Delete' : 'Clear'}
+              cancelLabel={'Cancel'}
+              onClose={() => { setChatConfirm({ isOpen: false, type: null, chatId: null }); setShowHeaderMenu(false); setOpenSidebarMenuId(null); }}
+              onConfirm={async () => {
+                try {
+                  const cid = chatConfirm.chatId || activeChat?._id;
+                  if (!cid) return;
+                  if (chatConfirm.type === 'clear') {
+                    await chatService.clearChat(cid, myUserId);
+                    if (activeChat?._id === cid) setMessages([]);
+                  } else if (chatConfirm.type === 'delete') {
+                    await chatService.deleteChat(cid, myUserId);
+                    setChats(prev => prev.filter(c => c._id !== cid));
+                    if (activeChat?._id === cid) setActiveChat(null);
+                  }
+                } catch (err) {
+                  console.error('chat action failed', err);
+                } finally {
+                  setChatConfirm({ isOpen: false, type: null, chatId: null });
+                  setShowHeaderMenu(false);
+                  setOpenSidebarMenuId(null);
+                }
+              }}
+            />
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
               {messages.map((m, idx) => {
