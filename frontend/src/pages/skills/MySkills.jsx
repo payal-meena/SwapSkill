@@ -344,16 +344,25 @@ const MySkills = () => {
                     <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
                     <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
                   </div>
-                  {/* Search Input for Wanted Skills */}
-                  <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={18} />
-                    <input 
-                      className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-xl py-3 pl-12 pr-4 text-white outline-none transition-all placeholder:text-white/30 w-64" 
-                      placeholder="Search wanted skills..." 
-                      type="text" 
-                      value={searchTerm} 
-                      onChange={(e) => setSearchTerm(e.target.value)} 
-                    />
+                  <div className="flex items-center gap-4">
+                    {/* Search Input for Wanted Skills */}
+                    <div className="relative group">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={18} />
+                      <input 
+                        className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-xl py-3 pl-12 pr-4 text-white outline-none transition-all placeholder:text-white/30 w-64" 
+                        placeholder="Search wanted skills..." 
+                        type="text" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                      />
+                    </div>
+                    <button
+                      onClick={() => setIsWantedModalOpen(true)}
+                      className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[15px] uppercase tracking-widest"
+                    >
+                      <PlusCircle size={18} />
+                      Add New Skill
+                    </button>
                   </div>
                 </div>
 
@@ -369,15 +378,7 @@ const MySkills = () => {
                   ))}
 
                   {/* Show "Add New" button only when not searching or when there are results */}
-                  {(!searchTerm || filteredWantedSkills.length > 0) && (
-                    <button
-                      className="border-2 border-dashed border-slate-200 dark:border-[#23482f] rounded-[2.5rem] flex flex-col items-center justify-center p-14 text-slate-400 hover:border-[#13ec5b] hover:bg-[#13ec5b]/5 hover:text-[#13ec5b] transition-all group cursor-pointer shadow-2xl shadow-black/10 min-h-[300px]"
-                      onClick={() => setIsWantedModalOpen(true)}
-                    >
-                      <PlusCircle className="mb-5 group-hover:scale-110 transition-transform text-[#13ec5b]/40 group-hover:text-[#13ec5b]" size={56} />
-                      <span className="font-black uppercase tracking-[0.2em] text-[10px]">Identify New Target</span>
-                    </button>
-                  )}
+                 
 
                   {/* Show no results message when searching and no results found */}
                   {searchTerm && filteredWantedSkills.length === 0 && (

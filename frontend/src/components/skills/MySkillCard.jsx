@@ -57,15 +57,17 @@ const MySkillCard = ({ title, level, icon, detail, status, isSearching, isOffer 
           <span className="inline-flex px-3.5 py-1.5 rounded-full text-[12px] font-black uppercase tracking-wider bg-[#13ec5b]/20 text-[#13ec5b]">
             {level || 'Beginner'}
           </span>
-          <span className={`inline-flex px-3 py-1.5 rounded-full text-[11px] font-bold ${
-            status === 'Active' 
-              ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' 
-              : status === 'Paused'
-              ? 'bg-slate-400/20 text-slate-700 dark:text-slate-400'
-              : 'bg-slate-200/50 text-slate-600'
-          }`}>
-            {status === 'Active' && '🟢'} {status}
-          </span>
+          {isOffer && (
+            <span className={`inline-flex px-3 py-1.5 rounded-full text-[11px] font-bold ${
+              status === 'Active' 
+                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' 
+                : status === 'Paused'
+                ? 'bg-slate-400/20 text-slate-700 dark:text-slate-400'
+                : 'bg-slate-200/50 text-slate-600'
+            }`}>
+              {status === 'Active' && '🟢'} {status}
+            </span>
+          )}
         </div>
 
         {/* Action Button */}
