@@ -107,38 +107,38 @@ const Requests = () => {
     /* Background updated to rgb(17, 34, 23) */
     <div className="min-h-screen flex flex-col bg-[#112217] text-slate-200 font-['Lexend']">
      
-      <main className="flex-1 p-4 md:p-10 max-w-5xl mx-auto w-full">
-        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <main className="flex-1 p-4 sm:p-8 md:p-10 max-w-5xl mx-auto w-full">
+        <div className="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-black text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               Swap <span className="text-[#13ec5b]">Hub</span>
             </h2>
-            <p className="text-slate-400 font-medium mt-1">Manage your incoming and outgoing requests</p>
+            <p className="text-slate-400 font-medium mt-1 text-sm">Manage your incoming and outgoing requests</p>
           </div>
           
           {/* Tab Container color lightened slightly for contrast */}
-          <div className="flex gap-2 bg-[#1a2e21] p-1 rounded-xl border border-[#2d4a35]">
+          <div className="flex gap-1 sm:gap-2 bg-[#1a2e21] p-1 rounded-xl border border-[#2d4a35]">
             <button 
               onClick={() => setActiveTab("received")} 
-              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"}`}
+              className={`px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"}`}
             >
               Received ({receivedRequests.filter(r => r.status === 'pending').length})
             </button>
             <button 
               onClick={() => setActiveTab("sent")} 
-              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"}`}
+              className={`px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"}`}
             >
               Sent ({sentRequests.filter(r => r.status === 'pending').length})
             </button>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {loading ? (
-            <div className="space-y-4 animate-pulse">
+            <div className="space-y-3 sm:space-y-4 animate-pulse">
               {[1, 2, 3].map((i) => (
                 /* Skeleton updated */
-                <div key={i} className="h-32 bg-[#1a2e21] rounded-3xl border border-[#2d4a35]" />
+                <div key={i} className="h-28 sm:h-32 bg-[#1a2e21] rounded-3xl border border-[#2d4a35]" />
               ))}
             </div>
           ) : activeTab === "received" ? (

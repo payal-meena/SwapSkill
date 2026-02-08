@@ -14,24 +14,24 @@ const StatCard = ({ label, value, trend, icon, onClick }) => {
   
   return (
     /* Card Background updated to match rgb(17, 34, 23) style */
-    <button onClick={onClick} className="group relative flex flex-col gap-2 rounded-[2rem] p-8 bg-[#1a2e21] border border-[#13ec5b]/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden text-left">
+    <button onClick={onClick} className="group relative flex flex-col gap-2 rounded-[2rem] p-4 sm:p-8 bg-[#1a2e21] border border-[#13ec5b]/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden text-left">
       {/* Background Accent Glow */}
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#13ec5b]/5 blur-3xl group-hover:bg-[#13ec5b]/10 transition-all" />
       
       <div className="flex justify-between items-start relative z-10">
-        <div className="p-3 bg-[#13ec5b]/10 rounded-2xl text-[#13ec5b]">
-          <span className="material-symbols-outlined !text-3xl">{icon}</span>
+        <div className="p-2 sm:p-3 bg-[#13ec5b]/10 rounded-2xl text-[#13ec5b]">
+          <span className="material-symbols-outlined !text-2xl sm:!text-3xl">{icon}</span>
         </div>
-        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isPositive ? 'bg-[#13ec5b]/10 text-[#13ec5b]' : 'bg-white/5 text-slate-400'}`}>
+        <div className={`px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${isPositive ? 'bg-[#13ec5b]/10 text-[#13ec5b]' : 'bg-white/5 text-slate-400'}`}>
           {trend}
         </div>
       </div>
 
-      <div className="mt-6 relative z-10">
-        <p className="text-[#92c9a4] text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70">
+      <div className="mt-4 sm:mt-6 relative z-10">
+        <p className="text-[#92c9a4] text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70">
           {label}
         </p>
-        <p className="text-white text-4xl font-black tracking-tighter">
+        <p className="text-white text-2xl sm:text-4xl font-black tracking-tighter">
           {value}
         </p>
       </div>
@@ -117,11 +117,11 @@ const Dashboard = () => {
       <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
         {/* Navbar */}
        
-        <div className="p-8 lg:p-12 max-w-[1400px] mx-auto w-full">
+        <div className="p-4 sm:p-8 lg:p-12 max-w-[1400px] mx-auto w-full">
           
           {/* Header Section */}
-          <div className="mb-10">
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-white">
+          <div className="mb-8 sm:mb-10">
+            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white">
               User <span className="text-[#13ec5b]">Dashboard</span>
             </h1>
             <p className="text-[#92c9a4] text-xs font-bold uppercase tracking-[0.3em] mt-2 opacity-60">
@@ -130,7 +130,7 @@ const Dashboard = () => {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mb-8 sm:mb-12">
             <StatCard
               label="Skills Offered"
               value={offeredCount}
@@ -156,21 +156,21 @@ const Dashboard = () => {
 
         
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
             
             {/* Left Content - Current Exchanges */}
-            <div className="lg:col-span-2 flex flex-col gap-8">
-               <div className="flex justify-between items-end border-b border-[#13ec5b]/10 pb-4">
+            <div className="lg:col-span-2 flex flex-col gap-6 sm:gap-8">
+               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 sm:gap-0 border-b border-[#13ec5b]/10 pb-4">
                   <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight text-white">Current Exchanges</h2>
+                    <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">Current Exchanges</h2>
                     <p className="text-[10px] text-[#13ec5b] font-bold uppercase tracking-widest mt-1">Active learning sessions</p>
                   </div>
-                  <button className="px-4 py-2 bg-white/5 hover:bg-[#13ec5b]/10 text-[#13ec5b] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-[#13ec5b]/10">
+                  <button className="px-4 py-2 bg-white/5 hover:bg-[#13ec5b]/10 text-[#13ec5b] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-[#13ec5b]/10 whitespace-nowrap">
                     View all
                   </button>
                </div>
 
-               <div className="grid gap-6">
+               <div className="grid gap-4 sm:gap-6">
                  {/* Card Wrapper background update if applicable */}
                  <ExchangeCard 
                     title="Learning Python with Sarah" 
@@ -186,7 +186,7 @@ const Dashboard = () => {
             </div>
 
             {/* Right Content - Requests */}
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-6 sm:gap-8">
               {/* Box background changed to #1a2e21 for slight contrast against #112217 */}
               <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2.5rem] p-2 shadow-2xl">
                 <PendingRequests />

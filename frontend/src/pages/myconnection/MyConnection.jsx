@@ -1,86 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import { connectionService } from '../../services/connectionService';
-
-// const MyConnection = () => {
-//   const [connections, setConnections] = useState([]);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     fetchConnections();
-//   }, []);
-
-//   const fetchConnections = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await connectionService.getMyConnections();
-//       if (response.success) {
-//         setConnections(response.connections);
-//       }
-//     } catch (error) {
-//       console.error('Error fetching connections:', error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="flex h-screen overflow-hidden font-['Lexend']">
-//       <main className="flex-1 flex flex-col overflow-y-auto scrollbar-hide bg-background-light dark:bg-background-dark">
-//         <div className="max-w-7xl mx-auto w-full px-6 py-10">
-//           <div className="text-center mb-10">
-//             <h1 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">
-//               My Connections
-//             </h1>
-//             <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">
-//               MANAGE YOUR SKILL EXCHANGE NETWORK
-//             </p>
-//           </div>
-
-//           {loading ? (
-//             <div className="flex justify-center items-center py-20">
-//               <div className="size-12 border-4 border-[#13ec5b]/20 border-t-[#13ec5b] rounded-full animate-spin" />
-//             </div>
-//           ) : connections.length > 0 ? (
-//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//               {connections.map((connection) => (
-//                 <div
-//                   key={connection._id}
-//                   className="bg-white dark:bg-[#112217] border border-slate-200 dark:border-[#23482f] rounded-2xl p-6 hover:shadow-lg transition-all"
-//                 >
-//                   <div className="flex items-center gap-4">
-//                     <div className="size-16 rounded-full bg-[#13ec5b]/10 flex items-center justify-center overflow-hidden">
-//                       {connection.profileImage ? (
-//                         <img src={connection.profileImage} alt={connection.name} className="w-full h-full object-cover" />
-//                       ) : (
-//                         <span className="material-symbols-outlined text-[#13ec5b] text-3xl">person</span>
-//                       )}
-//                     </div>
-//                     <div className="flex-1">
-//                       <h3 className="text-slate-900 dark:text-white font-bold text-lg">{connection.name}</h3>
-//                       {connection.profession && (
-//                         <p className="text-slate-500 dark:text-slate-400 text-sm">{connection.profession}</p>
-//                       )}
-//                     </div>
-//                   </div>
-//                   {connection.bio && (
-//                     <p className="text-slate-600 dark:text-slate-300 text-sm mt-4 line-clamp-2">{connection.bio}</p>
-//                   )}
-//                 </div>
-//               ))}
-//             </div>
-//           ) : (
-//             <div className="text-center py-20 border-2 border-dashed border-[#23482f] rounded-3xl">
-//               <span className="material-symbols-outlined text-[#13ec5b]/40 text-6xl mb-4">group_off</span>
-//               <p className="text-slate-500 dark:text-[#92c9a4]/40 font-black uppercase text-xs tracking-widest">
-//                 No connections yet
-//               </p>
-//             </div>
-//           )}
-//         </div>
-//       </main>
-//     </div>
-//   );
-// };
 
 // export default MyConnection;
 import React, { useState, useEffect } from 'react';
@@ -151,10 +68,10 @@ const MyConnection = () => {
         {/* Navbar Call (Notifications ke liye) */}
         {/* <UserNavbar /> */}
 
-        <div className="max-w-7xl mx-auto w-full px-6 py-10">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
           {/* Header Section */}
-          <div className="mb-12">
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-white">
+          <div className="mb-8 sm:mb-12">
+            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white">
               My <span className="text-[#13ec5b]">Connections</span>
             </h1>
             <p className="text-[#92c9a4] text-xs font-bold uppercase tracking-[0.3em] mt-2 opacity-60">
@@ -170,51 +87,51 @@ const MyConnection = () => {
             </div>
           ) : connections.length > 0 ? (
             /* Connections Grid */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
               {connections.map((user) => (
                 <div
                   key={user.id}
-                  className="group relative bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-6 hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden"
+                  className="group relative bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-4 sm:p-6 hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden"
                 >
                   {/* Background Glow */}
                   <div className="absolute -right-4 -top-4 w-20 h-20 bg-[#13ec5b]/5 blur-3xl group-hover:bg-[#13ec5b]/10 transition-all" />
 
-                  <div className="flex items-center gap-5 relative z-10">
+                  <div className="flex items-center gap-3 sm:gap-5 relative z-10">
                     
                       <Avatar 
               src={user.profileImage} 
               name={user.name} 
-              size="w-28 h-28" 
-              textSize="text-2xl"
-              className="border-2 border-[#13ec5b]"
+              size="w-20 sm:w-28 h-20 sm:h-28" 
+              textSize="text-lg sm:text-2xl"
+              className="border-2 border-[#13ec5b] flex-shrink-0"
             />
                     
-                    <div>
-                      <h3 className="text-xl font-black text-white group-hover:text-[#13ec5b] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-[#13ec5b] transition-colors truncate">
                         {user.name}
                       </h3>
-                      <p className="text-[#92c9a4] text-[10px] font-bold uppercase tracking-widest opacity-70">
+                      <p className="text-[#92c9a4] text-[9px] sm:text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">
                         {user.profession}
                       </p>
                     </div>
                   </div>
 
-                  <p className="text-slate-400 text-sm mt-6 mb-8 line-clamp-2 min-h-[40px] italic">
+                  <p className="text-slate-400 text-xs sm:text-sm mt-4 sm:mt-6 mb-4 sm:mb-8 line-clamp-2 min-h-[40px] italic">
                     "{user.bio}"
                   </p>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 relative z-10">
+                  <div className="flex gap-2 sm:gap-3 relative z-10">
                     <button 
                       onClick={() => navigate(`/messages/${user.id}`)}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#13ec5b]/10 hover:bg-[#13ec5b] text-[#13ec5b] hover:text-[#0a1a10] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300"
+                      className="flex-1 flex items-center justify-center gap-2 py-2 sm:py-3 bg-[#13ec5b]/10 hover:bg-[#13ec5b] text-[#13ec5b] hover:text-[#0a1a10] rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap"
                     >
-                      <span className="material-symbols-outlined !text-lg">chat</span>
-                      Message
+                      <span className="material-symbols-outlined !text-base sm:!text-lg">chat</span>
+                      <span className="hidden sm:inline">Message</span>
                     </button>
                     <button 
                       onClick={() => navigate('/explore-profile', { state: user })}
-                      className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all"
+                      className="px-3 sm:px-4 py-2 sm:py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all flex-shrink-0"
                     >
                       <span className="material-symbols-outlined !text-lg">visibility</span>
                     </button>
@@ -227,9 +144,9 @@ const MyConnection = () => {
             </div>
           ) : (
             /* Empty State */
-            <div className="text-center py-32 bg-[#1a2e21]/30 border-2 border-dashed border-[#13ec5b]/10 rounded-[3rem]">
-              <span className="material-symbols-outlined text-[#13ec5b]/20 text-7xl mb-6">group_off</span>
-              <p className="text-white text-xl font-black uppercase tracking-tighter">No connections found</p>
+            <div className="text-center py-24 sm:py-32 bg-[#1a2e21]/30 border-2 border-dashed border-[#13ec5b]/10 rounded-[3rem] px-4">
+              <span className="material-symbols-outlined text-[#13ec5b]/20 text-6xl sm:text-7xl mb-6">group_off</span>
+              <p className="text-white text-lg sm:text-xl font-black uppercase tracking-tighter">No connections found</p>
               <p className="text-[#92c9a4] text-xs mt-2 uppercase tracking-widest opacity-60">Start exploring to build your network</p>
               <button 
                 onClick={() => navigate('/explore')}

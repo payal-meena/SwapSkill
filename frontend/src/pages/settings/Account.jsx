@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe, Briefcase, FileText, ChevronDown, ChevronUp, Instagram, Facebook, Ghost, Twitter, Link as LinkIcon, ExternalLink, Edit3, Check, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { UserCog, Trash2, Mail, Lock, ShieldCheck, Camera, Github, Globe, Briefcase, FileText, ChevronDown, ChevronUp, Instagram, Facebook, Ghost, Twitter, Link as LinkIcon, ExternalLink, Edit3, Check, X, ArrowLeft } from 'lucide-react';
 import { getMyProfile } from "../../services/authService.js";
 import api from "../../services/api";
 import AccountModal from "./AccountModal"; 
@@ -8,6 +9,7 @@ import AccountModal from "./AccountModal";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Account = () => {
+  const navigate = useNavigate();
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
@@ -160,9 +162,18 @@ const Account = () => {
   return (
     <div className="w-full max-w-6xl mx-auto px-4 md:px-8 py-10 space-y-8 animate-in fade-in duration-700 font-['Lexend']">
       
-      <div className="mb-4">
-        <h2 className="text-3xl font-bold dark:text-white text-slate-900">Account Settings</h2>
-        <p className="text-slate-500 dark:text-[#92c9a4]">Update your profile and social presence.</p>
+      <div className="mb-4 flex items-center gap-4">
+        <button
+          onClick={() => navigate('/profile')}
+          className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          title="Go back to profile"
+        >
+          <ArrowLeft size={24} className="text-slate-900 dark:text-white" />
+        </button>
+        <div>
+          <h2 className="text-3xl font-bold dark:text-white text-slate-900">Account Settings</h2>
+          <p className="text-slate-500 dark:text-[#92c9a4]">Update your profile and social presence.</p>
+        </div>
       </div>
 
       {/* 1. Photo Section */}

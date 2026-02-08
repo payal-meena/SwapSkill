@@ -80,7 +80,7 @@ const handleMessage = async () => {
     // Pending - waiting for other user to accept
     if (connectionStatus === "pending") {
       return (
-        <button disabled className="py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 text-sm font-bold opacity-70 cursor-not-allowed">
+        <button disabled className="py-2 sm:py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 text-xs sm:text-sm font-bold opacity-70 cursor-not-allowed">
           Pending
         </button>
       );
@@ -91,7 +91,7 @@ const handleMessage = async () => {
       return (
         <button 
           onClick={onDisconnect}
-          className="py-2.5 rounded-xl border-2 border-red-600 text-red-600 text-sm font-bold hover:bg-red-600 hover:text-white transition-all duration-300"
+          className="py-2 sm:py-2.5 rounded-xl border-2 border-red-600 text-red-600 text-xs sm:text-sm font-bold hover:bg-red-600 hover:text-white transition-all duration-300"
         >
           Unfollow
         </button>
@@ -100,7 +100,7 @@ const handleMessage = async () => {
 
     // Not connected - show connect button
     return (
-      <button onClick={onConnect} className="py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all">
+      <button onClick={onConnect} className="py-2 sm:py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-xs sm:text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all">
         Connect
       </button>
     );
@@ -109,81 +109,81 @@ const handleMessage = async () => {
   return (
     <>
     <div className="group bg-white dark:bg-[#193322] border border-slate-200 dark:border-[#23482f] rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-[#13ec5b]/5 transition-all duration-300 flex flex-col h-full">
-      <div className="p-6 flex-1 flex flex-col justify-between">
+      <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
         {/* Profile Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="relative">
+        <div className="flex items-start justify-between mb-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <div className="relative flex-shrink-0">
               <Avatar 
                 src={img} 
                 name={name} 
-                size="w-16 h-16" 
-                textSize="text-xl"
-                className="border-2 border-[#13ec5b]/20 rounded-2xl" // SkillCard ki styling ke liye rounded-2xl rakha hai
+                size="w-12 sm:w-16 h-12 sm:h-16" 
+                textSize="text-base sm:text-xl"
+                className="border-2 border-[#13ec5b]/20 rounded-2xl" 
               />
               <span className={`absolute -bottom-1 -right-1 w-4 h-4 ${statusColor} border-2 border-[#193322] rounded-full`}></span>
             </div>
-            <div>
-              <h3 className="text-slate-900 dark:text-white font-bold text-lg">{name}</h3>
-              <div className="flex items-center text-amber-400 gap-1 mt-0.5">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-slate-900 dark:text-white font-bold text-sm sm:text-lg truncate">{name}</h3>
+              <div className="flex items-center text-amber-400 gap-1 mt-0.5 flex-wrap">
                 <span className="material-symbols-outlined text-sm fill-icon">star</span>
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{rating}</span>
-                <span className="text-[10px] text-slate-400">({reviews} reviews)</span>
+                <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">{rating}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400">({reviews})</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Offered Skills */}
-        <div className="mb-5 pb-5 border-b border-slate-100 dark:border-[#23482f]">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-[#13ec5b] text-lg">school</span>
-            <p className="text-[11px] uppercase tracking-wider text-slate-600 dark:text-[#92c9a4] font-bold">Can Teach</p>
+        <div className="mb-4 sm:mb-5 pb-4 sm:pb-5 border-b border-slate-100 dark:border-[#23482f]">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
+            <span className="material-symbols-outlined text-[#13ec5b] text-base sm:text-lg">school</span>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600 dark:text-[#92c9a4] font-bold">Can Teach</p>
           </div>
           {offeredSkills.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {offeredSkills.map((skill, idx) => (
-                <div key={idx} className="inline-flex items-center gap-2 bg-[#13ec5b]/5 dark:bg-[#13ec5b]/10 px-3 py-2 rounded-lg border border-[#13ec5b]/30 hover:border-[#13ec5b]/60 transition-all">
-                  <span className="text-lg">{getSkillIcon(skill.name)}</span>
-                  <span className="text-slate-900 dark:text-white font-semibold text-sm">{skill.name}</span>
-                  <span className="bg-[#13ec5b]/40 text-[#13ec5b] dark:text-[#13ec5b] text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">{skill.level || skill.leval}</span>
+                <div key={idx} className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#13ec5b]/5 dark:bg-[#13ec5b]/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-[#13ec5b]/30 hover:border-[#13ec5b]/60 transition-all">
+                  <span className="text-base sm:text-lg">{getSkillIcon(skill.name)}</span>
+                  <span className="text-slate-900 dark:text-white font-semibold text-xs sm:text-sm truncate">{skill.name}</span>
+                  <span className="bg-[#13ec5b]/40 text-[#13ec5b] dark:text-[#13ec5b] text-[8px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 rounded-full whitespace-nowrap">{skill.level || skill.leval}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-3 bg-[#13ec5b]/5 border border-[#13ec5b]/20 rounded-lg text-center">
+            <div className="p-2 sm:p-3 bg-[#13ec5b]/5 border border-[#13ec5b]/20 rounded-lg text-center">
               <p className="text-[#13ec5b] text-xs font-bold uppercase tracking-wide">Not Added</p>
             </div>
           )}
         </div>
 
         {/* Wanted Skills */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-[#60a5fa] text-lg">lightbulb</span>
-            <p className="text-[11px] uppercase tracking-wider text-slate-600 dark:text-blue-300 font-bold">Wants to Learn</p>
+        <div className="mb-4 sm:mb-4">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
+            <span className="material-symbols-outlined text-[#60a5fa] text-base sm:text-lg">lightbulb</span>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600 dark:text-blue-300 font-bold">Wants to Learn</p>
           </div>
           {wantedSkills.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {wantedSkills.map((skill, idx) => (
-                <div key={idx} className="inline-flex items-center gap-2 bg-blue-500/5 dark:bg-blue-500/10 px-3 py-2 rounded-lg border border-blue-300/30 hover:border-blue-300/60 transition-all">
-                  <span className="text-lg">{getSkillIcon(typeof skill === 'string' ? skill : skill.name)}</span>
-                  <span className="font-medium text-slate-900 dark:text-white text-sm">{typeof skill === 'string' ? skill : skill.name}</span>
+                <div key={idx} className="inline-flex items-center gap-1.5 sm:gap-2 bg-blue-500/5 dark:bg-blue-500/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-blue-300/30 hover:border-blue-300/60 transition-all">
+                  <span className="text-base sm:text-lg">{getSkillIcon(typeof skill === 'string' ? skill : skill.name)}</span>
+                  <span className="font-medium text-slate-900 dark:text-white text-xs sm:text-sm truncate">{typeof skill === 'string' ? skill : skill.name}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-3 bg-blue-500/5 border border-blue-300/20 rounded-lg text-center">
+            <div className="p-2 sm:p-3 bg-blue-500/5 border border-blue-300/20 rounded-lg text-center">
               <p className="text-blue-500 text-xs font-bold uppercase tracking-wide">Not Added</p>
             </div>
           )}
         </div>
 
-        {/* Action Buttons - Dono Buttons Green style mein */}
-        <div className="grid grid-cols-2 gap-3 mt-6">
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4 sm:mt-6">
           <button
             onClick={handleViewProfile}
-            className="py-2.5 rounded-xl bg-[#13ec5b] text-[#112217] text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all text-center"
+            className="py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl bg-[#13ec5b] text-[#112217] text-xs sm:text-sm font-bold hover:bg-[#13ec5b]/90 hover:shadow-lg hover:shadow-[#13ec5b]/20 transition-all text-center whitespace-nowrap overflow-hidden text-ellipsis"
           >
             View Profile
           </button>

@@ -220,15 +220,15 @@ const Explore = () => {
         onFilter={(filterData) => setFilters(filterData)}
       />
       
-      <div className="p-8 max-w-[1200px] mx-auto w-full">
+      <div className="p-4 sm:p-8 max-w-[1200px] mx-auto w-full">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-pulse">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-64 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch">
             {filteredMentors.length > 0 ? (
               filteredMentors.map((mentor) => (
                 <SkillCard 
@@ -240,8 +240,8 @@ const Explore = () => {
                 />
               ))
             ) : (
-              <div className="col-span-full text-center py-20">
-                <p className="text-slate-500 dark:text-[#92c9a4] text-lg font-bold">
+              <div className="col-span-full text-center py-20 px-4">
+                <p className="text-slate-500 dark:text-[#92c9a4] text-base sm:text-lg font-bold">
                   {searchTerm || filters.experience || filters.skills.length > 0 
                     ? `No mentors found matching your criteria` 
                     : "No mentors available"
@@ -254,8 +254,8 @@ const Explore = () => {
 
         {/* Bottom Section */}
         {!loading && filteredMentors.length > 0 && (
-          <div className="mt-12 flex flex-col items-center gap-4">
-            <button className="px-8 py-3 rounded-xl border border-slate-200 dark:border-[#326744] text-slate-900 dark:text-white font-bold hover:bg-white dark:hover:bg-[#112217] shadow-sm transition-all active:scale-95">
+          <div className="mt-8 sm:mt-12 flex flex-col items-center gap-4">
+            <button className="px-6 sm:px-8 py-3 rounded-xl border border-slate-200 dark:border-[#326744] text-slate-900 dark:text-white font-bold hover:bg-white dark:hover:bg-[#112217] shadow-sm transition-all active:scale-95">
               Load More Results
             </button>
             <p className="text-slate-500 dark:text-[#92c9a4] text-xs">
