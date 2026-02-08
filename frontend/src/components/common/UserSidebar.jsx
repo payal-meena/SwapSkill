@@ -17,7 +17,7 @@ const getMyIdFromToken = () => {
   } catch (e) { return null; }
 };
 
-const NavItem = ({ icon, label, to, badge = false, badgeCount = 0, onClick }) => {
+const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
@@ -31,17 +31,12 @@ const NavItem = ({ icon, label, to, badge = false, badgeCount = 0, onClick }) =>
           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#23482f] dark:hover:text-white'
       }`}
     >
-      <span className="material-symbols-outlined text-[22px]">
-        {icon}
-      </span>
+      <span className="material-symbols-outlined text-[22px]">{icon}</span>
       <p className={`text-sm tracking-wide ${isActive ? 'font-bold' : 'font-medium'}`}>
         {label}
       </p>
-      {badge && !isActive && (
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 flex h-2 w-2 rounded-full bg-[#13ec5b] animate-pulse"></span>
-      )}
       {badgeCount > 0 && !isActive && (
-        <span className={`absolute right-3 top-1/2 -translate-y-1/2 bg-[#13ec5b] text-[#102216] font-bold text-xs px-2 py-0.5 rounded-full shadow-sm ${badgeCount ? 'wiggle-badge' : ''}`}>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#13ec5b] text-[#102216] font-bold text-xs px-2 py-0.5 rounded-full shadow-sm">
           {badgeCount > 99 ? '99+' : badgeCount}
         </span>
       )}
@@ -57,6 +52,7 @@ const UserSidebar = () => {
   const location = useLocation();
   const { chats } = useChat();
   const myId = getMyIdFromToken();
+
   const getUnreadCountFor = (c) => {
     if (!c) return 0;
     const uc = c.unreadCount;
@@ -66,134 +62,47 @@ const UserSidebar = () => {
       const it = uc.find(u => (u.userId || u._id || u.id) === myId);
       return it?.count || 0;
     }
-    if (typeof uc === 'object') {
-      if (uc[myId] != null) return uc[myId];
-      return uc.count || 0;
-    }
-    return 0;
+    return uc[myId] || uc.count || 0;
   };
 
   const totalUnread = (chats || []).reduce((sum, c) => sum + getUnreadCountFor(c), 0);
 
-  // Log whenever chats change
+  // Close mobile drawer when route changes
   useEffect(() => {
-    if (chats && chats.length > 0) {
-      console.log('💬 UserSidebar - Chats updated:', {
-        count: chats.length,
-        totalUnread,
-        chats: chats.map(c => ({ 
-          id: c._id, 
-          participant: c.participants?.[0]?.name,
-          unreadCount: c.unreadCount 
-        }))
-      });
-    }
-  }, [chats, totalUnread]);
-
-  // Listen for incoming connection requests
-  useEffect(() => {
-    if (!myId) return;
-
-    // Try to use socket from chatService
-    const socket = chatService.socket;
-    if (!socket) {
-      console.warn('⚠️ Socket not available for request notifications');
-      return;
-    }
-
-    const handleNewRequest = (request) => {
-      console.log('🔔 Incoming request notification:', request);
-      // Only increment if this is for current user (receiver)
-      if (request?.receiver?._id?.toString() === myId?.toString() || request?.receiver === myId) {
-        setIncomingRequestCount(prev => {
-          const newCount = prev + 1;
-          console.log('📥 Updated incoming request count:', newCount);
-          return newCount;
-        });
-      }
-    };
-
-    const handleRequestUpdated = (updatedRequest) => {
-      // If it's a new pending request for us, increment
-      if (updatedRequest?.status === 'pending' && (updatedRequest?.receiver?._id?.toString() === myId?.toString() || updatedRequest?.receiver === myId)) {
-        setIncomingRequestCount(prev => {
-          const newCount = prev + 1;
-          console.log('📥 Updated incoming request count (from requestUpdated):', newCount);
-          return newCount;
-        });
-      }
-    };
-
-    socket.on('newNotification', handleNewRequest);
-    socket.on('requestUpdated', handleRequestUpdated);
-
-    return () => {
-      socket.off('newNotification', handleNewRequest);
-      socket.off('requestUpdated', handleRequestUpdated);
-    };
-  }, [myId]);
-
-  // Reset incoming request count when user visits requests page
-  useEffect(() => {
-    if (location.pathname === '/requests') {
-      console.log('🔄 User opened Requests page, resetting counter');
-      setIncomingRequestCount(0);
-    }
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Fetch incoming requests count on mount
   useEffect(() => {
     if (!myId) return;
-    
-    const fetchIncomingRequestsCount = async () => {
-      try {
-        console.log('📥 Fetching incoming requests count on mount...');
-        const res = await requestService.getMyRequests();
-        console.log('📥 API Response:', res);
-        
-        if (res?.requests && Array.isArray(res.requests)) {
-          const incomingCount = res.requests.filter(r => {
-            const isReceiverMatch = r.receiver?._id?.toString() === myId?.toString() || 
-                                    r.receiver === myId;
-            const isPending = r.status === 'pending';
-            console.log(`📥 Checking request - Receiver: ${isReceiverMatch}, Status: ${r.status}`);
-            return isReceiverMatch && isPending;
-          }).length;
-          
-          console.log('📥 Final incoming request count:', incomingCount);
-          setIncomingRequestCount(incomingCount);
-        } else {
-          console.warn('📥 No requests array in response or invalid format:', res);
-        }
-      } catch (err) {
-        console.error('❌ Error fetching incoming requests count:', err);
+    const socket = chatService.socket;
+    if (!socket) return;
+
+    const handleNewRequest = (request) => {
+      if (request?.receiver?._id?.toString() === myId?.toString() || request?.receiver === myId) {
+        setIncomingRequestCount(prev => prev + 1);
       }
     };
-    
-    fetchIncomingRequestsCount();
+    socket.on('newNotification', handleNewRequest);
+    return () => socket.off('newNotification', handleNewRequest);
   }, [myId]);
 
+  useEffect(() => {
+    if (location.pathname === '/requests') setIncomingRequestCount(0);
+  }, [location.pathname]);
+
   const handleLogoutConfirm = () => {
-    const myId = getMyIdFromToken();
-    if (myId) {
-      // Tell server we're logging out so it can update lastSeen immediately
-      chatService.logout(myId);
-    }
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userId');
+    if (myId) chatService.logout(myId);
+    localStorage.clear();
     setIsLogoutModalOpen(false);
     navigate('/auth');
   };
 
-  // Sidebar Content Function
   const renderSidebarContent = (isMobileView) => (
     <div className="flex flex-col justify-between h-full font-['Lexend']">
       <div className="flex flex-col gap-8">
-        {/* Logo Section */}
         <div className="flex items-center justify-between gap-3 px-2">
           <div className="flex gap-3 items-center">
-            <div className="bg-[#13ec5b] rounded-lg p-2 flex items-center justify-center shadow-[0_0_15px_rgba(19,236,91,0.3)]">
+            <div className="bg-[#13ec5b] rounded-lg p-2 flex items-center justify-center">
               <span className="material-symbols-outlined text-[#102216] font-bold">swap_horiz</span>
             </div>
             <div className="flex flex-col">
@@ -201,16 +110,13 @@ const UserSidebar = () => {
               <p className="text-[#13ec5b] text-[10px] font-bold uppercase tracking-widest">P2P Learning</p>
             </div>
           </div>
-          
-          {/* Mobile Close Button */}
           {isMobileView && (
-            <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-500 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-slate-500 dark:text-white">
               <X size={24} />
             </button>
           )}
         </div>
 
-        {/* Navigation Items */}
         <nav className="flex flex-col gap-1.5">
           <NavItem to="/dashboard" icon="dashboard" label="Dashboard" />
           <NavItem to="/explore" icon="explore" label="Explore" />
@@ -221,7 +127,6 @@ const UserSidebar = () => {
         </nav>
       </div>
 
-      {/* Bottom Actions */}
       <div className="flex flex-col gap-2 pt-6 border-t border-slate-200 dark:border-[#23482f]">
         <NavItem to="/settings" icon="settings" label="Settings" />
         <div 
@@ -237,7 +142,7 @@ const UserSidebar = () => {
 
   return (
     <>
-      {/* --- MOBILE HEADER --- */}
+      {/* --- MOBILE TOP BAR --- */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#112217] border-b border-slate-200 dark:border-[#23482f] flex items-center justify-between px-6 z-[60]">
         <div className="flex items-center gap-2">
           <div className="bg-[#13ec5b] rounded p-1">
@@ -258,26 +163,21 @@ const UserSidebar = () => {
         {renderSidebarContent(false)}
       </aside>
 
-      {/* --- MOBILE DRAWER --- */}
-      {isMobileMenuOpen && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] lg:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] z-[80] p-6 shadow-2xl lg:hidden">
-            {renderSidebarContent(true)}
-          </div>
-        </>
-      )}
-
-      {/* LogOut Modal */}
-      {isLogoutModalOpen && (
-        <LogOut 
-          isOpen={isLogoutModalOpen} 
-          onClose={() => setIsLogoutModalOpen(false)} 
-          onConfirm={handleLogoutConfirm} 
+      {/* --- MOBILE SIDEBAR DRAWER --- */}
+      <div className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
+        {/* Overlay */}
+        <div 
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setIsMobileMenuOpen(false)}
         />
+        {/* Sliding Panel */}
+        <div className={`absolute inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] p-6 shadow-2xl transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          {renderSidebarContent(true)}
+        </div>
+      </div>
+
+      {isLogoutModalOpen && (
+        <LogOut isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} onConfirm={handleLogoutConfirm} />
       )}
     </>
   );
