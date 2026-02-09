@@ -15,7 +15,14 @@ const app = express();
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const corsOptions = {
-  origin: FRONTEND_URL,
+  origin: function (origin, callback) {
+    const allowedOrigins = [FRONTEND_URL, 'http://localhost:5173'];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
