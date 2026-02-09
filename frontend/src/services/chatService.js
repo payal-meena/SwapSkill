@@ -3,7 +3,7 @@ import api from './api';
 import { io } from 'socket.io-client';
 
 // Use environment variable so other devices can connect to the real backend
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://swapskill-backend-4ovd.onrender.com';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://swapskill-1-9vg4.onrender.com';
 
 let socket;
 
