@@ -16,8 +16,10 @@ const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = [FRONTEND_URL, 'http://localhost:5173'];
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow localhost and all Vercel deployments
+    if (!origin || 
+        origin === 'http://localhost:5173' || 
+        origin?.includes('vercel.app')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
