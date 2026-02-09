@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://swapskill-1-9vg4.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://swapskill-backend-4ovd.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
