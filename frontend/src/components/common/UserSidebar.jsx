@@ -45,9 +45,8 @@ const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
   );
 };
 
-const UserSidebar = () => {
+const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -204,7 +203,7 @@ useEffect(() => {
               <p className="text-[#13ec5b] text-[10px] font-bold uppercase tracking-widest">P2P Learning</p>
             </div>
           </div>
-          {isMobileView && (
+          {isMobileView && setIsMobileMenuOpen && (
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-slate-500 dark:text-white">
               <X size={24} />
             </button>

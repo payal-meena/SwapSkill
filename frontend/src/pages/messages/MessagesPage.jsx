@@ -879,6 +879,7 @@ const MessagesPage = () => {
                           <X size={14} />
                           <span>Delete Chat</span>
                         </button>
+
                       </div>
                     )}
                   </div>

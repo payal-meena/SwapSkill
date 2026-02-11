@@ -1,22 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import UserSidebar from '../../components/common/UserSidebar';
 import UserNavbar from '../../components/common/UserNavbar';
 import SettingsSidebar from './SettingsSidebar';
 
 const SettingsLayout = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="flex h-screen bg-[#102216] text-white overflow-hidden font-['Lexend']">
-      {/* 1. Main Left Sidebar - Bilkul left mein fixed, no gap */}
       <div className="flex-shrink-0 z-20">
-        <UserSidebar />
+        <UserSidebar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       </div>
 
-      {/* 2. Main Body Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        
-        {/* 3. Top Navbar (Fixed) */}
-        <UserNavbar />
+        <UserNavbar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
         {/* 4. Settings Header (Fixed) */}
         <header className="px-10 py-6 flex-shrink-0 border-b border-[#23482f]/30 bg-[#102216]">
