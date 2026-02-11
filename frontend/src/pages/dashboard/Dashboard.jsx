@@ -174,14 +174,9 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
             
             <div className="lg:col-span-2 flex flex-col gap-6 sm:gap-8">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 sm:gap-0 border-b border-[#13ec5b]/10 pb-4">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">Current Exchanges</h2>
-                  <p className="text-[10px] text-[#13ec5b] font-bold uppercase tracking-widest mt-1">Active learning sessions</p>
-                </div>
-                <button className="px-4 py-2 bg-white/5 hover:bg-[#13ec5b]/10 text-[#13ec5b] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-[#13ec5b]/10 whitespace-nowrap">
-                  View all
-                </button>
+              <div className="border-b border-[#13ec5b]/10 pb-4">
+                <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">Last Discussion</h2>
+                <p className="text-[10px] text-[#13ec5b] font-bold uppercase tracking-widest mt-1">Recent conversation</p>
               </div>
 
               <div className="grid gap-4 sm:gap-6">
