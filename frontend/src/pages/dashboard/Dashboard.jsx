@@ -8,6 +8,8 @@ import PendingRequests from '../../components/requests/PendingRequests';
 import TestNotification from '../../components/common/TestNotification';
 import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
+import { chatService } from '../../services/chatService';
+import Avatar from '../../components/common/Avatar';
 
 const StatCard = ({ label, value, trend, icon, onClick }) => {
   const isPositive = trend.includes('+');
@@ -49,6 +51,7 @@ const Dashboard = () => {
   const [acceptedRequestsCount, setAcceptedRequestsCount] = useState(0);
   const [connections, setConnections] = useState([]);
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
+  const [lastChat, setLastChat] = useState(null);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -101,6 +104,19 @@ const Dashboard = () => {
           }));
 
           setConnections(usersWithSkills);
+        }
+
+        // Fetch last chat
+        try {
+          const chatsRes = await chatService.getMyChats();
+          if (chatsRes?.chats && chatsRes.chats.length > 0) {
+            const sortedChats = chatsRes.chats.sort((a, b) => 
+              new Date(b.lastMessage?.createdAt || b.updatedAt) - new Date(a.lastMessage?.createdAt || a.updatedAt)
+            );
+            setLastChat(sortedChats[0]);
+          }
+        } catch (err) {
+          console.error('Error loading last chat', err);
         }
       } catch (err) {
         console.error('Error loading dashboard stats', err);
@@ -171,17 +187,34 @@ const Dashboard = () => {
                </div>
 
                <div className="grid gap-4 sm:gap-6">
-                 {/* Card Wrapper background update if applicable */}
-                 <ExchangeCard 
-                    title="Learning Python with Sarah" 
-                    status="In Progress" 
-                    meta="Next session: Tomorrow, 4 PM" 
-                    progress={65} 
-                    image="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400" 
-                    personImg="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" 
-                    actionLabel="Open Chat" 
-                    actionIcon="chat" 
-                  />
+                 {lastChat ? (
+                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-6 hover:border-[#13ec5b]/40 transition-all">
+                     <div className="flex items-center gap-4 mb-4">
+                       <Avatar 
+                         src={lastChat.otherUser?.profileImage} 
+                         name={lastChat.otherUser?.name || 'User'} 
+                         size="w-16 h-16" 
+                         textSize="text-xl"
+                         className="border-2 border-[#13ec5b]"
+                       />
+                       <div className="flex-1">
+                         <h3 className="text-lg font-black text-white">{lastChat.otherUser?.name || 'Unknown User'}</h3>
+                         <p className="text-slate-400 text-sm truncate">{lastChat.lastMessage?.text || 'No messages yet'}</p>
+                       </div>
+                     </div>
+                     <button 
+                       onClick={() => navigate(`/messages/${lastChat.otherUser?._id}`)}
+                       className="w-full py-3 bg-[#13ec5b] text-[#05160e] font-black rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                     >
+                       <span className="material-symbols-outlined">chat</span>
+                       Start Chat
+                     </button>
+                   </div>
+                 ) : (
+                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-12 text-center">
+                     <p className="text-slate-400 text-sm">No recent discussions</p>
+                   </div>
+                 )}
                </div>
             </div>
 
