@@ -129,12 +129,12 @@ export const chatService = {
   // services/chatService.js update karo
 
   // Message emit karne ke liye (supports both object and params)
-  sendMessage: (chatIdOrData, senderId, text) => {
+  sendMessage: (chatIdOrData, senderId, text, tempId = null) => {
     if (!socket) return;
     if (typeof chatIdOrData === 'object') {
       socket.emit('sendMessage', chatIdOrData);
     } else {
-      socket.emit('sendMessage', { chatId: chatIdOrData, senderId, text });
+      socket.emit('sendMessage', { chatId: chatIdOrData, senderId, text , tempId});
     }
   },
 

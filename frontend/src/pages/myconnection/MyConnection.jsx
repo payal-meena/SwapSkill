@@ -98,7 +98,7 @@ const MyConnection = () => {
 
                   <div className="flex items-center gap-3 sm:gap-5 relative z-10">
                     
-                      <Avatar 
+                <Avatar 
               src={user.profileImage} 
               name={user.name} 
               size="w-20 sm:w-28 h-20 sm:h-28" 

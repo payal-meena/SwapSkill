@@ -1,12 +1,739 @@
-import React, { useState, useEffect, useRef } from 'react';
+// import React, { useState, useEffect, useRef } from 'react';
+// import { chatService } from '../../services/chatService';
+// import { skillService } from '../../services/skillService';
+// import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff } from 'lucide-react';
+// import EmojiPicker from 'emoji-picker-react';
+// import Avatar from '../../components/common/Avatar';
+// import { useNavigate, useLocation } from 'react-router-dom';
+// import { useChat } from '../../context/ChatContext';
+
+// const getMyId = () => {
+//   const token = localStorage.getItem('token');
+//   if (!token) return null;
+//   try {
+//     const base64Url = token.split('.')[1];
+//     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+//     const payload = JSON.parse(window.atob(base64));
+//     return payload.id || payload._id;
+//   } catch (e) { return null; }
+// };
+
+// const MessagesPage = () => {
+
+//   const { chats, setChats: setGlobalChats, setActiveChatId } = useChat(); // Context wala
+//   const [activeChat, setActiveChat] = useState(null);
+//   const [messages, setMessages] = useState([]);
+//   const [pendingFile, setPendingFile] = useState(null);
+//   const [inputText, setInputText] = useState("");
+//   const [editingMessage, setEditingMessage] = useState(null);
+//   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+//   const [deleteStep, setDeleteStep] = useState('none');
+//   const [deleteTarget, setDeleteTarget] = useState({ msgId: null, isMe: false });
+//   const [tempDeleteMode, setTempDeleteMode] = useState(null);
+//   const [openSidebarMenuId, setOpenSidebarMenuId] = useState(null);
+//   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+
+//   const myUserId = getMyId();
+//   const location = useLocation();
+//   const navigate = useNavigate();
+//   const scrollRef = useRef();
+//   const fileInputRef = useRef();
+//   const activeChatIdRef = useRef(null);
+//   const activeChatRef = useRef(null);
+
+
+//   const activeChatFromList = React.useMemo(() => {
+//     if (!activeChat) return null;
+//     return chats.find(c => c._id === activeChat._id) || activeChat;
+//   }, [chats, activeChat]);
+
+
+//   const formatMessageDate = (dateString) => {
+//     const date = new Date(dateString);
+//     const today = new Date();
+//     const yesterday = new Date();
+//     yesterday.setDate(today.getDate() - 1);
+
+//     if (date.toDateString() === today.toDateString()) return "Today";
+//     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+//     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+//   };
+
+//   const getUnreadCount = (chat) => {
+//     if (!chat) return 0;
+//     const uc = chat.unreadCount;
+//     if (uc == null) return 0;
+//     if (typeof uc === 'number') return uc;
+//     if (Array.isArray(uc)) {
+//       const item = uc.find(u => (u.userId || u._id || u.id) === myUserId);
+//       return item?.count || 0;
+//     }
+//     // If it's an object keyed by userId
+//     if (typeof uc === 'object') {
+//       // try direct key
+//       const key = myUserId;
+//       if (uc[key] != null) return uc[key];
+//       // fallback to any count field
+//       return uc.count || 0;
+//     }
+//     return 0;
+//   };
+
+//   const formatLastSeen = (dateString) => {
+//     if (!dateString) return "unknown";
+//     const d = new Date(dateString);
+//     const diff = Date.now() - d.getTime();
+//     const sec = Math.floor(diff / 1000);
+//     if (sec < 60) return 'just now';
+//     const min = Math.floor(sec / 60);
+//     if (min < 60) return `${min}m ago`;
+//     const hr = Math.floor(min / 60);
+//     if (hr < 24) return `${hr}h ago`;
+//     return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+//   };
+
+//   const isRecentlyOnline = (user) => {
+//     if (!user) return false;
+//     return !!user.isOnline;
+//   };
+
+//   const getUniqueChats = (allChats) => {
+//     const uniqueMap = new Map();
+//     allChats.forEach(chat => {
+//       const otherUser = chat.participants.find(p => (p._id || p) !== myUserId);
+//       const otherId = otherUser?._id || otherUser;
+//       if (otherId) {
+//         const existing = uniqueMap.get(otherId);
+//         if (!existing || new Date(chat.lastMessageAt || 0) > new Date(existing.lastMessageAt || 0)) {
+//           uniqueMap.set(otherId, chat);
+//         }
+//       }
+//     });
+//     return Array.from(uniqueMap.values());
+//   };
+//   useEffect(() => {
+//     if (!myUserId) return;
+
+//     chatService.connectSocket(myUserId);
+
+//     const handleNewMessage = (newMsg) => {
+//       const msgChatId = newMsg.chat?._id || newMsg.chat;
+//       const currentId = activeChatIdRef.current;
+
+//       // Check if it's the current chat
+//       const isSameChat = currentId && msgChatId && currentId.toString() === msgChatId.toString();
+
+//       if (isSameChat) {
+//         // 1. Update Message List
+//         setMessages(prev => {
+//           if (prev.find(m => m._id === newMsg._id)) return prev;
+//           const filtered = prev.filter(m => !m.isTemp || (m.text !== newMsg.text));
+//           return [...filtered, newMsg];
+//         });
+
+//         // 2. Mark as read immediately if window is open
+//         const isFromOther = (newMsg.sender?._id || newMsg.sender) !== myUserId;
+//         if (isFromOther) {
+//           chatService.markAsRead?.(msgChatId, myUserId);
+//           chatService.markMessageSeen?.(newMsg._id, msgChatId, myUserId);
+
+//           // 🔥 Fix 2: Sidebar count ko 0 karo bina refresh ke
+//           setGlobalChats(prev => prev.map(c =>
+//             c._id === msgChatId
+//               ? {
+//                 ...c,
+//                 unreadCount: Array.isArray(c.unreadCount)
+//                   ? c.unreadCount.map(u => (u.userId || u._id) === myUserId ? { ...u, count: 0 } : u)
+//                   : 0
+//               }
+//               : c
+//           ));
+//         }
+//       }
+//     };
+
+//     chatService.onMessageReceived?.(handleNewMessage);
+
+//     return () => {
+//       chatService.removeMessageListener?.();
+//     };
+//   }, [myUserId, setGlobalChats]);
+//   useEffect(() => {
+//     if (location.state?.chatId && chats.length > 0 && !activeChat) {
+//       const targetChat = chats.find(c => c._id === location.state.chatId);
+//       if (targetChat) {
+//         setActiveChat(targetChat);
+//       }
+//       // Clear location state after using it so it doesn't interfere with chat switching
+//       window.history.replaceState({}, document.title, window.location.pathname);
+//     }
+//   }, [chats.length, activeChat]);
+
+//   // Modified handleSend to support auto-sending links
+//   const handleSend = async (overrideText = null) => {
+//     const textToProcess = (typeof overrideText === 'string') ? overrideText : inputText.trim();
+//     if (!textToProcess && !pendingFile) return;
+//     if (!activeChat) return;
+
+//     // 🔥 Fix 1: Turant input clear karo
+//     if (!overrideText) setInputText("");
+//     setShowEmojiPicker(false);
+
+//     try {
+//       if (pendingFile) {
+//         // ... file upload logic ...
+//         setPendingFile(null);
+//       } else if (editingMessage && !overrideText) {
+//         chatService.editMessage?.(editingMessage.id, textToProcess, activeChat._id, myUserId);
+//         setMessages(prev => prev.map(m =>
+//           m._id === editingMessage.id ? { ...m, text: textToProcess, isEdited: true } : m
+//         ));
+//         setEditingMessage(null);
+//       } else {
+//         // Normal Message
+//         const tempId = "temp-" + Date.now();
+//         const newMessage = {
+//           _id: tempId,
+//           sender: myUserId,
+//           text: textToProcess,
+//           createdAt: new Date().toISOString(),
+//           isTemp: true
+//         };
+//         setMessages(prev => [...prev, newMessage]);
+
+//         // Socket call
+//         chatService.sendMessage(activeChat._id, myUserId, textToProcess);
+
+//         // Update sidebar locally
+//         setGlobalChats(prev => prev.map(c =>
+//           c._id === activeChat._id ? { ...c, lastMessage: newMessage, lastMessageAt: new Date().toISOString() } : c
+//         ));
+//       }
+//     } catch (err) {
+//       console.error('Send failed', err);
+//       // Error handling: wapas text daal sakte ho agar fail ho jaye
+//     }
+//   };
+
+//   // Video Call Link Generation Logic
+//   const handleVideoCallAction = (type) => {
+//     const meetingId = Math.random().toString(36).substring(7);
+//     const link = type === 'zoom'
+//       ? `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`
+//       : `https://meet.google.com/new`;
+
+//     const messageBody = `Let's have a video call on ${type === 'zoom' ? 'Zoom' : 'Google Meet'}. Join here: ${link}`;
+//     handleSend(messageBody);
+//     window.open(link, '_blank');
+//   };
+
+//   const handleFileUpload = async (e) => {
+//     const file = e.target.files[0];
+//     if (!file) return;
+
+//     // Sirf file store karo, send nahi
+//     setPendingFile(file);
+//     e.target.value = null;
+//   };
+
+//   const finalDeleteExecute = async () => {
+//     chatService.deleteMessage(deleteTarget.msgId, activeChat._id, tempDeleteMode, myUserId);
+//     if (tempDeleteMode === 'me') {
+//       setMessages(prev => prev.filter(m => m._id !== deleteTarget.msgId));
+//     } else {
+//       setMessages(prev => prev.map(m => m._id === deleteTarget.msgId ? { ...m, text: "This message was deleted", isDeleted: true } : m));
+//     }
+//     setDeleteStep('none');
+//   };
+
+//   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+//   // Close menus when clicking outside
+//   useEffect(() => {
+//     const handler = () => {
+//       setOpenSidebarMenuId(null);
+//       setShowHeaderMenu(false);
+//     };
+//     document.addEventListener('click', handler);
+//     return () => document.removeEventListener('click', handler);
+//   }, []);
+
+//   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
+
+//   // Helper to detect and render links in messages
+//   const renderMessageText = (text) => {
+//     const urlRegex = /(https?:\/\/[^\s]+)/g;
+//     return text.split(urlRegex).map((part, i) => {
+//       if (part.match(urlRegex)) {
+//         return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-blue-200">{part}</a>;
+//       }
+//       return part;
+//     });
+//   };
+
+//   return (
+//     <div className="relative flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
+
+//       <style>
+//         {`
+//           .EmojiPickerReact .epr-body::-webkit-scrollbar { display: none !important; }
+//           .EmojiPickerReact .epr-body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+//           .hide-scrollbar::-webkit-scrollbar { display: none; }
+//           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+//         `}
+//       </style>
+
+//       {/* DELETE MODAL */}
+//       {deleteStep !== 'none' && (
+//         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+//           <div className="bg-[#193322] border border-[#23482f] w-full max-w-[320px] rounded-3xl p-6 shadow-2xl">
+//             {deleteStep === 'options' ? (
+//               <div className="flex flex-col gap-2">
+//                 <h3 className="text-lg font-bold text-center mb-4">Delete?</h3>
+//                 <button onClick={() => { setTempDeleteMode('me'); setDeleteStep('confirm'); }} className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm">Delete for me</button>
+//                 {deleteTarget.isMe && (
+//                   <button onClick={() => { setTempDeleteMode('everyone'); setDeleteStep('confirm'); }} className="w-full py-3 rounded-xl bg-red-600/20 text-red-400 text-sm font-semibold">Delete for everyone</button>
+//                 )}
+//                 <button onClick={() => setDeleteStep('none')} className="w-full py-3 text-[#13ec5b] text-sm font-bold">Cancel</button>
+//               </div>
+//             ) : (
+//               <div className="text-center">
+//                 <AlertCircle className="mx-auto mb-4 text-yellow-500" size={40} />
+//                 <h3 className="font-bold mb-6">Confirm Delete?</h3>
+//                 <div className="flex gap-3">
+//                   <button onClick={() => setDeleteStep('none')} className="flex-1 py-2 rounded-lg bg-white/5 text-sm">No</button>
+//                   <button onClick={finalDeleteExecute} className="flex-1 py-2 rounded-lg bg-[#13ec5b] text-black font-bold">Yes</button>
+//                 </div>
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       )}
+
+//       {/* SIDEBAR */}
+//       <aside className="w-80 border-r border-[#23482f] flex flex-col bg-[#102216]">
+//         <div className="p-5 border-b border-[#23482f]">
+//           <h2 className="text-xl font-bold text-[#13ec5b] mb-4">Messages</h2>
+//           <div className="relative">
+//             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92c9a4]" size={16} />
+//             <input type="text" placeholder="Search..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#112217] text-sm outline-none border border-[#23482f]" />
+//           </div>
+//         </div>
+//         <div className="flex-1 overflow-y-auto hide-scrollbar">
+
+//           {chats.map((chat) => {
+
+//             const p = chat.participants.find(u => (u._id || u) !== myUserId);
+
+//             const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
+//             const unread = getUnreadCount(chat) || 0;
+
+//             return (
+//               <div key={chat._id} className="relative group/item">
+
+//                 {/* Subtle backdrop when menu is open */}
+//                 {openSidebarMenuId === chat._id && (
+//                   <div className="fixed inset-0 z-20" onClick={() => setOpenSidebarMenuId(null)} />
+//                 )}
+
+//                 <div
+//                   onClick={() => {
+//                     setActiveChat(chat);
+//                     setActiveChatId(chat._id); // Context ko update karo
+//                     activeChatIdRef.current = chat._id;
+
+//                     // 0 set karo unread count ko locally
+//                     setGlobalChats(prev => prev.map(c =>
+//                       c._id === chat._id
+//                         ? {
+//                           ...c,
+//                           unreadCount: Array.isArray(c.unreadCount)
+//                             ? c.unreadCount.map(u => (u.userId || u._id) === myUserId ? { ...u, count: 0 } : u)
+//                             : 0
+//                         }
+//                         : c
+//                     ));
+
+//                     chatService.markAsRead?.(chat._id, myUserId);
+//                     // Immediately join chat room for real-time
+//                     chatService.joinChat?.(chat._id, myUserId);
+
+//                     // Scroll to bottom
+//                     if (scrollRef.current) {
+//                       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+//                     }
+//                   }}
+//                   className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] transition-all ${chat.isNew ? 'bg-[#13ec5b]/15 border-l-4 border-[#13ec5b]' : activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : (unread ? 'bg-[#072814] border-l-4 border-[#13ec5b]' : 'hover:bg-white/5')}`}
+//                 >
+//                   <div className="relative">
+//                     <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className={`h-11 w-11 rounded-full border border-[#23482f] ${unread ? 'ring-2 ring-[#13ec5b]/40' : ''}`} alt="" />
+//                     {unread > 0 && (
+//                       <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#13ec5b] animate-pulse border border-transparent"></span>
+//                     )}
+//                     {chat.mutedBy?.includes(myUserId) && (
+//                       <div className="absolute -bottom-1 -right-1 bg-[#92c9a4] text-[#102216] rounded-full w-4 h-4 flex items-center justify-center font-bold"><BellOff size={10} /></div>
+//                     )}
+//                   </div>
+
+//                   <div className="flex-1 truncate">
+//                     <div className="flex justify-between items-center gap-1">
+//                       <div className="flex items-center gap-2">
+//                         <h4 className={`text-sm ${unread || chat.isNew ? 'font-bold text-[#13ec5b]' : 'font-bold'}`}>{p?.name}</h4>
+//                         {chat.isNew && (
+//                           <span className="text-[7px] font-bold bg-[#13ec5b] text-[#102216] px-1.5 py-0.5 rounded-full flex-shrink-0 animate-pulse">NEW</span>
+//                         )}
+//                       </div>
+//                       {unread > 0 && (
+//                         <span className="text-[9px] font-bold bg-[#13ec5b] text-black px-1.5 py-0.5 rounded-full flex-shrink-0">
+//                           {unread}
+//                         </span>
+//                       )}
+//                     </div>
+//                     <p className={`text-xs truncate ${unread || chat.isNew ? 'text-[#e6f9ec] font-semibold' : 'text-[#92c9a4]'}`}>
+//                       {isMeLast ? 'You: ' : ''}{chat.lastMessage?.text || "Chat now"}
+//                     </p>
+//                   </div>
+
+//                   {/* Three-dot menu button - now inline */}
+//                   <div className="relative flex-shrink-0">
+//                     <button onClick={(e) => { e.stopPropagation(); setOpenSidebarMenuId(prev => prev === (chat._id) ? null : chat._id); }} className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+//                       <MoreVertical size={16} />
+//                     </button>
+
+//                     {openSidebarMenuId === chat._id && (
+//                       <div onClick={(e) => e.stopPropagation()} className="absolute right-0 top-10 w-40 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl z-50 overflow-hidden">
+//                         <button
+//                           onClick={async (e) => {
+//                             e.stopPropagation();
+//                             try {
+//                               const skillsRes = await skillService.getUserSkills(p._id);
+//                               const offered = skillsRes?.offered || skillsRes?.skills || skillsRes?.offeredSkills || [];
+//                               const wanted = skillsRes?.wanted || skillsRes?.wantedSkills || [];
+//                               navigate("/explore-profile", {
+//                                 state: {
+//                                   id: p._id,
+//                                   name: p.name,
+//                                   img: p.profileImage,
+//                                   offeredSkills: offered,
+//                                   wantedSkills: wanted,
+//                                   rating: p.rating || 4.9,
+//                                   reviews: p.reviews || 0
+//                                 }
+//                               });
+//                             } catch (err) {
+//                               console.error('Error fetching user skills:', err);
+//                               navigate("/explore-profile", {
+//                                 state: {
+//                                   id: p._id,
+//                                   name: p.name,
+//                                   img: p.profileImage,
+//                                   offeredSkills: [],
+//                                   wantedSkills: [],
+//                                   rating: p.rating || 4.9,
+//                                   reviews: p.reviews || 0
+//                                 }
+//                               });
+//                             }
+//                             setOpenSidebarMenuId(null);
+//                           }}
+//                           className="w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-[#13ec5b] hover:text-black transition-colors flex items-center gap-2"
+//                         >
+//                           <span className="material-symbols-outlined text-sm">person</span>
+//                           View Profile
+//                         </button>
+
+//                         <button
+//                           onClick={(e) => {
+//                             e.stopPropagation();
+//                             const isMuted = chat.mutedBy?.includes(myUserId);
+//                             // Optimistic UI update
+//                             setGlobalChats(prev => prev.map(c => c._id === chat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
+//                             if (activeChat?._id === chat._id) setActiveChat(prev => prev ? { ...prev, mutedBy: (isMuted ? prev.mutedBy?.filter(id => id !== myUserId) : [...(prev.mutedBy || []), myUserId]) } : prev);
+//                             chatService.muteChat(chat._id, myUserId, !isMuted);
+//                             setOpenSidebarMenuId(null);
+//                           }}
+//                           className="w-full text-left px-4 py-2.5 text-[11px] hover:bg-white/5 border-t border-[#23482f] flex items-center gap-2"
+//                         >
+//                           {chat.mutedBy?.includes(myUserId) ? <Bell size={16} /> : <BellOff size={16} />}
+//                           <span>{chat.mutedBy?.includes(myUserId) ? 'Unmute' : 'Mute'}</span>
+//                         </button>
+
+//                         <button
+//                           onClick={(e) => {
+//                             e.stopPropagation();
+//                             if (confirm('Clear all messages from this chat?')) {
+//                               chatService.clearChat(chat._id, myUserId);
+//                               if (activeChat?._id === chat._id) {
+//                                 setMessages([]);
+//                               }
+//                             }
+//                             setOpenSidebarMenuId(null);
+//                           }}
+//                           className="w-full text-left px-4 py-2.5 text-[11px] text-[#92c9a4] hover:bg-white/5 border-t border-[#23482f] flex items-center gap-2"
+//                         >
+//                           <Trash2 size={14} />
+//                           <span>Clear Chat</span>
+//                         </button>
+
+//                         <button
+//                           onClick={(e) => {
+//                             e.stopPropagation();
+//                             if (confirm('Delete this chat?')) {
+//                               chatService.deleteChat(chat._id, myUserId);
+//                               setGlobalChats(prev => prev.filter(c => c._id !== chat._id));
+//                               if (activeChat?._id === chat._id) setActiveChat(null);
+//                             }
+//                             setOpenSidebarMenuId(null);
+//                           }}
+//                           className="w-full text-left px-4 py-2.5 text-[11px] text-red-400 hover:bg-red-500/10 border-t border-[#23482f] flex items-center gap-2"
+//                         >
+//                           <Trash2 size={14} />
+//                           <span>Delete</span>
+//                         </button>
+//                       </div>
+//                     )}
+//                   </div>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </aside>
+
+//       {/* CHAT WINDOW */}
+//       <main className="flex-1 flex flex-col bg-[#0d1a11]">
+//         {activeChat ? (
+//           <>
+//             <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
+//               <div className="flex items-center gap-3">
+//                 <div className="relative">
+//                   <img src={otherUser?.profileImage || `https://ui-avatars.com/api/?name=${otherUser?.name}&bg=13ec5b&color=000`} className="h-10 w-10 rounded-full" alt="" />
+//                   {activeChat?.mutedBy?.includes(myUserId) && (
+//                     <div className="absolute -bottom-1 -right-1 bg-[#92c9a4] text-[#102216] rounded-full w-5 h-5 flex items-center justify-center font-bold"><BellOff size={12} /></div>
+//                   )}
+//                 </div>
+//                 <div>
+//                   <h3 className="font-bold">{otherUser?.name}</h3>
+//                   <p className={`text-[10px] ${isRecentlyOnline(otherUser) ? 'text-[#13ec5b]' : 'text-[#92c9a4]'}`}>
+//                     {isRecentlyOnline(otherUser)
+//                       ? '● Online'
+//                       : `Last seen ${formatLastSeen(otherUser?.lastSeen)}`
+//                     }
+//                   </p>
+//                 </div>
+//               </div>
+
+//               <div className="flex items-center gap-4">
+//                 {/* Unread badge */}
+
+
+//                 {getUnreadCount(activeChatFromList) > 0 && (
+//                   <div className="px-3 py-1 bg-[#13ec5b]/20 border border-[#13ec5b] rounded-full text-[10px] font-bold text-[#13ec5b]">
+//                     {getUnreadCount(activeChatFromList)} unread
+//                   </div>
+//                 )}
+
+//                 {/* Chat actions menu */}
+//                 <div className="relative">
+//                   <button onClick={(e) => { e.stopPropagation(); setShowHeaderMenu(prev => !prev); }} className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+//                     <MoreVertical size={24} />
+//                   </button>
+//                   {showHeaderMenu && (
+//                     <div onClick={(e) => e.stopPropagation()} className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-100 visible transition-all duration-300 z-50 overflow-hidden">
+//                       <button onClick={() => {
+//                         const isMuted = activeChat?.mutedBy?.includes(myUserId);
+//                         // optimistic update
+//                         setGlobalChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
+//                         if (activeChat) setActiveChat(prev => prev ? { ...prev, mutedBy: isMuted ? prev.mutedBy?.filter(id => id !== myUserId) : [...(prev.mutedBy || []), myUserId] } : prev);
+//                         chatService.muteChat(activeChat._id, myUserId, !isMuted);
+//                         setShowHeaderMenu(false);
+//                       }} className="w-full text-left px-4 py-2 text-xs hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
+//                         {activeChat?.mutedBy?.includes(myUserId) ? <><Bell size={16} /><span>Unmute</span></> : <><BellOff size={16} /><span>Mute</span></>}
+//                       </button>
+//                       <button onClick={() => { if (confirm('Clear all messages?')) { chatService.clearChat(activeChat._id, myUserId); setMessages([]); } setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-[#92c9a4] hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
+//                         <Trash2 size={14} />
+//                         <span>Clear Chat</span>
+//                       </button>
+//                       <button onClick={() => { if (confirm('Delete this chat?')) { chatService.deleteChat(activeChat._id, myUserId); setActiveChat(null); setGlobalChats(prev => prev.filter(c => c._id !== activeChat._id)); } setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950/20 flex items-center gap-2">
+//                         <X size={14} />
+//                         <span>Delete Chat</span>
+//                       </button>
+
+//                     </div>
+//                   )}
+//                 </div>
+
+//                 {/* Video call menu */}
+//                 <div className="relative group">
+//                   <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+//                     <Video size={24} />
+//                   </button>
+//                   <div className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
+//                     <button onClick={() => handleVideoCallAction('zoom')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+//                       <div className="w-6 h-6 bg-[#2D8CFF] rounded flex items-center justify-center text-[10px] font-black text-white italic">Z</div>
+//                       <span className="text-xs font-bold">Zoom Link</span>
+//                     </button>
+//                     <button onClick={() => handleVideoCallAction('meet')} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-t border-[#23482f]">
+//                       <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-blue-500 text-[10px]">M</div>
+//                       <span className="text-xs font-bold">Meet Link</span>
+//                     </button>
+//                   </div>
+//                 </div>
+//               </div>
+//             </header>
+
+//             <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
+//               {messages.map((m, idx) => {
+//                 const isMe = (m.sender?._id || m.sender) === myUserId;
+//                 const isDeleted = m.isDeleted || m.text === "This message was deleted";
+//                 // Only show "edited" when the message was explicitly marked edited
+//                 const wasEdited = (m.isEdited === true);
+//                 const showDateHeader = idx === 0 || formatMessageDate(messages[idx - 1].createdAt) !== formatMessageDate(m.createdAt);
+
+//                 return (
+//                   <React.Fragment key={m._id || idx}>
+//                     {showDateHeader && (
+//                       <div className="flex justify-center my-6">
+//                         <span className="bg-[#193322] text-[#92c9a4] text-[10px] px-4 py-1 rounded-full border border-[#23482f] uppercase tracking-widest">
+//                           {formatMessageDate(m.createdAt)}
+//                         </span>
+//                       </div>
+//                     )}
+//                     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+//                       <div className="relative group max-w-[70%]">
+//                         {!isDeleted && (
+//                           <div className={`absolute -top-8 flex bg-[#1a3322] border border-[#23482f] rounded-lg opacity-0 group-hover:opacity-100 transition-all z-20 ${isMe ? 'right-0' : 'left-0'}`}>
+//                             {isMe && <button onClick={() => { setEditingMessage({ id: m._id, text: m.text }); setInputText(m.text); }} className="p-2 hover:bg-white/10 text-[#92c9a4]"><Edit2 size={14} /></button>}
+//                             <button onClick={() => { setDeleteTarget({ msgId: m._id, isMe }); setDeleteStep('options'); }} className="p-2 hover:bg-red-500/20 text-red-400"><Trash2 size={14} /></button>
+//                           </div>
+//                         )}
+//                         <div className={`px-4 py-2 rounded-2xl shadow-sm ${isDeleted ? 'border border-[#23482f] italic text-gray-500' : isMe ? 'bg-[#193322] border border-[#13ec5b]/30 text-white rounded-tr-none' : 'bg-[#193322] text-white border border-[#23482f] rounded-tl-none'}`}>
+//                           {m.file ? (
+//                             m.file.mimeType && m.file.mimeType.startsWith('image/') ? (
+//                               <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="block">
+//                                 <img src={m.file.url} alt={m.file.name} className="max-w-[220px] rounded-xl border border-[#23482f]" />
+//                               </a>
+//                             ) : (
+//                               <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline break-all hover:text-blue-200 text-sm">
+//                                 <Paperclip size={14} />
+//                                 <span>{m.file.name || m.file.url}</span>
+//                               </a>
+//                             )
+//                           ) : (
+//                             <p className="text-sm">{renderMessageText(m.text)}</p>
+//                           )}
+//                           <div className="flex items-center justify-end gap-2 mt-1">
+//                             {!isDeleted && wasEdited && <span className="text-[8px] opacity-50 italic font-bold">edited</span>}
+//                             <p className="text-[9px] opacity-60">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+//                             {isMe && !isDeleted && <Check size={10} className={m.seen ? "text-blue-500" : "text-gray-400"} />}
+//                           </div>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </React.Fragment>
+//                 );
+//               })}
+//               <div ref={scrollRef} />
+//             </div>
+
+//             <div className="p-4 bg-[#112217] border-t border-[#23482f]">
+//               {editingMessage && (
+//                 <div className="flex items-center justify-between bg-[#193322] px-4 py-1 mb-2 rounded border-l-4 border-[#13ec5b]">
+//                   <p className="text-[10px] text-[#92c9a4]">Editing...</p>
+//                   <button onClick={() => { setEditingMessage(null); setInputText(""); }}><X size={12} /></button>
+//                 </div>
+//               )}
+
+//               {/* Pending file preview */}
+//               {pendingFile && (
+//                 <div className="flex items-center gap-3 bg-[#193322] border border-[#23482f] p-3 rounded-xl mb-2">
+//                   {pendingFile.type.startsWith('image/') ? (
+//                     <>
+//                       <img src={URL.createObjectURL(pendingFile)} alt="preview" className="h-12 w-12 rounded object-cover" />
+//                       <span className="text-sm text-white flex-1">{pendingFile.name}</span>
+//                     </>
+//                   ) : (
+//                     <>
+//                       <Paperclip size={20} className="text-[#92c9a4]" />
+//                       <span className="text-sm text-white flex-1 truncate">{pendingFile.name}</span>
+//                     </>
+//                   )}
+//                   <button onClick={() => setPendingFile(null)} className="text-red-400 hover:text-red-300">
+//                     <X size={18} />
+//                   </button>
+//                 </div>
+//               )}
+
+//               <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
+//                 <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]"><Smile size={22} /></button>
+
+//                 <button onClick={() => fileInputRef.current.click()} className="text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
+//                   <Paperclip size={20} />
+//                 </button>
+//                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+
+//                 <input value={inputText} onChange={(e) => {
+//                   setInputText(e.target.value);
+//                   // Auto-close emoji picker when typing
+//                   if (showEmojiPicker && e.target.value.length > 0) {
+//                     setShowEmojiPicker(false);
+//                   }
+//                 }} onFocus={() => setShowEmojiPicker(false)}
+//                   onKeyDown={(e) => {
+//                     if (e.key === 'Enter') {
+//                       handleSend();
+//                       setShowEmojiPicker(false);
+//                     }
+//                   }} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
+
+//                 <button onClick={() => {
+//                   handleSend();
+//                   setShowEmojiPicker(false);
+//                 }} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
+//                   {editingMessage ? <Check size={18} /> : <Send size={18} />}
+//                 </button>
+
+//                 {showEmojiPicker && (
+//                   <div className="absolute bottom-16 left-0 z-50">
+//                     <EmojiPicker onEmojiClick={(e) => {
+//                       setInputText(p => p + e.emoji);
+//                       // Keep emoji picker open for more emojis
+//                     }} theme="dark" width={300} height={400} />
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           </>
+//         ) : (
+//           <div className="flex-1 flex flex-col items-center justify-center opacity-10">
+//             <Send size={80} />
+//             <p className="mt-4 font-bold tracking-[0.3em]">SELECT A CHAT</p>
+//           </div>
+//         )}
+//       </main>
+//     </div>
+//   );
+// };
+
+// export default MessagesPage;
+// =======================
+// MessagesPage.jsx (FINAL)
+// UI UNCHANGED | ALL FEATURES MERGED
+// =======================
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { chatService } from '../../services/chatService';
 import { skillService } from '../../services/skillService';
-import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff } from 'lucide-react';
+import {
+  Search, Send, Trash2, Edit2, X, Check, Smile,
+  AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff
+} from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import Avatar from '../../components/common/Avatar';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
+/* ===================== HELPERS ===================== */
 const getMyId = () => {
   const token = localStorage.getItem('token');
   if (!token) return null;
@@ -15,39 +742,209 @@ const getMyId = () => {
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(window.atob(base64));
     return payload.id || payload._id;
-  } catch (e) { return null; }
+  } catch {
+    return null;
+  }
 };
 
+/* ===================== COMPONENT ===================== */
 const MessagesPage = () => {
-  const [chats, setChats] = useState([]);
+  const { chats, setChats: setGlobalChats, setActiveChatId } = useChat();
+
+  const myUserId = getMyId();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [pendingFile, setPendingFile] = useState(null);
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState('');
   const [editingMessage, setEditingMessage] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const [deleteStep, setDeleteStep] = useState('none');
   const [deleteTarget, setDeleteTarget] = useState({ msgId: null, isMe: false });
   const [tempDeleteMode, setTempDeleteMode] = useState(null);
+
   const [openSidebarMenuId, setOpenSidebarMenuId] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
 
-  const myUserId = getMyId();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const scrollRef = useRef();
-  const fileInputRef = useRef();
+  const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
   const activeChatIdRef = useRef(null);
-  const activeChatRef = useRef(null);
 
 
-  const activeChatFromList = React.useMemo(() => {
-  if (!activeChat) return null;
-  return chats.find(c => c._id === activeChat._id) || activeChat;
-}, [chats, activeChat]);
+  useEffect(() => {
+    if (activeChat?._id) {
+      activeChatIdRef.current = activeChat._id;
+    }
+  }, [activeChat?._id]);
+
+  /* ===================== DERIVED ===================== */
+  const activeChatFromList = useMemo(() => {
+    if (!activeChat) return null;
+    return chats.find(c => c._id === activeChat._id) || activeChat;
+  }, [chats, activeChat]);
+
+  const otherUser = activeChat?.participants?.find(
+    p => (p._id || p) !== myUserId
+  );
+
+  /* ===================== UNREAD ===================== */
+  const getUnreadCount = (chat) => {
+    if (!chat?.unreadCount) return 0;
+    if (typeof chat.unreadCount === 'number') return chat.unreadCount;
+    if (Array.isArray(chat.unreadCount)) {
+      return chat.unreadCount.find(
+        u => (u.userId || u._id) === myUserId
+      )?.count || 0;
+    }
+    return 0;
+  };
+
+  /* ===================== SOCKET ===================== */
+  useEffect(() => {
+    if (!myUserId) return;
+
+    chatService.connectSocket(myUserId);
+
+  const onMessage = (msg) => {
+  // chatService.removeMessageListener();
+  const msgChatId = msg.chat?._id || msg.chat;
+
+  if (activeChatIdRef.current === msgChatId) {
+    
+    setMessages(prev => {
+      if (prev.some(m => m._id === msg._id)) return prev;
+      if (msg.tempId) {
+        const index = prev.findIndex(m => m._id === msg.tempId);
+        if (index !== -1) {
+          const newMessages = [...prev];
+          newMessages[index] = { ...msg, _id: msg._id };
+          return newMessages;
+        }
+      }
+      if (prev.some(m => m._id === msg._id)) return prev;
+      // const exists = prev.find(m => m._id === msg._id || m._id === msg.tempId);
+      // if (exists) return prev;
+
+      return [...prev, msg];
+    });
+
+    if ((msg.sender?._id || msg.sender) !== myUserId) {
+      chatService.markAsRead(msgChatId, myUserId);
+      chatService.markMessageSeen?.(msg._id, msgChatId, myUserId);
+    }
+  }
+};
 
 
+
+    chatService.onMessageReceived(onMessage);
+    return () => chatService.removeMessageListener(onMessage);
+  }, [myUserId, setGlobalChats]);
+
+  /* ===================== HISTORY ===================== */
+
+  // useEffect(() => {
+  //   if (!activeChat?._id || !myUserId) return;
+  //   if (document.visibilityState !== "visible") return;
+
+  //   // unread reset
+  //   // chatService.markAsRead(activeChat._id, myUserId);
+
+  //   // 🔥 old unseen messages ko seen mark karo
+  //   messages.forEach(m => {
+  //     const isFromOther =
+  //       (m.sender?._id || m.sender) !== myUserId;
+
+  //     if (!m.seen && isFromOther) {
+  //       chatService.markMessageSeen?.(
+  //         m._id,
+  //         activeChat._id,
+  //         myUserId
+  //       );
+  //     }
+  //   });
+  // }, [activeChat?._id, messages.length]);
+  useEffect(() => {
+    if (!activeChat?._id) return;
+
+    const loadHistory = async () => {
+      try {
+        const history = await chatService.getChatHistory(activeChat._id);
+        setMessages(history || []);
+
+        // socket room join
+        chatService.joinChat(activeChat._id, myUserId);
+
+        // chat open hote hi read mark
+        chatService.markAsRead(activeChat._id, myUserId);
+      } catch (err) {
+        console.error("❌ Failed to load chat history", err);
+      }
+    };
+
+    loadHistory();
+  }, [activeChat?._id]);
+
+
+  /* ===================== SEND ===================== */
+  const handleSend = async (override = null) => {
+    const text = override ?? inputText.trim();
+    if (!text && !pendingFile) return;
+    if (!activeChat) return;
+
+    if (!override) setInputText('');
+    setShowEmojiPicker(false);
+
+    if (editingMessage && !override) {
+      chatService.editMessage(editingMessage.id, text, activeChat._id, myUserId);
+      setMessages(prev =>
+        prev.map(m => m._id === editingMessage.id ? { ...m, text, isEdited: true } : m)
+      );
+      setEditingMessage(null);
+      return;
+    }
+
+    // Generate a temp ID
+    const tempId = 'temp-' + Date.now();
+    const tempMsg = {
+      _id: tempId,
+      sender: myUserId,
+      text,
+      createdAt: new Date().toISOString(),
+      isTemp: true
+    };
+
+    setMessages(prev => [...prev, tempMsg]);
+
+    // Send message with tempId
+    chatService.sendMessage(activeChat._id, myUserId, text, tempMsg._id);
+
+    setGlobalChats(prev =>
+      prev.map(c =>
+        c._id === activeChat._id
+          ? { ...c, lastMessage: tempMsg, lastMessageAt: tempMsg.createdAt }
+          : c
+      )
+    );
+  };
+
+
+  const isRecentlyOnline = (user) => {
+    if (!user) return false;
+    return !!user.isOnline;
+  };
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Sirf file store karo, send nahi
+    setPendingFile(file);
+    e.target.value = null;
+  };
   const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -58,27 +955,15 @@ const MessagesPage = () => {
     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
   };
-
-  const getUnreadCount = (chat) => {
-    if (!chat) return 0;
-    const uc = chat.unreadCount;
-    if (uc == null) return 0;
-    if (typeof uc === 'number') return uc;
-    if (Array.isArray(uc)) {
-      const item = uc.find(u => (u.userId || u._id || u.id) === myUserId);
-      return item?.count || 0;
-    }
-    // If it's an object keyed by userId
-    if (typeof uc === 'object') {
-      // try direct key
-      const key = myUserId;
-      if (uc[key] != null) return uc[key];
-      // fallback to any count field
-      return uc.count || 0;
-    }
-    return 0;
+  const renderMessageText = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, i) => {
+      if (part.match(urlRegex)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-blue-200">{part}</a>;
+      }
+      return part;
+    });
   };
-
   const formatLastSeen = (dateString) => {
     if (!dateString) return "unknown";
     const d = new Date(dateString);
@@ -91,12 +976,15 @@ const MessagesPage = () => {
     if (hr < 24) return `${hr}h ago`;
     return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
-
-  const isRecentlyOnline = (user) => {
-    if (!user) return false;
-    return !!user.isOnline;
+  const finalDeleteExecute = async () => {
+    chatService.deleteMessage(deleteTarget.msgId, activeChat._id, tempDeleteMode, myUserId);
+    if (tempDeleteMode === 'me') {
+      setMessages(prev => prev.filter(m => m._id !== deleteTarget.msgId));
+    } else {
+      setMessages(prev => prev.map(m => m._id === deleteTarget.msgId ? { ...m, text: "This message was deleted", isDeleted: true } : m));
+    }
+    setDeleteStep('none');
   };
-
   const getUniqueChats = (allChats) => {
     const uniqueMap = new Map();
     allChats.forEach(chat => {
@@ -112,31 +1000,13 @@ const MessagesPage = () => {
     return Array.from(uniqueMap.values());
   };
 
+
+  /* ===================== SCROLL ===================== */
   useEffect(() => {
-    if (!myUserId) return;
-    const loadInitialData = async () => {
-      const data = await chatService.getMyChats();
-      const normalized = data.map(chat => ({
-        ...chat,
-        participants: chat.participants.map(p => ({
-          ...(p || {}),
-          isOnline: !!p?.isOnline
-        }))
-      }));
-      const uniqueChats = getUniqueChats(normalized);
-      setChats(uniqueChats);
-    };
-    chatService.connectSocket(myUserId);
-    const timer = setTimeout(() => { loadInitialData(); }, 100);
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    // Real-time message listener - with better debugging
-    const handleNewMessage = (newMsg) => {
-      console.log('📨 MessagesPage.handleNewMessage called with:', { msgId: newMsg._id, chat: newMsg.chat });
 
-      const msgChatId = newMsg.chat?._id || newMsg.chat;
-      const isFromOther = (newMsg.sender?._id || newMsg.sender) !== myUserId;
-      const currentId = activeChatIdRef.current;
-      const currentActiveChat = activeChatRef.current;
 
       // Multiple ways to check if this is the active chat
       const isSameChatById = currentId && msgChatId &&
@@ -532,6 +1402,7 @@ const MessagesPage = () => {
     });
   };
 
+  /* ===================== RENDER ===================== */
   return (
     <div className="relative flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
 
@@ -582,13 +1453,16 @@ const MessagesPage = () => {
         </div>
         <div className="flex-1 overflow-y-auto hide-scrollbar">
 
-          {chats.map((chat) => {
+          {getUniqueChats(chats).map((chat) => {
+
             const p = chat.participants.find(u => (u._id || u) !== myUserId);
+
             const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
             const unread = getUnreadCount(chat) || 0;
 
             return (
               <div key={chat._id} className="relative group/item">
+
                 {/* Subtle backdrop when menu is open */}
                 {openSidebarMenuId === chat._id && (
                   <div className="fixed inset-0 z-20" onClick={() => setOpenSidebarMenuId(null)} />
@@ -597,14 +1471,8 @@ const MessagesPage = () => {
                 <div
                   onClick={() => {
                     setActiveChat(chat);
-                    // Update refs immediately (not async like setActiveChat)
+                    setActiveChatId(chat._id); // Context ko update karo
                     activeChatIdRef.current = chat._id;
-                    activeChatRef.current = chat;
-
-                    // Remove isNew flag when user opens the chat
-                    if (chat.isNew) {
-                      setChats(prev => prev.map(c => c._id === chat._id ? { ...c, isNew: false } : c));
-                    }
                     // Immediately join chat room for real-time
                     chatService.joinChat?.(chat._id, myUserId);
 
@@ -697,7 +1565,7 @@ const MessagesPage = () => {
                             e.stopPropagation();
                             const isMuted = chat.mutedBy?.includes(myUserId);
                             // Optimistic UI update
-                            setChats(prev => prev.map(c => c._id === chat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
+                            setGlobalChats(prev => prev.map(c => c._id === chat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
                             if (activeChat?._id === chat._id) setActiveChat(prev => prev ? { ...prev, mutedBy: (isMuted ? prev.mutedBy?.filter(id => id !== myUserId) : [...(prev.mutedBy || []), myUserId]) } : prev);
                             chatService.muteChat(chat._id, myUserId, !isMuted);
                             setOpenSidebarMenuId(null);
@@ -766,7 +1634,7 @@ const MessagesPage = () => {
 
               <div className="flex items-center gap-4">
                 {/* Unread badge */}
-                
+
 
                 {getUnreadCount(activeChatFromList) > 0 && (
                   <div className="px-3 py-1 bg-[#13ec5b]/20 border border-[#13ec5b] rounded-full text-[10px] font-bold text-[#13ec5b]">
@@ -784,7 +1652,7 @@ const MessagesPage = () => {
                       <button onClick={() => {
                         const isMuted = activeChat?.mutedBy?.includes(myUserId);
                         // optimistic update
-                        setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
+                        setGlobalChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
                         if (activeChat) setActiveChat(prev => prev ? { ...prev, mutedBy: isMuted ? prev.mutedBy?.filter(id => id !== myUserId) : [...(prev.mutedBy || []), myUserId] } : prev);
                         chatService.muteChat(activeChat._id, myUserId, !isMuted);
                         setShowHeaderMenu(false);
@@ -862,7 +1730,7 @@ const MessagesPage = () => {
                 const showDateHeader = idx === 0 || formatMessageDate(messages[idx - 1].createdAt) !== formatMessageDate(m.createdAt);
 
                 return (
-                  <React.Fragment key={m._id || idx}>
+                  <React.Fragment key={m._id || m.tempId || idx}>
                     {showDateHeader && (
                       <div className="flex justify-center my-6">
                         <span className="bg-[#193322] text-[#92c9a4] text-[10px] px-4 py-1 rounded-full border border-[#23482f] uppercase tracking-widest">

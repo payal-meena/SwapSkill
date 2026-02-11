@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut as LogOutIcon } from 'lucide-react';
 import LogOut from '../modals/LogOut';
@@ -19,7 +20,7 @@ const getMyIdFromToken = () => {
 
 const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = location.pathname === to || (to === '/messages/list' && location.pathname.startsWith('/messages/'));
 
   return (
     <Link 
@@ -50,45 +51,106 @@ const UserSidebar = () => {
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
-  const { chats } = useChat();
-  const myId = getMyIdFromToken();
+  
+  const { chats, setActiveChatId, myUserId } = useChat(); 
+  const myId = myUserId || getMyIdFromToken();
 
-  const getUnreadCountFor = (c) => {
-    if (!c) return 0;
-    const uc = c.unreadCount;
-    if (uc == null) return 0;
-    if (typeof uc === 'number') return uc;
-    if (Array.isArray(uc)) {
-      const it = uc.find(u => (u.userId || u._id || u.id) === myId);
-      return it?.count || 0;
-    }
+  // 1. Unread Count logic (Supports both Number and Array structure)
+  const getUnreadCount = (chat) => {
+  if (!chat) return 0;
+  
+  // Console log ke mutabik unreadCount ek property hai chat object ki
+  const uc = chat.unreadCount;
+  
+  if (typeof uc === 'number') return uc;
+
+  // Agar unreadCount array hai (jo aapke console mein dikh raha hai)
+  if (Array.isArray(uc)) {
+    const myEntry = uc.find(item => 
+      (item.userId?.toString() === myId?.toString()) || 
+      (item._id?.toString() === myId?.toString())
+    );
+    return myEntry ? myEntry.count : 0;
+  }
+
+  // Agar unreadCount object hai
+  if (typeof uc === 'object' && uc !== null) {
     return uc[myId] || uc.count || 0;
+  }
+
+  return 0;
+};
+
+  // 2. Real-time Total Unread
+  const totalUnread = useMemo(() => {
+    return (chats || []).reduce((sum, c) => sum + getUnreadCount(c), 0);
+  }, [chats, myId]);
+
+  // 3. WhatsApp Style Real-time Logic: Detect URL Change
+  useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    const activeIdFromUrl = pathParts[pathParts.length - 1];
+
+    // Agar user kisi specific chat par hai (not on list or empty)
+    if (location.pathname.startsWith('/messages/') && activeIdFromUrl !== 'list' && activeIdFromUrl !== ':userId') {
+      setActiveChatId(activeIdFromUrl);
+    } else {
+      setActiveChatId(null);
+    }
+  }, [location.pathname, setActiveChatId]);
+
+  // 4. Requests count fetch logic
+// 4. Requests count fetch AND Real-time listener
+// 4. Requests count fetch AND Real-time listener
+// 4. Requests count fetch AND Real-time listener
+// 4. Requests count fetch AND Real-time listener (Instagram Style)
+// 4. Requests count fetch AND Real-time listener (Robust Version)
+useEffect(() => {
+  const socket = chatService.socket;
+  if (!myId || !socket) return;
+
+  const syncIncomingCount = async () => {
+    try {
+      const res = await requestService.getMyRequests();
+      console.log("🟢 API RESPONSE =", res);
+console.log("🟢 MY ID =", myId);
+      const allRequests = res?.requests || [];
+      const pendingCount = allRequests.filter(r => {
+        const receiverId = r.receiver?._id || r.receiver;
+        return receiverId?.toString() === myId?.toString() && r.status === 'pending';
+      }).length;
+      setIncomingRequestCount(pendingCount);
+    } catch (err) {
+      console.error("❌ Count sync failed", err);
+    }
   };
 
-  const totalUnread = (chats || []).reduce((sum, c) => sum + getUnreadCountFor(c), 0);
+  // Initial load
+  syncIncomingCount();
 
-  // Close mobile drawer when route changes
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+  // 🔥 SINGLE SOURCE OF TRUTH
+  socket.off("requestUpdated");
+  socket.on("requestUpdated", (req) => {
+    const receiverId = req?.receiver?._id || req?.receiver;
+    if (receiverId?.toString() === myId?.toString()) {
+      syncIncomingCount();
+    }
+  });
 
-  useEffect(() => {
-    if (!myId) return;
-    const socket = chatService.socket;
-    if (!socket) return;
+  return () => {
+    socket.off("requestUpdated");
+  };
+}, [myId]);
+// Jab socket change ho tab re-run// 🔥 Socket ko dependency mein dala// isse sirf myId par chalne dein
 
-    const handleNewRequest = (request) => {
-      if (request?.receiver?._id?.toString() === myId?.toString() || request?.receiver === myId) {
-        setIncomingRequestCount(prev => prev + 1);
-      }
-    };
-    socket.on('newNotification', handleNewRequest);
-    return () => socket.off('newNotification', handleNewRequest);
-  }, [myId]);
+// 5. URL change hone par count reset logic (UX improvement)
+useEffect(() => {
+  if (location.pathname === '/requests') {
+    setIncomingRequestCount(0);
+  }
+}, [location.pathname]);
 
-  useEffect(() => {
-    if (location.pathname === '/requests') setIncomingRequestCount(0);
-  }, [location.pathname]);
+
 
   const handleLogoutConfirm = () => {
     if (myId) chatService.logout(myId);
@@ -122,8 +184,8 @@ const UserSidebar = () => {
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
           <NavItem to="/my-connection" icon="group" label="My Connection" />
-          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} />
-          <NavItem to="/messages/:userId" icon="chat_bubble" label="Messages" badgeCount={totalUnread} />
+          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} onClick={() => setIncomingRequestCount(0)}/>
+          <NavItem to="/messages/list" icon="chat_bubble" label="Messages" badgeCount={totalUnread} />
         </nav>
       </div>
 
@@ -142,7 +204,6 @@ const UserSidebar = () => {
 
   return (
     <>
-      {/* --- MOBILE TOP BAR --- */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#112217] border-b border-slate-200 dark:border-[#23482f] flex items-center justify-between px-6 z-[60]">
         <div className="flex items-center gap-2">
           <div className="bg-[#13ec5b] rounded p-1">
@@ -150,31 +211,23 @@ const UserSidebar = () => {
           </div>
           <span className="font-black dark:text-white text-sm uppercase tracking-tighter">SwapSkill</span>
         </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="p-2 bg-[#13ec5b]/10 text-[#13ec5b] rounded-lg"
-        >
+        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-[#13ec5b]/10 text-[#13ec5b] rounded-lg">
           <Menu size={24} />
         </button>
       </div>
 
-      {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-8 h-screen sticky top-0 z-50">
         {renderSidebarContent(false)}
       </aside>
 
-      {/* --- MOBILE SIDEBAR DRAWER --- */}
-      <div className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
-        {/* Overlay */}
-        <div 
-          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-        {/* Sliding Panel */}
-        <div className={`absolute inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] p-6 shadow-2xl transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          {renderSidebarContent(true)}
-        </div>
-      </div>
+      {isMobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] z-[80] p-6 shadow-2xl lg:hidden">
+            {renderSidebarContent(true)}
+          </div>
+        </>
+      )}
 
       {isLogoutModalOpen && (
         <LogOut isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} onConfirm={handleLogoutConfirm} />
