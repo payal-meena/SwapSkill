@@ -130,7 +130,7 @@ const MyConnection = () => {
                       <span className="hidden sm:inline">Message</span>
                     </button>
                     <button 
-                      onClick={() => navigate('/explore-profile', { state: user })}
+                      onClick={() => navigate('/explore-profile', { state: { ...user, img: user.profileImage } })}
                       className="px-3 sm:px-4 py-2 sm:py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all flex-shrink-0"
                     >
                       <span className="material-symbols-outlined !text-lg">visibility</span>
