@@ -108,11 +108,13 @@ const Dashboard = () => {
 
         // Fetch last chat
         try {
-          const chatsRes = await chatService.getMyChats();
-          if (chatsRes?.chats && chatsRes.chats.length > 0) {
-            const sortedChats = chatsRes.chats.sort((a, b) => 
+          const chatsData = await chatService.getMyChats();
+          console.log('Chats Response:', chatsData);
+          if (chatsData && Array.isArray(chatsData) && chatsData.length > 0) {
+            const sortedChats = chatsData.sort((a, b) => 
               new Date(b.lastMessage?.createdAt || b.updatedAt) - new Date(a.lastMessage?.createdAt || a.updatedAt)
             );
+            console.log('Last Chat:', sortedChats[0]);
             setLastChat(sortedChats[0]);
           }
         } catch (err) {
@@ -190,12 +192,62 @@ const Dashboard = () => {
                  {lastChat ? (
                    <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-6 hover:border-[#13ec5b]/40 transition-all">
                      <div className="flex items-center gap-4 mb-4">
-                       <Avatar 
-                         src={lastChat.otherUser?.profileImage} 
-                         name={lastChat.otherUser?.name || 'User'} 
-                         size="w-16 h-16" 
-                         textSize="text-xl"
-                         className="border-2 border-[#13ec5b]"
+                       {(() => {
+                         const getCurrentUserId = () => {
+                           const token = localStorage.getItem('token');
+                           if (!token) return null;
+                           try {
+                             return JSON.parse(window.atob(token.split('.')[1])).id;
+                           } catch (err) {
+                             return null;
+                           }
+                         };
+                         const myId = getCurrentUserId();
+                         const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
+                         return (
+                           <>
+                             <Avatar 
+                               src={otherUser?.profileImage} 
+                               name={otherUser?.name || 'User'} 
+                               size="w-16 h-16" 
+                               textSize="text-xl"
+                               className="border-2 border-[#13ec5b]"
+                             />
+                             <div className="flex-1">
+                               <h3 className="text-lg font-black text-white">{otherUser?.name || 'Unknown User'}</h3>
+                               <p className="text-slate-400 text-sm truncate">{lastChat.lastMessage?.text || 'No messages yet'}</p>
+                             </div>
+                           </>
+                         );
+                       })()}
+                     </div>
+                     <button 
+                       onClick={() => {
+                         const getCurrentUserId = () => {
+                           const token = localStorage.getItem('token');
+                           if (!token) return null;
+                           try {
+                             return JSON.parse(window.atob(token.split('.')[1])).id;
+                           } catch (err) {
+                             return null;
+                           }
+                         };
+                         const myId = getCurrentUserId();
+                         const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
+                         navigate(`/messages/${otherUser?._id || otherUser}`);
+                       }}
+                       className="w-full py-3 bg-[#13ec5b] text-[#05160e] font-black rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                     >
+                       <span className="material-symbols-outlined">chat</span>
+                       Start Chat
+                     </button>
+                   </div>
+                 ) : (
+                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-12 text-center">
+                     <p className="text-slate-400 text-sm">No recent discussions</p>
+                   </div>
+                 )}
+               </div>border-2 border-[#13ec5b]"
                        />
                        <div className="flex-1">
                          <h3 className="text-lg font-black text-white">{lastChat.otherUser?.name || 'Unknown User'}</h3>
