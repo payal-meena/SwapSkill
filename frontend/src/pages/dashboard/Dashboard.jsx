@@ -75,7 +75,7 @@ const Dashboard = () => {
               otherMap[id] = {
                 id,
                 name: other?.name || other?.username || 'Unknown',
-                img: other?.profileImage || other?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${other?.name || id}`,
+                img: other?.profileImage || other?.avatar || null,
                 rating: other?.rating || 0,
                 reviews: other?.reviews || 0,
                 socials: other?.socials || {}
@@ -212,7 +212,13 @@ const Dashboard = () => {
                 {connections.map((u) => (
                   <div key={u.id} className="flex items-center justify-between bg-[#071711] p-3 rounded-lg border border-white/5">
                     <div className="flex items-center gap-4">
-                      <img src={u.img} alt={u.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#13ec5b]" />
+                      {u.img ? (
+                        <img src={u.img} alt={u.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#13ec5b]" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-[#13ec5b] border-2 border-[#13ec5b] flex items-center justify-center text-[#05160e] font-black text-xl uppercase">
+                          {u.name.charAt(0)}
+                        </div>
+                      )}
                       <div>
                         <div className="font-bold text-white">{u.name}</div>
                         <div className="text-sm text-slate-400">{u.offeredSkills?.length || 0} offered · {u.wantedSkills?.length || 0} learning</div>
