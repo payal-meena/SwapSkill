@@ -10,7 +10,7 @@ module.exports = (io) => {
     console.log("User connected:", socket.id);
 
     if (userId && userId !== "null") {
-      socket.join(userId); 
+      socket.join(userId || userId.toString());
       await User.findByIdAndUpdate(userId, { isOnline: true });
       socket.broadcast.emit("userStatusChanged", {
         userId,
@@ -32,7 +32,7 @@ module.exports = (io) => {
     });
 
     // --- 2. Send Message (Real-time Fix) ---
-    socket.on("sendMessage", async ({ chatId, senderId, text, file ,tempId}) => {
+    socket.on("sendMessage", async ({ chatId, senderId, text, file, replyTo, tempId }) => {
       try {
         const chat = await Chat.findById(chatId);
         if (!chat) {
@@ -41,7 +41,11 @@ module.exports = (io) => {
         }
 
         // Prepare payload: support text-only, file-only, or both
-        const payload = { chat: chatId, sender: senderId };
+        const payload = {
+          chat: chatId,
+          sender: senderId,
+          replyTo: replyTo || null
+        };
         if (file && file.url) {
           payload.file = {
             url: file.url,
@@ -60,35 +64,28 @@ module.exports = (io) => {
         console.log('💾 Message created:', message._id, 'with file:', !!file);
 
         // Populate sender info
-        message = await Message.findById(message._id).populate("sender", "name profileImage");
+        message = await Message.findById(message._id).populate("sender", "name profileImage").populate({
+          path: "replyTo",
+          populate: { path: "sender", select: "name profileImage" }
+        });
 
         // Update chat's last message
         chat.lastMessage = message._id;
         chat.lastMessageAt = new Date();
-        await chat.save();
+
 
         // Prepare message object for emit
         const messageObj = message.toObject ? message.toObject() : message;
         messageObj.chat = chatId;
-        
+
         console.log(`📤 Emitting message ${messageObj._id} to chat room`);
         if (tempId) messageObj.tempId = tempId;
-        
+
         // Emit to everyone in the chat room
         io.to(chatId.toString()).emit("messageReceived", messageObj);
         console.log(`✉️ Message emitted to chat room ${chatId}:`, messageObj._id);
 
-        // Also emit directly to each participant's personal room so clients
-        // receive the message even if they haven't joined the chat room yet.
-        // if (chat.participants && chat.participants.length > 0) {
-        //   chat.participants.forEach(participant => {
-        //     const pId = participant._id ? participant._id.toString() : participant.toString();
-        //     io.to(pId).emit('messageReceived', messageObj);
-        //     console.log(`✉️ Message also emitted to participant room ${pId}:`, messageObj._id);
-        //   });
-        // }
 
-        // Increment unreadCount for the other participant(s)
         const otherParticipantId = chat.participants.find(p => p.toString() !== senderId.toString());
         if (otherParticipantId) {
           const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === otherParticipantId.toString());
@@ -104,7 +101,14 @@ module.exports = (io) => {
         // Sidebar update ke liye poora chat populate karo
         const updatedChat = await Chat.findById(chatId)
           .populate("participants", "name profileImage isOnline lastSeen")
-          .populate({ path: 'lastMessage', select: 'text file createdAt sender isDeleted' });
+          .populate({
+            path: 'lastMessage',
+            populate: {
+              path: 'replyTo',
+              select: "text file sender createdAt",
+              populate: { path: 'sender', select: 'name profileImage' }
+            }
+          });
 
         updatedChat.participants.forEach(participant => {
           const pId = participant._id.toString();
@@ -205,68 +209,40 @@ module.exports = (io) => {
       }
     });
 
-    // --- 4. Mark As Read (Updated to clear unreadCount) ---
-    // socket.on("markAsRead", async ({ chatId, userId }) => {
-    //   try {
-    //     // Mark all messages as read
-    //     await Message.updateMany(
-    //       { chat: chatId, sender: { $ne: userId }, isRead: false },
-    //       { $set: { isRead: true } }
-    //     );
-        
-    //     // Clear unreadCount for this user in this chat
-    //     const chat = await Chat.findById(chatId);
-    //     if (chat) {
-    //       const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === userId.toString());
-    //       if (unreadEntry) {
-    //         unreadEntry.count = 0;
-    //       } else {
-    //         chat.unreadCount.push({ userId, count: 0 });
-    //       }
-    //       await chat.save();
-    //       console.log(`✅ Chat ${chatId} marked as read for user ${userId}`);
-    //     }
-        
-    //     io.to(chatId).emit("messagesMarkedAsRead", { chatId, userId });
-    //     io.to(userId).emit('unreadCountUpdated', { chatId, count: 0 });
-    //   } catch (err) {
-    //     console.error('markAsRead error:', err);
-    //   }
-    // });
     socket.on("markAsRead", async ({ chatId, userId }) => {
-  try {
-    // 1. Messages read mark
-    await Message.updateMany(
-      { chat: chatId, sender: { $ne: userId }, isRead: false },
-      { $set: { isRead: true } }
-    );
+      try {
+        // 1. Messages read mark
+        await Message.updateMany(
+          { chat: chatId, sender: { $ne: userId }, isRead: false },
+          { $set: { isRead: true } }
+        );
 
-    // 2. Unread count reset
-    const chat = await Chat.findById(chatId);
-    if (!chat) return;
+        // 2. Unread count reset
+        const chat = await Chat.findById(chatId);
+        if (!chat) return;
 
-    const unread = chat.unreadCount.find(
-      u => u.userId.toString() === userId.toString()
-    );
+        const unread = chat.unreadCount.find(
+          u => u.userId.toString() === userId.toString()
+        );
 
-    if (unread) unread.count = 0;
-    else chat.unreadCount.push({ userId, count: 0 });
+        if (unread) unread.count = 0;
+        else chat.unreadCount.push({ userId, count: 0 });
 
-    await chat.save();
+        await chat.save();
 
-    // 3. 🔥 SIDEBAR REAL-TIME UPDATE
-    const updatedChat = await Chat.findById(chatId)
-      .populate("participants", "name profileImage isOnline lastSeen");
+        // 3. 🔥 SIDEBAR REAL-TIME UPDATE
+        const updatedChat = await Chat.findById(chatId)
+          .populate("participants", "name profileImage isOnline lastSeen");
 
-    io.to(userId.toString()).emit("sidebarUpdate", updatedChat);
+        io.to(userId.toString()).emit("sidebarUpdate", updatedChat);
 
-    // optional (agar chat open hai)
-    io.to(chatId.toString()).emit("messagesMarkedAsRead", { chatId, userId });
+        // optional (agar chat open hai)
+        io.to(chatId.toString()).emit("messagesMarkedAsRead", { chatId, userId });
 
-  } catch (err) {
-    console.error("markAsRead error:", err);
-  }
-});
+      } catch (err) {
+        console.error("markAsRead error:", err);
+      }
+    });
 
 
     // --- Message Seen (read receipt) ---
@@ -298,22 +274,47 @@ module.exports = (io) => {
     });
 
     // Clear chat (delete messages, keep chat)
+    // Clear chat (Hide messages only for the person who clicked clear)
     socket.on('clearChat', async ({ chatId, userId }) => {
       try {
-        await Message.deleteMany({ chat: chatId });
-        io.to(chatId).emit('chatCleared', { chatId, userId });
-        console.log(`Chat ${chatId} cleared by ${userId}`);
+
+        await Message.updateMany(
+          { chat: chatId },
+          { $addToSet: { deletedFor: userId } }
+        );
+
+        const chat = await Chat.findById(chatId);
+        if (chat) {
+          // Aap chahein toh sidebar update emit kar sakte hain empty state ke saath
+          io.to(userId.toString()).emit("sidebarUpdate", { ...chat._doc, lastMessage: null });
+        }
+        socket.emit('chatCleared', { chatId, userId });
+
+        console.log(`✅ Chat ${chatId} hidden for user ${userId}`);
       } catch (err) {
         console.error('clearChat error:', err);
       }
     });
 
     // Delete chat (remove from list)
+    // Delete chat (Sirf us user ke liye hide karna, database se delete nahi)
     socket.on('deleteChat', async ({ chatId, userId }) => {
       try {
-        await Chat.findByIdAndDelete(chatId);
-        io.to(userId).emit('chatDeleted', { chatId });
-        console.log(`Chat ${chatId} deleted by ${userId}`);
+        // 1. Chat document mein user ki ID add karein deletedBy array mein
+        await Chat.findByIdAndUpdate(chatId, {
+          $addToSet: { deletedBy: userId }
+        });
+
+        // 2. Us chat ke saare messages bhi us user ke liye hide kar dein
+        await Message.updateMany(
+          { chat: chatId },
+          { $addToSet: { deletedFor: userId } }
+        );
+
+        // 3. Sirf us user ko emit karein
+        socket.emit('chatDeleted', { chatId });
+
+        console.log(`🗑️ Chat ${chatId} hidden from list for user ${userId}`);
       } catch (err) {
         console.error('deleteChat error:', err);
       }
@@ -322,7 +323,7 @@ module.exports = (io) => {
     // Mute/Unmute chat
     socket.on('muteChat', async ({ chatId, userId, isMuted }) => {
       try {
-        const update = isMuted 
+        const update = isMuted
           ? { $addToSet: { mutedBy: userId } }
           : { $pull: { mutedBy: userId } };
         await Chat.findByIdAndUpdate(chatId, update);
@@ -338,7 +339,7 @@ module.exports = (io) => {
       try {
         const chat = await Chat.findById(chatId);
         if (!chat) return;
-        
+
         const unread = chat.unreadCount.find(u => u.userId.toString() === userId.toString());
         if (unread) {
           unread.count = Math.max(0, unread.count + increment);
@@ -360,11 +361,27 @@ module.exports = (io) => {
         const populatedNotification = await Notification.findById(notification._id)
           .populate('sender', 'name profilePicture')
           .populate('recipient', 'name');
-        
+
         // Send to specific user
         io.to(notificationData.recipient).emit("newNotification", populatedNotification);
       } catch (error) {
         console.error('Error sending notification:', error);
+      }
+    });
+    // --- Connection Request Real-time logic ---
+    socket.on("sendConnectionRequest", async ({ senderId, receiverId, requestData }) => {
+      try {
+        // 1. Receiver ko signal bhejo ki naya request aaya hai
+        // Hum receiverId ke 'room' mein emit kar rahe hain (jo socket.join(userId) se banta hai)
+        io.to(receiverId.toString()).emit("newIncomingRequest", {
+          senderId,
+          requestData,
+          timestamp: new Date()
+        });
+
+        console.log(`📡 Real-time request alert sent to: ${receiverId}`);
+      } catch (err) {
+        console.error("Request Socket Error:", err);
       }
     });
 

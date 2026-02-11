@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut as LogOutIcon } from 'lucide-react';
 import LogOut from '../modals/LogOut';
 import { chatService } from '../../services/chatService';
 import { requestService } from '../../services/requestService';
 import { useChat } from '../../context/ChatContext';
+import { SocketContext } from '../../context/SocketContext';
 
 const getMyIdFromToken = () => {
   const token = localStorage.getItem('token');
@@ -23,14 +24,13 @@ const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
   const isActive = location.pathname === to || (to === '/messages/list' && location.pathname.startsWith('/messages/'));
 
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer relative ${
-        isActive 
-          ? 'bg-[#13ec5b] text-[#102216] shadow-[0_4px_15px_rgba(19,236,91,0.2)]' 
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer relative ${isActive
+          ? 'bg-[#13ec5b] text-[#102216] shadow-[0_4px_15px_rgba(19,236,91,0.2)]'
           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#23482f] dark:hover:text-white'
-      }`}
+        }`}
     >
       <span className="material-symbols-outlined text-[22px]">{icon}</span>
       <p className={`text-sm tracking-wide ${isActive ? 'font-bold' : 'font-medium'}`}>
@@ -51,35 +51,38 @@ const UserSidebar = () => {
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const { chats, setActiveChatId, myUserId } = useChat(); 
+
+  const { chats, setActiveChatId, myUserId } = useChat();
   const myId = myUserId || getMyIdFromToken();
+  const { socket } = useContext(SocketContext);
+
+  
 
   // 1. Unread Count logic (Supports both Number and Array structure)
   const getUnreadCount = (chat) => {
-  if (!chat) return 0;
-  
-  // Console log ke mutabik unreadCount ek property hai chat object ki
-  const uc = chat.unreadCount;
-  
-  if (typeof uc === 'number') return uc;
+    if (!chat) return 0;
 
-  // Agar unreadCount array hai (jo aapke console mein dikh raha hai)
-  if (Array.isArray(uc)) {
-    const myEntry = uc.find(item => 
-      (item.userId?.toString() === myId?.toString()) || 
-      (item._id?.toString() === myId?.toString())
-    );
-    return myEntry ? myEntry.count : 0;
-  }
+    // Console log ke mutabik unreadCount ek property hai chat object ki
+    const uc = chat.unreadCount;
 
-  // Agar unreadCount object hai
-  if (typeof uc === 'object' && uc !== null) {
-    return uc[myId] || uc.count || 0;
-  }
+    if (typeof uc === 'number') return uc;
 
-  return 0;
-};
+    // Agar unreadCount array hai (jo aapke console mein dikh raha hai)
+    if (Array.isArray(uc)) {
+      const myEntry = uc.find(item =>
+        (item.userId?.toString() === myId?.toString()) ||
+        (item._id?.toString() === myId?.toString())
+      );
+      return myEntry ? myEntry.count : 0;
+    }
+
+    // Agar unreadCount object hai
+    if (typeof uc === 'object' && uc !== null) {
+      return uc[myId] || uc.count || 0;
+    }
+
+    return 0;
+  };
 
   // 2. Real-time Total Unread
   const totalUnread = useMemo(() => {
@@ -100,55 +103,84 @@ const UserSidebar = () => {
   }, [location.pathname, setActiveChatId]);
 
   // 4. Requests count fetch logic
-// 4. Requests count fetch AND Real-time listener
-// 4. Requests count fetch AND Real-time listener
-// 4. Requests count fetch AND Real-time listener
-// 4. Requests count fetch AND Real-time listener (Instagram Style)
-// 4. Requests count fetch AND Real-time listener (Robust Version)
+  // 4. Requests count fetch AND Real-time listener
+  // 4. Requests count fetch AND Real-time listener
+  // 4. Requests count fetch AND Real-time listener
+  // 4. Requests count fetch AND Real-time listener (Instagram Style)
+  // 4. Requests count fetch AND Real-time listener (Robust Version)
 useEffect(() => {
-  const socket = chatService.socket;
-  if (!myId || !socket) return;
+  if (!socket || !myId) return;
 
-  const syncIncomingCount = async () => {
-    try {
-      const res = await requestService.getMyRequests();
-      console.log("🟢 API RESPONSE =", res);
-console.log("🟢 MY ID =", myId);
-      const allRequests = res?.requests || [];
-      const pendingCount = allRequests.filter(r => {
-        const receiverId = r.receiver?._id || r.receiver;
-        return receiverId?.toString() === myId?.toString() && r.status === 'pending';
-      }).length;
-      setIncomingRequestCount(pendingCount);
-    } catch (err) {
-      console.error("❌ Count sync failed", err);
+  const handleRequestUpdated = (data) => {
+    const receiverId = (data?.receiver?._id || data?.receiver)?.toString();
+    if (receiverId === myId) {
+      const count = data.totalPending ?? 0;
+      setIncomingRequestCount(count); // direct update from socket
     }
   };
 
-  // Initial load
-  syncIncomingCount();
-
-  // 🔥 SINGLE SOURCE OF TRUTH
-  socket.off("requestUpdated");
-  socket.on("requestUpdated", (req) => {
-    const receiverId = req?.receiver?._id || req?.receiver;
-    if (receiverId?.toString() === myId?.toString()) {
-      syncIncomingCount();
-    }
-  });
+  socket.on("requestUpdated", handleRequestUpdated);
+  socket.on("requestSeen", handleRequestUpdated);
 
   return () => {
-    socket.off("requestUpdated");
+    socket.off("requestUpdated", handleRequestUpdated);
+    socket.off("requestSeen", handleRequestUpdated);
   };
-}, [myId]);
-// Jab socket change ho tab re-run// 🔥 Socket ko dependency mein dala// isse sirf myId par chalne dein
+}, [socket, myId]);
 
-// 5. URL change hone par count reset logic (UX improvement)
-useEffect(() => {
-  if (location.pathname === '/requests') {
-    setIncomingRequestCount(0);
-  }
-}, [location.pathname]);
+
+
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      if (!myId) return;
+
+      if (location.pathname === '/requests') {
+        setIncomingRequestCount(0);
+        return;
+      }
+
+      try {
+        const res = await requestService.getMyRequests();
+        setIncomingRequestCount(res.count); // backend ne already unseen pending count calculate kar diya
+      } catch (err) {
+        console.log("Error fetching requests:", err);
+      }
+
+    };
+
+    fetchPendingRequests();
+  }, [myId, location.pathname]);
+
+
+  useEffect(() => {
+    const markSeenAndResetCount = async () => {
+      if (!myId) return;
+
+      if (location.pathname === '/requests') {
+        try {
+          // 🔹 1️⃣ Server ko mark as seen call karo
+          await requestService.markRequestsAsSeen();
+
+          // 🔹 2️⃣ Local count zero kar do
+          setIncomingRequestCount(0);
+        } catch (err) {
+          console.log("Error marking requests as seen:", err);
+        }
+      }
+    };
+
+    markSeenAndResetCount();
+  }, [myId, location.pathname]);
+
+
+
+
+  // 5. URL change hone par count reset logic (UX improvement)
+  useEffect(() => {
+    if (location.pathname === '/requests') {
+      setIncomingRequestCount(0);
+    }
+  }, [location.pathname]);
 
 
 
@@ -184,14 +216,14 @@ useEffect(() => {
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
           <NavItem to="/my-connection" icon="group" label="My Connection" />
-          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} onClick={() => setIncomingRequestCount(0)}/>
+          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} onClick={() => setIncomingRequestCount(0)} />
           <NavItem to="/messages/list" icon="chat_bubble" label="Messages" badgeCount={totalUnread} />
         </nav>
       </div>
 
       <div className="flex flex-col gap-2 pt-6 border-t border-slate-200 dark:border-[#23482f]">
         <NavItem to="/settings" icon="settings" label="Settings" />
-        <div 
+        <div
           onClick={() => setIsLogoutModalOpen(true)}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all cursor-pointer group"
         >

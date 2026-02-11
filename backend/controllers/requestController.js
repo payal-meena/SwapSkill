@@ -5,7 +5,9 @@ const User = require("../models/User");
 
 
 const sendRequest = async (req, res) => {
-  console.log("REQ.USER =", req.user);
+  // console.log("SCHEMA FIELDS =", Object.keys(Request.schema.paths));
+  console.log("🔥 SEND REQUEST API HIT 🔥");
+
 
   try {
     const { receiver, offeredSkill, requestedSkill } = req.body;
@@ -48,13 +50,16 @@ const sendRequest = async (req, res) => {
     const requestData = {
       requester,
       receiver,
+      isSeen: false
     };
-
+    // console.log("SAVED REQUEST =", request);
     // Only add skills if present
     if (offeredSkill) requestData.offeredSkill = offeredSkill;
     if (requestedSkill) requestData.requestedSkill = requestedSkill;
 
     const request = await Request.create(requestData);
+    console.log("SAVED REQUEST =", request);
+
 
     // Send notification to receiver
     try {
@@ -81,16 +86,32 @@ const sendRequest = async (req, res) => {
     } catch (notifError) {
       console.log('Error sending notification:', notifError);
     }
-    
+
     // Emit request update to both parties so frontend can refresh without reload
     try {
       if (req.io) {
+        const receiverRoom = receiver._id ? receiver._id.toString() : receiver.toString();
+        const requesterRoom = requester._id ? requester._id.toString() : requester.toString();
+
         const populated = await Request.findById(request._id)
           .populate("requester", "name email profileImage")
           .populate("receiver", "name email profileImage");
 
-        req.io.to(receiver.toString()).emit('requestUpdated', populated);
-        req.io.to(requester.toString()).emit('requestUpdated', populated);
+        const totalPendingForReceiver = await Request.countDocuments({
+          receiver: receiver,
+          status: "pending",
+          isSeen: false
+        });
+        req.io.to(receiverRoom).emit('requestUpdated', {
+          request: populated,
+          totalPending: totalPendingForReceiver
+        });
+
+        req.io.to(requesterRoom).emit('requestUpdated', {
+          request: populated,
+          totalPending: totalPendingForReceiver
+        });
+        req.io.to(receiverRoom).emit('newIncomingRequest', populated);
       }
     } catch (emitErr) {
       console.log('Error emitting request update:', emitErr);
@@ -109,25 +130,70 @@ const sendRequest = async (req, res) => {
   }
 };
 
+const markRequestsAsSeen = async (req, res) => {
+  try {
+    const userId = req.user._id ? req.user._id.toString() : req.user.toString();
 
 
- const getMyRequests = async (req, res) => {
+    await Request.updateMany(
+      {
+        receiver: userId,
+        status: "pending",
+        isSeen: false,
+      },
+      { $set: { isSeen: true } }
+    );
+
+    // 🔄 realtime sidebar zero
+    if (req.io) {
+      // Calculate new totalPending
+      const totalPendingForReceiver = await Request.countDocuments({
+        receiver: userId,
+        status: "pending",
+        isSeen: false
+      });
+
+      req.io.to(userId.toString()).emit("requestSeen", {
+        totalPending: totalPendingForReceiver
+      });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+
+
+const getMyRequests = async (req, res) => {
   try {
     const userId = req.user;
 
+    // Full request list
     const requests = await Request.find({
       $or: [{ requester: userId }, { receiver: userId }],
     })
-      // Yahan "bio profession" add kar diya hai
-      .populate("requester", "name email profileImage bio profession") 
+      .populate("requester", "name email profileImage bio profession")
       .populate("receiver", "name email profileImage bio profession")
       .sort({ createdAt: -1 });
 
+    // Sirf unseen pending requests ka count for sidebar badge
+    const unseenCount = await Request.countDocuments({
+      receiver: userId,
+      status: "pending",
+      isSeen: false
+    });
+
     res.status(200).json({
       success: true,
-      count: requests.length,
+      count: unseenCount, // ye sidebar badge ke liye
       currentUser: userId,
-      requests,
+      requests, // ye full list ke liye
     });
   } catch (error) {
     res.status(500).json({
@@ -138,7 +204,8 @@ const sendRequest = async (req, res) => {
 };
 
 
- const acceptRequest = async (req, res) => {
+
+const acceptRequest = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id);
 
@@ -149,7 +216,7 @@ const sendRequest = async (req, res) => {
       });
     }
 
-  
+
     if (request.receiver.toString() !== req.user) {
       return res.status(403).json({
         success: false,
@@ -159,6 +226,7 @@ const sendRequest = async (req, res) => {
 
     request.status = "accepted";
     request.receiverAccepted = true;
+    request.isSeen = true;
 
     await request.save();
 
@@ -370,7 +438,7 @@ const unfriendUser = async (req, res) => {
 };
 
 
- const rejectRequest = async (req, res) => {
+const rejectRequest = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id);
 
@@ -389,6 +457,7 @@ const unfriendUser = async (req, res) => {
     }
 
     request.status = "rejected";
+    request.isSeen = true;
     await request.save();
 
     res.status(200).json({
@@ -417,7 +486,7 @@ const unfriendUser = async (req, res) => {
 };
 
 
- const completeRequest = async (req, res) => {
+const completeRequest = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id);
 
@@ -438,7 +507,7 @@ const unfriendUser = async (req, res) => {
       request.receiverCompleted = true;
     }
 
-  
+
     if (request.requesterCompleted && request.receiverCompleted) {
       request.status = "completed";
     }
@@ -467,4 +536,5 @@ module.exports = {
   completeRequest,
   withdrawRequest,
   unfriendUser,
+  markRequestsAsSeen
 };
