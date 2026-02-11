@@ -44,7 +44,7 @@ const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
   );
 };
 
-const UserSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
+const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
@@ -68,8 +68,8 @@ const UserSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
   // Close mobile drawer when route changes
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+    if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
+  }, [location.pathname, setIsMobileMenuOpen]);
 
   useEffect(() => {
     if (!myId) return;
@@ -109,7 +109,7 @@ const UserSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
               <p className="text-[#13ec5b] text-[10px] font-bold uppercase tracking-widest">P2P Learning</p>
             </div>
           </div>
-          {isMobileView && (
+          {isMobileView && setIsMobileMenuOpen && (
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-slate-500 dark:text-white">
               <X size={24} />
             </button>
@@ -142,20 +142,21 @@ const UserSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   return (
     <>
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-8 h-screen sticky top-0 z-50">
+      <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-[#112217] border-r border-slate-200 dark:border-[#23482f] p-8 h-screen sticky top-0 z-50 ">
         {renderSidebarContent(false)}
       </aside>
 
-      {/* --- MOBILE SIDEBAR DRAWER --- */}
-      <div className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
-        <div 
-          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-        <div className={`absolute inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] p-6 shadow-2xl transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          {renderSidebarContent(true)}
+      {isMobileMenuOpen && (
+        <div className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 visible`}>
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-100"
+            onClick={() => setIsMobileMenuOpen && setIsMobileMenuOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-[280px] bg-white dark:bg-[#112217] p-6 shadow-2xl transition-transform duration-300 ease-in-out translate-x-0">
+            {renderSidebarContent(true)}
+          </div>
         </div>
-      </div>
+      )}
 
       {isLogoutModalOpen && (
         <LogOut isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} onConfirm={handleLogoutConfirm} />
