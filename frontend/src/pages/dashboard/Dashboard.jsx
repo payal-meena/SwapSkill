@@ -247,26 +247,6 @@ const Dashboard = () => {
                      <p className="text-slate-400 text-sm">No recent discussions</p>
                    </div>
                  )}
-               </div>border-2 border-[#13ec5b]"
-                       />
-                       <div className="flex-1">
-                         <h3 className="text-lg font-black text-white">{lastChat.otherUser?.name || 'Unknown User'}</h3>
-                         <p className="text-slate-400 text-sm truncate">{lastChat.lastMessage?.text || 'No messages yet'}</p>
-                       </div>
-                     </div>
-                     <button 
-                       onClick={() => navigate(`/messages/${lastChat.otherUser?._id}`)}
-                       className="w-full py-3 bg-[#13ec5b] text-[#05160e] font-black rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                     >
-                       <span className="material-symbols-outlined">chat</span>
-                       Start Chat
-                     </button>
-                   </div>
-                 ) : (
-                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-12 text-center">
-                     <p className="text-slate-400 text-sm">No recent discussions</p>
-                   </div>
-                 )}
                </div>
             </div>
 
