@@ -35,6 +35,11 @@ const requestSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "rejected", "cancelled", "completed"],
       default: "pending",
     },
+    isSeen: {
+      type: Boolean,
+      default: false, // receiver ne abhi request nahi dekhi
+    },
+
 
     requesterAccepted: {
       type: Boolean,
@@ -59,5 +64,5 @@ const requestSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Request = mongoose.model("Request", requestSchema);
-module.exports= Request;
+module.exports =
+  mongoose.models.Request || mongoose.model("Request", requestSchema);

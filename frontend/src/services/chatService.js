@@ -129,14 +129,26 @@ export const chatService = {
   // services/chatService.js update karo
 
   // Message emit karne ke liye (supports both object and params)
-  sendMessage: (chatIdOrData, senderId, text) => {
-    if (!socket) return;
-    if (typeof chatIdOrData === 'object') {
-      socket.emit('sendMessage', chatIdOrData);
-    } else {
-      socket.emit('sendMessage', { chatId: chatIdOrData, senderId, text });
-    }
-  },
+  // services/chatService.js
+
+sendMessage: (chatId, senderId, text, replyToId = null, tempId = null) => {
+  if (!socket || !socket.connected) {
+    console.warn('Socket not connected, cannot send message');
+    return;
+  }
+
+  const payload = {
+    chatId,
+    senderId,
+    text: text || '',
+    replyTo: replyToId,          // ← Yeh line add karo
+    tempId
+  };
+
+  console.log('Emitting sendMessage with payload:', payload);  // debug ke liye
+
+  socket.emit('sendMessage', payload);
+},
 
   // Upload a file via HTTP and emit a file message over socket
   sendFile: async (chatId, senderId, file) => {
