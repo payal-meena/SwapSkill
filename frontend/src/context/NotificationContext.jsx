@@ -15,6 +15,7 @@ export const useNotifications = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [groupedNotifications, setGroupedNotifications] = useState({});
 
  useEffect(() => {
   const token = localStorage.getItem('token');
@@ -42,12 +43,32 @@ export const NotificationProvider = ({ children }) => {
       // Listen for new notifications
       socket.on('newNotification', (notification) => {
         console.log('🔔 New notification:', notification);
-        // Transform senderId to sender for consistency
-        const transformedNotification = {
-          ...notification,
-          sender: notification.senderId || null
-        };
-        setNotifications(prev => [transformedNotification, ...prev]);
+        
+        if (notification.type === 'message') {
+          // Group messages by senderId
+          setGroupedNotifications(prev => {
+            const key = notification.senderId;
+            return {
+              ...prev,
+              [key]: {
+                senderId: notification.senderId,
+                senderName: notification.senderName,
+                senderImage: notification.senderImage,
+                messageCount: notification.messageCount,
+                chatId: notification.chatId,
+                createdAt: notification.createdAt,
+                type: 'message'
+              }
+            };
+          });
+        } else {
+          // Other notifications remain as is
+          const transformedNotification = {
+            ...notification,
+            sender: notification.senderId || null
+          };
+          setNotifications(prev => [transformedNotification, ...prev]);
+        }
         setUnreadCount(prev => prev + 1);
       });
 
@@ -164,6 +185,8 @@ export const NotificationProvider = ({ children }) => {
   const value = {
     notifications,
     unreadCount,
+    groupedNotifications,
+    setGroupedNotifications,
     fetchNotifications,
     markAsRead,
     markAllAsRead,

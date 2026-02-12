@@ -4,7 +4,7 @@ import { useNotifications } from '../../context/NotificationContext';
 
 const NotificationModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, groupedNotifications, setGroupedNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -14,6 +14,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await markAllAsRead();
+      setGroupedNotifications({});
       console.log("Mark all as read completed");
     } catch (error) {
       console.error("Error in handleMarkAllRead:", error);
@@ -34,6 +35,19 @@ const NotificationModal = ({ isOpen, onClose }) => {
     console.log(`Notification ${id}: ${action}`);
     removeNotification(id);
   };
+
+  const removeGroupedNotification = (senderId) => {
+    setGroupedNotifications(prev => {
+      const updated = { ...prev };
+      delete updated[senderId];
+      return updated;
+    });
+  };
+
+  const allNotifications = [
+    ...Object.values(groupedNotifications),
+    ...notifications
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <>
@@ -64,16 +78,16 @@ const NotificationModal = ({ isOpen, onClose }) => {
               <span className="material-symbols-outlined text-4xl mb-2 block animate-spin">refresh</span>
               Loading notifications...
             </div>
-          ) : notifications.length === 0 ? (
+          ) : allNotifications.length === 0 ? (
             <div className="p-10 text-center text-white/40 text-sm">
               <span className="material-symbols-outlined text-4xl mb-2 block">notifications_off</span>
               No new notifications
             </div>
           ) : (
-            notifications.map((notif) => (
+            allNotifications.map((notif) => (
               <div 
-                key={notif._id} 
-                onClick={() => handleMarkSingleRead(notif._id)}
+                key={notif._id || notif.senderId} 
+                onClick={() => notif._id && handleMarkSingleRead(notif._id)}
                 className={`px-5 py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${!notif.isRead ? 'bg-[#13ec5b]/5' : ''}`}
               >
                 {!notif.isRead && (
@@ -82,11 +96,15 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
                 <div className="flex gap-3">
                   <div className="flex-shrink-0">
-                    {notif.sender?.profilePicture ? (
-                      <img alt={notif.sender?.name} className="h-10 w-10 rounded-lg object-cover border border-white/10" src={notif.sender.profilePicture} />
+                    {notif.senderImage || notif.sender?.profilePicture ? (
+                      <img alt={notif.senderName || notif.sender?.name} className="h-10 w-10 rounded-lg object-cover border border-white/10" src={notif.senderImage || notif.sender.profilePicture} />
                     ) : (
                       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#13ec5b33] text-[#13ec5b]">
-                        <span className="material-symbols-outlined">notifications</span>
+                        {notif.type === 'message' ? (
+                          <span className="material-symbols-outlined">chat</span>
+                        ) : (
+                          <span className="material-symbols-outlined">notifications</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -97,7 +115,14 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       <div className="flex items-center gap-2">
                         <span className="text-white/40 text-[10px]">{new Date(notif.createdAt).toLocaleString()}</span>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); removeNotification(notif._id); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (notif.senderId) {
+                              removeGroupedNotification(notif.senderId);
+                            } else {
+                              removeNotification(notif._id);
+                            }
+                          }}
                           className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all"
                         >
                           <span className="material-symbols-outlined text-xs">close</span>
@@ -105,8 +130,16 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                     <p className="text-white text-sm font-medium mb-1 leading-snug">
-                      {notif.sender?.name && <span className="text-white mr-1">{notif.sender.name}</span>}
-                      <span className="text-white/60 font-normal">{notif.message}</span>
+                      {(notif.senderName || notif.sender?.name) && (
+                        <span className="text-white mr-1">{notif.senderName || notif.sender.name}</span>
+                      )}
+                      {notif.type === 'message' && notif.messageCount ? (
+                        <span className="text-white/60 font-normal">
+                          {notif.messageCount} new {notif.messageCount === 1 ? 'message' : 'messages'}
+                        </span>
+                      ) : (
+                        <span className="text-white/60 font-normal">{notif.message}</span>
+                      )}
                     </p>
                     
                     {notif.type === 'request' && (
@@ -131,11 +164,14 @@ const NotificationModal = ({ isOpen, onClose }) => {
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
-                            if (notif.senderId || notif.sender?._id) {
-                              const userId = notif.senderId || notif.sender._id;
+                            const userId = notif.senderId || notif.sender?._id;
+                            if (userId) {
                               navigate(`/messages/${userId}`, { 
                                 state: { scrollToMessageId: notif.relatedId }
                               });
+                              if (notif.senderId) {
+                                removeGroupedNotification(notif.senderId);
+                              }
                               onClose();
                             }
                           }}
