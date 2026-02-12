@@ -13,8 +13,13 @@ const UserNavbar = ({ userName, onMenuClick }) => {
     profileImage: null
   });
 
-  const { unreadCount } = useNotifications();
+  const { unreadCount, fetchNotifications } = useNotifications();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch notifications on mount
+    fetchNotifications();
+  }, []);
 
   const getImageUrl = (img, name) => {
     if (img) {
