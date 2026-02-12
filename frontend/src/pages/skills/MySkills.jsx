@@ -247,30 +247,30 @@ const MySkills = () => {
       <main className={`flex-1 flex flex-col overflow-y-auto scrollbar-hide bg-background-light dark:bg-background-dark transition-all duration-300 ${isWantedModalOpen ? 'blur-sm opacity-50' : ''}`}>
         
 
-        <div className="max-w-7xl mx-auto w-full px-6 py-10">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-10">
 
           {/* --- TOP CENTERED MODERN NAVIGATION TABS --- */}
-          <div className="flex justify-center mb-16">
-            <div className="relative bg-[#102216] p-1.5 rounded-[2rem] flex items-center w-full max-w-lg border border-white/5 shadow-2xl">
+          <div className="flex justify-center mb-8 sm:mb-12 lg:mb-16">
+            <div className="relative bg-[#102216] p-1 sm:p-1.5 rounded-2xl sm:rounded-[2rem] flex items-center w-full max-w-lg border border-white/5 shadow-2xl">
               {/* Sliding Background Indicator */}
               <div 
-                className={`absolute h-[calc(100%-12px)] top-[6px] transition-all duration-500 ease-out rounded-[1.6rem] bg-[#13ec5b] shadow-[0_0_25px_rgba(19,236,91,0.5)]
-                ${activeTab === 'offered' ? 'left-[6px] w-[calc(50%-6px)]' : 'left-[50%] w-[calc(50%-6px)]'}`}
+                className={`absolute h-[calc(100%-8px)] sm:h-[calc(100%-12px)] top-[4px] sm:top-[6px] transition-all duration-500 ease-out rounded-xl sm:rounded-[1.6rem] bg-[#13ec5b] shadow-[0_0_25px_rgba(19,236,91,0.5)]
+                ${activeTab === 'offered' ? 'left-[4px] sm:left-[6px] w-[calc(50%-4px)] sm:w-[calc(50%-6px)]' : 'left-[50%] w-[calc(50%-4px)] sm:w-[calc(50%-6px)]'}`}
               />
 
               <button 
                 onClick={() => setActiveTab('offered')}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-4 text-[13px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'offered' ? 'text-[#102216] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-4 text-[11px] sm:text-[13px] font-black uppercase tracking-wider sm:tracking-widest transition-all duration-300 ${activeTab === 'offered' ? 'text-[#102216] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
               >
-                <span className="material-symbols-outlined text-xl">school</span>
+                <span className="material-symbols-outlined text-base sm:text-xl">school</span>
                 Skills I Offer
               </button>
 
               <button 
                 onClick={() => setActiveTab('wanted')}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-4 text-[13px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'wanted' ? 'text-[#102216] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-4 text-[11px] sm:text-[13px] font-black uppercase tracking-wider sm:tracking-widest transition-all duration-300 ${activeTab === 'wanted' ? 'text-[#102216] scale-105' : 'text-[#92c9a4]/50 hover:text-[#92c9a4]'}`}
               >
-                <span className="material-symbols-outlined text-xl">auto_stories</span>
+                <span className="material-symbols-outlined text-base sm:text-xl">auto_stories</span>
                 Skills I Want
               </button>
             </div>
@@ -280,17 +280,17 @@ const MySkills = () => {
             {activeTab === 'offered' ? (
               /* --- OFFERED SKILLS SECTION --- */
               <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
-                <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-6 sm:mb-8 lg:mb-10 gap-3 sm:gap-4">
                   <div className="text-center md:text-left">
-                    <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Offer</h3>
-                    <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">SHARE YOUR EXPERTISE WITH THE WORLD</p>
+                    <h3 className="text-slate-900 dark:text-white text-xl sm:text-2xl lg:text-3xl font-black uppercase tracking-tight">Skills I Offer</h3>
+                    <p className="text-[#13ec5b] text-[8px] sm:text-[9px] lg:text-[10px] font-black tracking-[0.15em] sm:tracking-[0.2em] mt-1">SHARE YOUR EXPERTISE WITH THE WORLD</p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto">
                     {/* Search Input */}
-                    <div className="relative group">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={18} />
+                    <div className="relative group w-full sm:w-auto">
+                      <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={16} />
                       <input 
-                        className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-xl py-3 pl-12 pr-4 text-white outline-none transition-all placeholder:text-white/30 w-64" 
+                        className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-lg sm:rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-3 sm:pr-4 text-sm sm:text-base text-white outline-none transition-all placeholder:text-white/30 w-full sm:w-48 lg:w-64" 
                         placeholder="Search skills..." 
                         type="text" 
                         value={searchTerm} 
@@ -299,15 +299,16 @@ const MySkills = () => {
                     </div>
                     <button
                       onClick={() => setIsAddModalOpen(true)}
-                      className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[15px] uppercase tracking-widest"
+                      className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5 lg:py-4 bg-[#13ec5b] text-[#102216] font-black rounded-xl sm:rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[11px] sm:text-[13px] lg:text-[15px] uppercase tracking-wider sm:tracking-widest w-full sm:w-auto"
                     >
-                      <PlusCircle size={18} />
-                      Add New Skill
+                      <PlusCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
+                      <span className="hidden sm:inline">Add New Skill</span>
+                      <span className="sm:hidden">Add Skill</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                   {loading ? (
                     <div className="col-span-full text-center py-20 flex flex-col items-center">
                       <div className="size-12 border-4 border-[#13ec5b]/20 border-t-[#13ec5b] rounded-full animate-spin mb-4" />
@@ -339,17 +340,17 @@ const MySkills = () => {
             ) : (
               /* --- WANTED SKILLS SECTION --- */
               <section className="w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
-                <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-6 sm:mb-8 lg:mb-10 gap-3 sm:gap-4">
                   <div className="text-center md:text-left">
-                    <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
-                    <p className="text-[#13ec5b] text-[10px] font-black tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
+                    <h3 className="text-slate-900 dark:text-white text-xl sm:text-2xl lg:text-3xl font-black uppercase tracking-tight">Skills I Want to Learn</h3>
+                    <p className="text-[#13ec5b] text-[8px] sm:text-[9px] lg:text-[10px] font-black tracking-[0.15em] sm:tracking-[0.2em] mt-1">YOUR PERSONAL GROWTH ROADMAP</p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto">
                     {/* Search Input for Wanted Skills */}
-                    <div className="relative group">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={18} />
+                    <div className="relative group w-full sm:w-auto">
+                      <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#13ec5b] transition-colors" size={16} />
                       <input 
-                        className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-xl py-3 pl-12 pr-4 text-white outline-none transition-all placeholder:text-white/30 w-64" 
+                        className="bg-[#102216] border border-white/10 focus:border-[#13ec5b] rounded-lg sm:rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-3 sm:pr-4 text-sm sm:text-base text-white outline-none transition-all placeholder:text-white/30 w-full sm:w-48 lg:w-64" 
                         placeholder="Search wanted skills..." 
                         type="text" 
                         value={searchTerm} 
@@ -358,15 +359,16 @@ const MySkills = () => {
                     </div>
                     <button
                       onClick={() => setIsWantedModalOpen(true)}
-                      className="flex items-center gap-3 px-8 py-4 bg-[#13ec5b] text-[#102216] font-black rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[15px] uppercase tracking-widest"
+                      className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5 lg:py-4 bg-[#13ec5b] text-[#102216] font-black rounded-xl sm:rounded-2xl hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:scale-105 transition-all cursor-pointer text-[11px] sm:text-[13px] lg:text-[15px] uppercase tracking-wider sm:tracking-widest w-full sm:w-auto"
                     >
-                      <PlusCircle size={18} />
-                      Add New Skill
+                      <PlusCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
+                      <span className="hidden sm:inline">Add New Skill</span>
+                      <span className="sm:hidden">Add Skill</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                   {filteredWantedSkills.map((skill, index) => (
                     <MySkillCard
                       key={skill.id || index}
