@@ -1,16 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import UserSidebar from "../../components/common/UserSidebar";
-import ExchangeCard from '../../components/exchange/ExchangeCard';
-import UserNavbar from '../../components/common/UserNavbar';
 import PendingRequests from '../../components/requests/PendingRequests';
-import TestNotification from '../../components/common/TestNotification';
 import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
 import { chatService } from '../../services/chatService';
 import Avatar from '../../components/common/Avatar';
-// import { chatService } from '../../services/chatService';
 
 const StatCard = ({ label, value, trend, icon, onClick }) => {
   const isPositive = trend.includes('+');
