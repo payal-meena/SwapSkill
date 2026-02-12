@@ -119,21 +119,23 @@ module.exports = (io) => {
         const otherParticipant = updatedChat.participants.find(p => p._id.toString() !== senderId.toString());
         if (otherParticipant) {
           try {
-            const sender = await User.findById(senderId).select('name profileImage');
-            const senderName = sender?.name || 'Someone';
-            
-            // Count unread messages from this sender
-            const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === otherParticipant._id.toString());
-            const unreadCount = unreadEntry?.count || 1;
+            const msgPreview = file ? `📁 ${file.name}` : text.substring(0, 50);
+            await Notification.create({
+              userId: senderId,
+              type: 'message',
+              title: 'New Message',
+              message: `New message: ${msgPreview}${text.length > 50 ? '...' : ''}`,
+              receiverId: otherParticipant._id,
+              senderId: senderId,
+              relatedId: message._id,
+              priority: 'normal'
+            });
 
-            // Emit grouped notification
+            // Emit real-time notification
             io.to(otherParticipant._id.toString()).emit('newNotification', {
               type: 'message',
-              senderId: senderId.toString(),
-              senderName: senderName,
-              senderImage: sender?.profileImage,
-              messageCount: unreadCount,
-              chatId: chatId.toString(),
+              title: 'New Message',
+              message: file ? `📁 ${file.name} sent` : `Message received`,
               createdAt: new Date()
             });
           } catch (notifError) {
