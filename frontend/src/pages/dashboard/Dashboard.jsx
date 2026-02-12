@@ -264,6 +264,7 @@ const Dashboard = () => {
                       <button
                         onClick={() => {
                           const profileData = {
+                            id:u.id,
                             name: u.name,
                             img: u.img,
                             rating: u.rating,
