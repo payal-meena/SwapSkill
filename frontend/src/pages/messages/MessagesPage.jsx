@@ -3,7 +3,6 @@ import { chatService } from '../../services/chatService';
 import { skillService } from '../../services/skillService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff, ArrowLeft, Download, Reply } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
-import Avatar from '../../components/common/Avatar';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
