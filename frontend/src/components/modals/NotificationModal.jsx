@@ -79,29 +79,17 @@ const NotificationModal = ({ isOpen, onClose }) => {
               <span className="material-symbols-outlined text-2xl sm:text-3xl lg:text-4xl mb-2 block animate-spin">refresh</span>
               Loading...
             </div>
-<<<<<<< HEAD
           ) : allNotifications.length === 0 ? (
-            <div className="p-10 text-center text-white/40 text-sm">
-              <span className="material-symbols-outlined text-4xl mb-2 block">notifications_off</span>
-=======
-          ) : notifications.length === 0 ? (
             <div className="p-6 sm:p-8 lg:p-10 text-center text-white/40 text-xs sm:text-sm">
               <span className="material-symbols-outlined text-2xl sm:text-3xl lg:text-4xl mb-2 block">notifications_off</span>
->>>>>>> 51dc42b111ae54f9d5bac5be99e6224e6d03c156
               No new notifications
             </div>
           ) : (
             allNotifications.map((notif) => (
               <div 
-<<<<<<< HEAD
                 key={notif._id || notif.senderId} 
                 onClick={() => notif._id && handleMarkSingleRead(notif._id)}
-                className={`px-5 py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${!notif.isRead ? 'bg-[#13ec5b]/5' : ''}`}
-=======
-                key={notif._id} 
-                onClick={() => handleMarkSingleRead(notif._id)}
                 className={`px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${!notif.isRead ? 'bg-[#13ec5b]/5' : ''}`}
->>>>>>> 51dc42b111ae54f9d5bac5be99e6224e6d03c156
               >
                 {!notif.isRead && (
                   <div className="absolute right-3 sm:right-4 lg:right-5 top-3 sm:top-4 lg:top-5 h-1.5 sm:h-2 w-1.5 sm:w-2 rounded-full bg-[#13ec5b] shadow-[0_0_6px_rgba(19,236,91,0.6)] sm:shadow-[0_0_8px_rgba(19,236,91,0.6)]"></div>
@@ -109,23 +97,15 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
                 <div className="flex gap-2 sm:gap-2.5 lg:gap-3">
                   <div className="flex-shrink-0">
-<<<<<<< HEAD
                     {notif.senderImage || notif.sender?.profilePicture ? (
-                      <img alt={notif.senderName || notif.sender?.name} className="h-10 w-10 rounded-lg object-cover border border-white/10" src={notif.senderImage || notif.sender.profilePicture} />
-                    ) : (
-                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#13ec5b33] text-[#13ec5b]">
-                        {notif.type === 'message' ? (
-                          <span className="material-symbols-outlined">chat</span>
-                        ) : (
-                          <span className="material-symbols-outlined">notifications</span>
-                        )}
-=======
-                    {notif.sender?.profilePicture ? (
-                      <img alt={notif.sender?.name} className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg object-cover border border-white/10" src={notif.sender.profilePicture} />
+                      <img alt={notif.senderName || notif.sender?.name} className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg object-cover border border-white/10" src={notif.senderImage || notif.sender.profilePicture} />
                     ) : (
                       <div className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg bg-[#13ec5b33] text-[#13ec5b]">
-                        <span className="material-symbols-outlined text-base sm:text-lg lg:text-xl">notifications</span>
->>>>>>> 51dc42b111ae54f9d5bac5be99e6224e6d03c156
+                        {notif.type === 'message' ? (
+                          <span className="material-symbols-outlined text-base sm:text-lg lg:text-xl">chat</span>
+                        ) : (
+                          <span className="material-symbols-outlined text-base sm:text-lg lg:text-xl">notifications</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -136,7 +116,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 flex-shrink-0">
                         <span className="text-white/40 text-[8px] sm:text-[9px] lg:text-[10px] hidden xs:inline">{new Date(notif.createdAt).toLocaleString()}</span>
                         <button 
-<<<<<<< HEAD
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             if (notif.senderId) {
@@ -145,18 +124,13 @@ const NotificationModal = ({ isOpen, onClose }) => {
                               removeNotification(notif._id);
                             }
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all"
-=======
-                          onClick={(e) => { e.stopPropagation(); removeNotification(notif._id); }}
                           className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all p-0.5"
->>>>>>> 51dc42b111ae54f9d5bac5be99e6224e6d03c156
                         >
                           <span className="material-symbols-outlined text-[10px] sm:text-xs">close</span>
                         </button>
                       </div>
                     </div>
-<<<<<<< HEAD
-                    <p className="text-white text-sm font-medium mb-1 leading-snug">
+                    <p className="text-white text-[11px] sm:text-xs lg:text-sm font-medium mb-1 leading-snug break-words">
                       {(notif.senderName || notif.sender?.name) && (
                         <span className="text-white mr-1">{notif.senderName || notif.sender.name}</span>
                       )}
@@ -167,11 +141,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       ) : (
                         <span className="text-white/60 font-normal">{notif.message}</span>
                       )}
-=======
-                    <p className="text-white text-[11px] sm:text-xs lg:text-sm font-medium mb-1 leading-snug break-words">
-                      {notif.sender?.name && <span className="text-white mr-1">{notif.sender.name}</span>}
-                      <span className="text-white/60 font-normal">{notif.message}</span>
->>>>>>> 51dc42b111ae54f9d5bac5be99e6224e6d03c156
                     </p>
                     
                     {notif.type === 'request' && (
