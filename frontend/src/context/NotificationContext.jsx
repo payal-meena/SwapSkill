@@ -17,117 +17,65 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [groupedNotifications, setGroupedNotifications] = useState({});
 
- useEffect(() => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    fetchNotifications();
-  }
-}, []);
-
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchNotifications();
+      
+      // Aggressive polling - har 5 seconds
+      const pollInterval = setInterval(() => {
+        fetchNotifications();
+      }, 5000);
+      
+      return () => clearInterval(pollInterval);
+    }
+  }, []);
 
   useEffect(() => {
-    // Initialize socket connection
-    const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    
-    if (token && userId) {
-      chatService.connectSocket(userId);
-    }
+    if (!userId) return;
 
-    // Get socket from chatService (singleton instance)
-    const socket = chatService.socket;
+    chatService.connectSocket(userId);
     
-    if (socket) {
-      console.log('NotificationContext: Setting up socket listeners');
-      
-      // Listen for new notifications
+    const setupListener = () => {
+      const socket = chatService.socket;
+      if (!socket) {
+        setTimeout(setupListener, 1000);
+        return;
+      }
+
       socket.on('newNotification', (notification) => {
-        console.log('🔔 New notification:', notification);
+        console.log('🔔 Notification received:', notification);
         
         if (notification.type === 'message') {
-          // Group messages by senderId
-          setGroupedNotifications(prev => {
-            const key = notification.senderId;
-            return {
-              ...prev,
-              [key]: {
-                senderId: notification.senderId,
-                senderName: notification.senderName,
-                senderImage: notification.senderImage,
-                messageCount: notification.messageCount,
-                chatId: notification.chatId,
-                createdAt: notification.createdAt,
-                type: 'message'
-              }
-            };
-          });
+          setGroupedNotifications(prev => ({
+            ...prev,
+            [notification.senderId]: {
+              _id: notification.senderId,
+              senderId: notification.senderId,
+              sender: { name: notification.senderName, profilePicture: notification.senderImage },
+              message: `${notification.messageCount} new message${notification.messageCount > 1 ? 's' : ''}`,
+              messageCount: notification.messageCount,
+              chatId: notification.chatId,
+              createdAt: notification.createdAt,
+              type: 'message',
+              isRead: false
+            }
+          }));
         } else {
-          // Other notifications remain as is
-          const transformedNotification = {
-            ...notification,
-            sender: notification.senderId || null
-          };
-          setNotifications(prev => [transformedNotification, ...prev]);
+          setNotifications(prev => [{ ...notification, sender: notification.senderId || null }, ...prev]);
         }
         setUnreadCount(prev => prev + 1);
+        fetchNotifications();
       });
+    };
 
-      // Listen for request updates and convert to notifications
-      socket.on('requestUpdated', (request) => {
-        console.log('📋 Request updated:', request);
-        // Auto-add to notifications if relevant
-        const notification = {
-          _id: request._id,
-          type: 'REQUEST_UPDATE',
-          title: 'Request Updated',
-          message: `A connection request status has changed`,
-          relatedId: request._id,
-          createdAt: new Date(),
-          isRead: false
-        };
-        setNotifications(prev => [notification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      });
+    setupListener();
 
-      // Listen for new chats
-      socket.on('chatCreated', (chat) => {
-        console.log('💬 Chat created:', chat);
-        const notification = {
-          _id: chat._id,
-          type: 'CHAT',
-          title: 'New Chat Created',
-          message: 'You have a new conversation',
-          relatedId: chat._id,
-          createdAt: new Date(),
-          isRead: false
-        };
-        setNotifications(prev => [notification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      });
-
-      // Listen for messages
-      socket.on('messageReceived', (message) => {
-        console.log('✉️ Message received:', message._id);
-        const notification = {
-          _id: message._id,
-          type: 'MESSAGE',
-          title: 'New Message',
-          message: 'You have a new message',
-          relatedId: message.chat || message._id,
-          createdAt: new Date(),
-          isRead: false
-        };
-        setNotifications(prev => [notification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      });
-
-      return () => {
-        socket.off('newNotification');
-        socket.off('requestUpdated');
-        socket.off('chatCreated');
-        socket.off('messageReceived');
-      };
-    }
+    return () => {
+      const socket = chatService.socket;
+      if (socket) socket.off('newNotification');
+    };
   }, []);
 
   const fetchNotifications = async () => {
