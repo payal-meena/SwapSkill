@@ -4,7 +4,7 @@ import { useNotifications } from '../../context/NotificationContext';
 
 const NotificationModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { notifications, unreadCount, groupedNotifications, setGroupedNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -14,7 +14,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await markAllAsRead();
-      setGroupedNotifications({});
       console.log("Mark all as read completed");
     } catch (error) {
       console.error("Error in handleMarkAllRead:", error);
@@ -35,19 +34,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
     console.log(`Notification ${id}: ${action}`);
     removeNotification(id);
   };
-
-  const removeGroupedNotification = (senderId) => {
-    setGroupedNotifications(prev => {
-      const updated = { ...prev };
-      delete updated[senderId];
-      return updated;
-    });
-  };
-
-  const allNotifications = [
-    ...Object.values(groupedNotifications),
-    ...notifications
-  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <>
@@ -85,7 +71,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
               No new notifications
             </div>
           ) : (
-            allNotifications.map((notif) => (
+            notifications.map((notif) => (
               <div 
                 key={notif._id} 
                 onClick={() => handleMarkSingleRead(notif._id)}
@@ -146,14 +132,11 @@ const NotificationModal = ({ isOpen, onClose }) => {
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
-                            const userId = notif.senderId || notif.sender?._id;
-                            if (userId) {
+                            if (notif.senderId || notif.sender?._id) {
+                              const userId = notif.senderId || notif.sender._id;
                               navigate(`/messages/${userId}`, { 
                                 state: { scrollToMessageId: notif.relatedId }
                               });
-                              if (notif.senderId) {
-                                removeGroupedNotification(notif.senderId);
-                              }
                               onClose();
                             }
                           }}
