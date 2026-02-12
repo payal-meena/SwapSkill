@@ -35,11 +35,9 @@ const MessagesPage = () => {
   const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showMediaView, setShowMediaView] = useState(false);
-  // Reply feature states
   const [replyTo, setReplyTo] = useState(null);
 
 
-  // Download toast state
   const [toastMessage, setToastMessage] = useState("");
 
   const myUserId = getMyId();

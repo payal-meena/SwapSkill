@@ -163,7 +163,6 @@ useEffect(() => {
 
 
 
-  // Helpers (Pure functions to avoid mutation)
   const resetUnreadLogic = (uc, uid) => {
     if (Array.isArray(uc)) return uc.map(u => (u.userId || u._id) === uid ? { ...u, count: 0 } : u);
     return 0;
