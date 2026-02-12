@@ -12,6 +12,7 @@ const UserNavbar = ({ userName, onMenuClick }) => {
     name: userName || "User",
     profileImage: null
   });
+
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
@@ -34,53 +35,112 @@ const UserNavbar = ({ userName, onMenuClick }) => {
           });
         }
       } catch (error) {
-        console.error("Error fetching profile for navbar:", error);
+        console.error("Navbar profile error:", error);
       }
     };
     fetchUserData();
   }, [userName]);
 
   return (
-    <header className="lg:sticky lg:top-0 z-[60] flex items-center justify-between border-b border-slate-200 dark:border-[#23482f] bg-white/80 dark:bg-[#102216]/80 backdrop-blur-md px-4 sm:px-8 py-4 font-['Lexend'] w-full">
-      <div className="flex items-center gap-2 sm:gap-4">
-        <button 
-          onClick={onMenuClick} 
-          className="lg:hidden flex items-center justify-center rounded-xl h-10 w-10 bg-[#13ec5b]/10 text-[#13ec5b] hover:bg-[#13ec5b]/20 transition-all active:scale-95"
+    <header className="
+      sticky top-0 z-[60] w-full
+      flex items-center justify-between
+      px-3 sm:px-6 lg:px-8 py-3
+      border-b border-slate-200 dark:border-[#23482f]
+      bg-white/80 dark:bg-[#102216]/80
+      backdrop-blur-md
+      font-['Lexend']
+    ">
+      {/* LEFT */}
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <button
+          onClick={onMenuClick}
+          className="
+            lg:hidden
+            h-11 w-11
+            flex items-center justify-center
+            rounded-xl
+            bg-[#13ec5b]/10 text-[#13ec5b]
+            hover:bg-[#13ec5b]/20
+            active:scale-95
+          "
         >
-          <span className="material-symbols-outlined font-bold">menu</span>
+          <span className="material-symbols-outlined text-2xl">menu</span>
         </button>
-        <h2 className="text-slate-900 dark:text-white text-base sm:text-xl font-bold tracking-tight truncate">
-          Welcome back, <span className="text-[#13ec5b]">{userProfile.name}</span>!
+
+        <h2 className="
+          text-sm sm:text-base lg:text-lg
+          font-bold text-slate-900 dark:text-white
+          truncate max-w-[180px] sm:max-w-[260px] lg:max-w-none
+        ">
+          Welcome back,&nbsp;
+          <span className="text-[#13ec5b] truncate">
+            {userProfile.name}
+          </span>
         </h2>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-6">
-        <div className="flex gap-2 sm:gap-3 items-center">
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="flex items-center justify-center rounded-xl h-9 w-9 sm:h-10 sm:w-10 bg-slate-100 dark:bg-[#23482f] text-slate-600 dark:text-white hover:bg-slate-200 transition-colors relative"
-            >
-              <span className="material-symbols-outlined text-xl sm:text-2xl">notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-[#13ec5b] text-[#102216] text-[10px] sm:text-xs font-bold">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-            <NotificationModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
-          </div>
-          <div 
-            onClick={() => navigate('/my-profile')}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-[#13ec5b] overflow-hidden cursor-pointer hover:scale-105 transition-all shadow-lg shadow-[#13ec5b]/10 bg-slate-800"
+      {/* RIGHT */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Notifications */}
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="
+              h-11 w-11
+              flex items-center justify-center
+              rounded-xl
+              bg-slate-100 dark:bg-[#23482f]
+              text-slate-600 dark:text-white
+              hover:bg-slate-200 dark:hover:bg-[#2f5e41]
+            "
           >
-            <img 
-              src={getImageUrl(userProfile.profileImage, userProfile.name)} 
-              alt={userProfile.name}
-              className="w-full h-full object-cover"
-              onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${userProfile.name}&bg=13ec5b&color=000&bold=true`; }}
-            />
-          </div>
+            <span className="material-symbols-outlined text-xl">
+              notifications
+            </span>
+
+            {unreadCount > 0 && (
+              <span className="
+                absolute -top-1 -right-1
+                min-w-[18px] h-[18px]
+                flex items-center justify-center
+                rounded-full
+                bg-[#13ec5b] text-[#102216]
+                text-[10px] font-bold
+              ">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          <NotificationModal
+            isOpen={showNotifications}
+            onClose={() => setShowNotifications(false)}
+          />
+        </div>
+
+        {/* Profile */}
+        <div
+          onClick={() => navigate('/my-profile')}
+          className="
+            h-11 w-11
+            rounded-full
+            border-2 border-[#13ec5b]
+            overflow-hidden
+            cursor-pointer
+            hover:scale-105
+            transition
+            bg-slate-800
+          "
+        >
+          <img
+            src={getImageUrl(userProfile.profileImage, userProfile.name)}
+            alt={userProfile.name}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.target.src = `https://ui-avatars.com/api/?name=${userProfile.name}&bg=13ec5b&color=000&bold=true`;
+            }}
+          />
         </div>
       </div>
     </header>
