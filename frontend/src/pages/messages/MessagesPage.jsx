@@ -34,9 +34,10 @@ const MessagesPage = () => {
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
+  const [showMediaView, setShowMediaView] = useState(false);
   // Reply feature states
   const [replyTo, setReplyTo] = useState(null);
+
 
   // Download toast state
   const [toastMessage, setToastMessage] = useState("");
@@ -126,11 +127,6 @@ const MessagesPage = () => {
   };
 
 
-
-  // Function to get quoted content from messages state
-
-
-
   const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -214,7 +210,9 @@ const MessagesPage = () => {
       const uniqueChats = getUniqueChats(normalized);
       setChats(uniqueChats);
     };
-    chatService.connectSocket(myUserId);
+   if (!chatService.socket?.connected) {
+  chatService.connectSocket(myUserId);
+}
     const timer = setTimeout(() => { loadInitialData(); }, 100);
 
     const handleNewMessage = (newMsg) => {
@@ -439,14 +437,17 @@ const MessagesPage = () => {
   }, [activeChat?._id, myUserId]);
 
   useEffect(() => {
-    if (location.state?.chatId && chats.length > 0 && !activeChat) {
-      const targetChat = chats.find(c => c._id === location.state.chatId);
-      if (targetChat) {
-        setActiveChat(targetChat);
-      }
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (!location.state?.chatId) return;
+    if (chats.length === 0) return;
+
+    const targetChat = chats.find(c => c._id === location.state.chatId);
+    if (targetChat) {
+      setActiveChat(prev => prev?._id === targetChat._id ? prev : targetChat);
     }
-  }, [chats.length, activeChat]);
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+  }, [location.state?.chatId, chats]);
 
   const { userId } = useParams();
 
@@ -871,6 +872,7 @@ const MessagesPage = () => {
                         }} className="w-full text-left px-4 py-2 text-xs hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
                           {activeChat?.mutedBy?.includes(myUserId) ? <><Bell size={16} /><span>Unmute</span></> : <><BellOff size={16} /><span>Mute</span></>}
                         </button>
+
                         <button onClick={() => { setChatConfirm({ isOpen: true, type: 'clear', chatId: activeChat?._id }); setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-[#92c9a4] hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
                           <Trash2 size={14} />
                           <span>Clear Chat</span>
@@ -878,6 +880,16 @@ const MessagesPage = () => {
                         <button onClick={() => { setChatConfirm({ isOpen: true, type: 'delete', chatId: activeChat?._id }); setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950/20 flex items-center gap-2">
                           <X size={14} />
                           <span>Delete Chat</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowMediaView(true);
+                            setShowHeaderMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs hover:bg-[#13ec5b]/10 flex items-center gap-2 border-b border-[#23482f]"
+                        >
+                          <span className="material-symbols-outlined text-base">photo_library</span>
+                          <span>Media</span>
                         </button>
 
                       </div>
@@ -1142,7 +1154,8 @@ const MessagesPage = () => {
         </main>
       ) : null}
     </div>
-  );
+    
+);
 };
 
 export default MessagesPage;

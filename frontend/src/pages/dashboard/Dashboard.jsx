@@ -10,6 +10,7 @@ import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
 import { chatService } from '../../services/chatService';
 import Avatar from '../../components/common/Avatar';
+import { chatService } from '../../services/chatService';
 
 const StatCard = ({ label, value, trend, icon, onClick }) => {
   const isPositive = trend.includes('+');
@@ -50,77 +51,90 @@ const Dashboard = () => {
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   const [lastChat, setLastChat] = useState(null);
 
-  const getCurrentUserId = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
+  const token = localStorage.getItem('token');
+  let myId = null;
+
+  if (token) {
     try {
-      return JSON.parse(window.atob(token.split('.')[1])).id;
-    } catch (err) {
-      return null;
-    }
-  };
+      myId = JSON.parse(window.atob(token.split('.')[1])).id;
+    } catch { }
+  }
+
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const skillsRes = await skillService.getMySkills();
-        if (skillsRes?.success) setOfferedCount(skillsRes.skills?.length || 0);
+        // 🔥 Run main APIs in parallel
+        const [skillsRes, wantedRes, reqRes, chatsData] = await Promise.all([
+          skillService.getMySkills(),
+          skillService.getMyWantedSkills(),
+          requestService.getMyRequests(),
+          chatService.getMyChats()
+        ]);
 
-        const wantedRes = await skillService.getMyWantedSkills();
-        if (wantedRes?.success) setWantedCount(wantedRes.skills?.length || 0);
+        // Skills Offered
+        if (skillsRes?.success) {
+          setOfferedCount(skillsRes.skills?.length || 0);
+        }
 
-        const reqRes = await requestService.getMyRequests();
+        // Skills Wanted
+        if (wantedRes?.success) {
+          setWantedCount(wantedRes.skills?.length || 0);
+        }
+
+        // Requests + Connections
         if (reqRes) {
-          const acceptedRequests = (reqRes.requests || []).filter(r => r.status === 'accepted' || r.status === 'completed');
+          const acceptedRequests = (reqRes.requests || []).filter(
+            r => r.status === 'accepted' || r.status === 'completed'
+          );
+
           setAcceptedRequestsCount(acceptedRequests.length);
 
           const currentUserId = reqRes.currentUser;
           const otherMap = {};
+
           acceptedRequests.forEach(r => {
-            const other = (r.requester && r.requester._id?.toString() === currentUserId?.toString()) ? r.receiver : r.requester;
+            const other =
+              r.requester &&
+                r.requester._id?.toString() === currentUserId?.toString()
+                ? r.receiver
+                : r.requester;
+
             const id = other?._id || other?.id;
             if (!id) return;
+
             if (!otherMap[id]) {
               otherMap[id] = {
                 id,
                 name: other?.name || other?.username || 'Unknown',
-                img: other?.profileImage || other?.avatar || null,
+                img:
+                  other?.profileImage ||
+                  other?.avatar ||
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${other?.name || id
+                  }`,
                 rating: other?.rating || 0,
                 reviews: other?.reviews || 0,
-                socials: other?.socials || {}
+                socials: other?.socials || {},
+                connectionStatus: r.status,
+                requestId: r._id,
+                offeredSkills: [],   // 👈 No extra API calls now
+                wantedSkills: []
               };
             }
           });
 
-          const ids = Object.keys(otherMap);
-          const usersWithSkills = await Promise.all(ids.map(async (uid) => {
-            try {
-              const skillsRes = await skillService.getUserSkills(uid);
-              const offered = skillsRes?.offered || skillsRes?.skills || skillsRes?.offeredSkills || [];
-              const wanted = skillsRes?.wanted || skillsRes?.wantedSkills || [];
-              return {
-                ...otherMap[uid],
-                offeredSkills: offered,
-                wantedSkills: wanted
-              };
-            } catch (err) {
-              return { ...otherMap[uid], offeredSkills: [], wantedSkills: [] };
-            }
-          }));
-
-          setConnections(usersWithSkills);
+          setConnections(Object.values(otherMap));
         }
 
-        try {
-          const chatsData = await chatService.getMyChats();
-          if (chatsData && Array.isArray(chatsData) && chatsData.length > 0) {
-            const sortedChats = chatsData.sort((a, b) => 
-              new Date(b.lastMessage?.createdAt || b.updatedAt) - new Date(a.lastMessage?.createdAt || a.updatedAt)
-            );
-            setLastChat(sortedChats[0]);
-          }
-        } catch (err) {
-          console.error('Error loading last chat', err);
+        // Last Chat
+        if (Array.isArray(chatsData) && chatsData.length > 0) {
+          const sortedChats = [...chatsData].sort(
+            (a, b) =>
+              new Date(b.lastMessage?.createdAt || b.updatedAt) -
+              new Date(a.lastMessage?.createdAt || a.updatedAt)
+          );
+
+          setLastChat(sortedChats[0]);
         }
       } catch (err) {
         console.error('Error loading dashboard stats', err);
@@ -130,8 +144,6 @@ const Dashboard = () => {
     loadStats();
   }, []);
 
-  const myId = getCurrentUserId();
-  const otherUser = lastChat?.participants?.find(p => (p._id || p) !== myId);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#112217] font-['Lexend'] text-white">
@@ -183,20 +195,33 @@ const Dashboard = () => {
                 {lastChat ? (
                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-6 hover:border-[#13ec5b]/40 transition-all">
                     <div className="flex items-center gap-4 mb-4">
-                      <Avatar 
-                        src={otherUser?.profileImage} 
-                        name={otherUser?.name || 'User'} 
-                        size="w-16 h-16" 
-                        textSize="text-xl"
-                        className="border-2 border-[#13ec5b]"
-                      />
-                      <div className="flex-1">
-                        <h3 className="text-lg font-black text-white">{otherUser?.name || 'Unknown User'}</h3>
-                        <p className="text-slate-400 text-sm truncate">{lastChat.lastMessage?.text || 'No messages yet'}</p>
-                      </div>
+                      {(() => {
+                        
+                        const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
+                        return (
+                          <>
+                            <Avatar
+                              src={otherUser?.profileImage}
+                              name={otherUser?.name || 'User'}
+                              size="w-16 h-16"
+                              textSize="text-xl"
+                              className="border-2 border-[#13ec5b]"
+                            />
+                            <div className="flex-1">
+                              <h3 className="text-lg font-black text-white">{otherUser?.name || 'Unknown User'}</h3>
+                              <p className="text-slate-400 text-sm truncate">{lastChat.lastMessage?.text || 'No messages yet'}</p>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
-                    <button 
-                      onClick={() => navigate(`/messages/${otherUser?._id || otherUser}`)}
+                    <button
+                      onClick={() => {
+                       
+                        
+                        const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
+                        navigate(`/messages/${otherUser?._id || otherUser}`);
+                      }}
                       className="w-full py-3 bg-[#13ec5b] text-[#05160e] font-black rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                     >
                       <span className="material-symbols-outlined">chat</span>
@@ -252,6 +277,7 @@ const Dashboard = () => {
                       <button
                         onClick={() => {
                           const profileData = {
+                            id: u.id,
                             name: u.name,
                             img: u.img,
                             rating: u.rating,
