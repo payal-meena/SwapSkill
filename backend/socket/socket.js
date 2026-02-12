@@ -320,17 +320,29 @@ module.exports = (io) => {
 
     // Mute/Unmute chat
     socket.on('muteChat', async ({ chatId, userId, isMuted }) => {
-      try {
-        const update = isMuted
-          ? { $addToSet: { mutedBy: userId } }
-          : { $pull: { mutedBy: userId } };
-        await Chat.findByIdAndUpdate(chatId, update);
-        io.to(userId).emit('chatMuted', { chatId, isMuted });
-        console.log(`Chat ${chatId} ${isMuted ? 'muted' : 'unmuted'} by ${userId}`);
-      } catch (err) {
-        console.error('muteChat error:', err);
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat) return;
+
+    let updatedMutedBy = chat.mutedBy || [];
+
+    if (isMuted) {
+      if (!updatedMutedBy.includes(userId)) {
+        updatedMutedBy.push(userId);
       }
-    });
+    } else {
+      updatedMutedBy = updatedMutedBy.filter(id => id.toString() !== userId.toString());
+    }
+
+    chat.mutedBy = updatedMutedBy;
+    await chat.save();
+
+    // Broadcast to room
+    io.to(chatId).emit('chatMuted', { chatId, userId, isMuted });
+  } catch (err) {
+    console.error('muteChat error:', err);
+  }
+});
 
     // Update unread count
     socket.on('updateUnreadCount', async ({ chatId, userId, increment }) => {
