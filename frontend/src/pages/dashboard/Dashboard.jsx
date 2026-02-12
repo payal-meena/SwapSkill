@@ -8,19 +8,17 @@ import PendingRequests from '../../components/requests/PendingRequests';
 import TestNotification from '../../components/common/TestNotification';
 import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
+import { chatService } from '../../services/chatService';
 import Avatar from '../../components/common/Avatar';
 import { chatService } from '../../services/chatService';
 
-
 const StatCard = ({ label, value, trend, icon, onClick }) => {
   const isPositive = trend.includes('+');
-
+  
   return (
-    /* Card Background updated to match rgb(17, 34, 23) style */
     <button onClick={onClick} className="group relative flex flex-col gap-2 rounded-[2rem] p-4 sm:p-8 bg-[#1a2e21] border border-[#13ec5b]/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden text-left">
-      {/* Background Accent Glow */}
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#13ec5b]/5 blur-3xl group-hover:bg-[#13ec5b]/10 transition-all" />
-
+      
       <div className="flex justify-between items-start relative z-10">
         <div className="p-2 sm:p-3 bg-[#13ec5b]/10 rounded-2xl text-[#13ec5b]">
           <span className="material-symbols-outlined !text-2xl sm:!text-3xl">{icon}</span>
@@ -38,8 +36,7 @@ const StatCard = ({ label, value, trend, icon, onClick }) => {
           {value}
         </p>
       </div>
-
-      {/* Hover Line Effect */}
+      
       <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#13ec5b] group-hover:w-full transition-all duration-700" />
     </button>
   );
@@ -149,15 +146,10 @@ const Dashboard = () => {
 
 
   return (
-    /* Main Background updated to #112217 (rgb 17,34,23) */
     <div className="flex h-screen overflow-hidden bg-[#112217] font-['Lexend'] text-white">
-
       <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-        {/* Navbar */}
-
         <div className="p-4 sm:p-8 lg:p-12 max-w-[1400px] mx-auto w-full">
-
-          {/* Header Section */}
+          
           <div className="mb-8 sm:mb-10">
             <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white">
               User <span className="text-[#13ec5b]">Dashboard</span>
@@ -167,7 +159,6 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mb-8 sm:mb-12">
             <StatCard
               label="Skills Offered"
@@ -192,20 +183,12 @@ const Dashboard = () => {
             />
           </div>
 
-
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
-
-            {/* Left Content - Current Exchanges */}
+            
             <div className="lg:col-span-2 flex flex-col gap-6 sm:gap-8">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 sm:gap-0 border-b border-[#13ec5b]/10 pb-4">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">Current Exchanges</h2>
-                  <p className="text-[10px] text-[#13ec5b] font-bold uppercase tracking-widest mt-1">Active learning sessions</p>
-                </div>
-                <button className="px-4 py-2 bg-white/5 hover:bg-[#13ec5b]/10 text-[#13ec5b] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-[#13ec5b]/10 whitespace-nowrap">
-                  View all
-                </button>
+              <div className="border-b border-[#13ec5b]/10 pb-4">
+                <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">Last Discussion</h2>
+                <p className="text-[10px] text-[#13ec5b] font-bold uppercase tracking-widest mt-1">Recent conversation</p>
               </div>
 
               <div className="grid gap-4 sm:gap-6">
@@ -253,9 +236,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right Content - Requests */}
             <div className="flex flex-col gap-6 sm:gap-8">
-              {/* Box background changed to #1a2e21 for slight contrast against #112217 */}
               <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2.5rem] p-2 shadow-2xl">
                 <PendingRequests />
               </div>
@@ -264,7 +245,7 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
-      {/* Connections Modal */}
+
       {showConnectionsModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60">
           <div className="w-full max-w-2xl bg-[#0b2316] rounded-2xl p-6 shadow-2xl border border-white/5">
@@ -280,12 +261,13 @@ const Dashboard = () => {
                 {connections.map((u) => (
                   <div key={u.id} className="flex items-center justify-between bg-[#071711] p-3 rounded-lg border border-white/5">
                     <div className="flex items-center gap-4">
-                      <Avatar
-                        src={u.img}
-                        name={u.name}
-                        size="w-12 h-12"           // size match kar rahe hain
-                        className="border-2 border-[#13ec5b]"
-                      />
+                      {u.img ? (
+                        <img src={u.img} alt={u.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#13ec5b]" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-[#13ec5b] border-2 border-[#13ec5b] flex items-center justify-center text-[#05160e] font-black text-xl uppercase">
+                          {u.name.charAt(0)}
+                        </div>
+                      )}
                       <div>
                         <div className="font-bold text-white">{u.name}</div>
                         <div className="text-sm text-slate-400">{u.offeredSkills?.length || 0} offered · {u.wantedSkills?.length || 0} learning</div>
@@ -302,9 +284,7 @@ const Dashboard = () => {
                             reviews: u.reviews,
                             offeredSkills: u.offeredSkills,
                             wantedSkills: u.wantedSkills,
-                            socials: u.socials,
-                            connectionStatus: u.connectionStatus,
-                            requestId: u.requestId
+                            socials: u.socials
                           };
                           setShowConnectionsModal(false);
                           navigate('/explore-profile', { state: profileData });
