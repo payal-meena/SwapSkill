@@ -51,11 +51,9 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { chats, setActiveChatId, myUserId } = useChat();
+  const { chats, setActiveChatId,activeChatId, myUserId } = useChat();
   const myId = myUserId || getMyIdFromToken();
   const { socket } = useContext(SocketContext);
-
-  
 
   // 1. Unread Count logic (Supports both Number and Array structure)
   const getUnreadCount = (chat) => {
@@ -101,27 +99,50 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} 
     }
   }, [location.pathname, setActiveChatId]);
 
-useEffect(() => {
-  if (!socket || !myId) return;
+  useEffect(() => {
+    if (!socket || !myId) return;
 
-  const handleRequestUpdated = (data) => {
-    const receiverId = (data?.receiver?._id || data?.receiver)?.toString();
-    if (receiverId === myId) {
-      const count = data.totalPending ?? 0;
-      setIncomingRequestCount(count); // direct update from socket
-    }
-  };
+    const handleRequestUpdated = (data) => {
+      const receiverId = (data?.receiver?._id || data?.receiver)?.toString();
+      if (receiverId === myId) {
+        const count = data.totalPending ?? 0;
+        setIncomingRequestCount(count); // direct update from socket
+      }
+    };
 
-  socket.on("requestUpdated", handleRequestUpdated);
-  socket.on("requestSeen", handleRequestUpdated);
+    socket.on("requestUpdated", handleRequestUpdated);
+    socket.on("requestSeen", handleRequestUpdated);
 
-  return () => {
-    socket.off("requestUpdated", handleRequestUpdated);
-    socket.off("requestSeen", handleRequestUpdated);
-  };
-}, [socket, myId]);
+    // New real-time unread update for messages badge
+    const handleNewMessage = (newMsg) => {
+      // Update unread count in sidebar without refresh
+      const msgChatId = newMsg.chat?._id || newMsg.chat;
+      const isFromOther = (newMsg.sender?._id || newMsg.sender) !== myId;
+      const isActive = activeChatId === msgChatId;  // ← state use karo
+      if (isFromOther && !isActive) {
+        // Increment totalUnread by updating chats state
+        setChats(prev => prev.map(chat => {
+          if (chat._id !== msgChatId) return chat;
+          let unread = getUnreadCount(chat) || 0;
+          unread += 1;
+          return {
+            ...chat,
+            unreadCount: Array.isArray(chat.unreadCount)
+              ? chat.unreadCount.map(u => (u.userId || u._id || u.id) === myId ? { ...u, count: unread } : u)
+              : unread
+          };
+        }));
+      }
+    };
 
+    socket.on("messageReceived", handleNewMessage);
 
+    return () => {
+      socket.off("requestUpdated", handleRequestUpdated);
+      socket.off("requestSeen", handleRequestUpdated);
+      socket.off("messageReceived", handleNewMessage);
+    };
+  }, [socket,activeChatId, myId, getUnreadCount]);
 
   useEffect(() => {
     const fetchPendingRequests = async () => {
@@ -165,17 +186,12 @@ useEffect(() => {
     markSeenAndResetCount();
   }, [myId, location.pathname]);
 
-
-
-
   // 5. URL change hone par count reset logic (UX improvement)
   useEffect(() => {
     if (location.pathname === '/requests') {
       setIncomingRequestCount(0);
     }
   }, [location.pathname]);
-
-
 
   const handleLogoutConfirm = () => {
     if (myId) chatService.logout(myId);

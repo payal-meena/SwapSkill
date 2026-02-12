@@ -7,15 +7,23 @@ exports.createOrGetChat = async (req, res) => {
     const { requestId, otherUserId } = req.body;
     const userId = req.user;
     // Validation: Agar koi ID missing hai toh 500 ki jagah 400 bhejo
-    if (!requestId || !otherUserId) {
-      return res.status(400).json({ message: "RequestId and otherUserId are required" });
-    }
+    if (!otherUserId) {
+    return res.status(400).json({ message: "otherUserId is required" });
+  }
+
+  // Agar requestId diya hai to validate karo, warna skip
+  let request = null;
+  if (requestId) {
+    request = await Request.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+    // Optional: check if request is accepted or pending as per your logic
+  }
 
     let chat = await Chat.findOne({ request: requestId });
 
     if (!chat) {
       chat = await Chat.create({
-        request: requestId,
+        request: requestId||null,
         participants: [userId, otherUserId],
       });
     }

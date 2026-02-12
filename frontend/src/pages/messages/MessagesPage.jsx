@@ -1,24 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { chatService } from '../../services/chatService';
 import { skillService } from '../../services/skillService';
 import { Search, Send, Trash2, Edit2, X, Check, Smile, AlertCircle, Video, Paperclip, MoreVertical, Bell, BellOff, ArrowLeft, Download, Reply } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-
-const getMyId = () => {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(window.atob(base64));
-    return payload.id || payload._id;
-  } catch (e) { return null; }
-};
+import { SocketContext } from '../../context/SocketContext';
+import { useChat } from '../../context/ChatContext';
 
 const MessagesPage = () => {
-  const [chats, setChats] = useState([]);
+  const { chats, setChats, refreshChats } = useChat();
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [pendingFile, setPendingFile] = useState(null);
@@ -34,37 +25,26 @@ const MessagesPage = () => {
   const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showMediaView, setShowMediaView] = useState(false);
-  // Reply feature states
   const [replyTo, setReplyTo] = useState(null);
-
-
-  // Download toast state
+  const { socket, on, off, emit, myUserId } = useContext(SocketContext);
   const [toastMessage, setToastMessage] = useState("");
-
-  const myUserId = getMyId();
   const location = useLocation();
   const navigate = useNavigate();
   const scrollRef = useRef();
   const fileInputRef = useRef();
   const activeChatIdRef = useRef(null);
   const activeChatRef = useRef(null);
-
-  // Refs for scrolling to messages
   const messageRefs = useRef({});
-
   const activeChatFromList = React.useMemo(() => {
     if (!activeChat) return null;
     return chats.find(c => c._id === activeChat._id) || activeChat;
   }, [chats, activeChat]);
-
-  // Toast auto hide
   useEffect(() => {
     if (toastMessage) {
       const timer = setTimeout(() => setToastMessage(""), 2500);
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
-
   const handleDownload = (url, fileName) => {
     if (!url) return;
     const link = document.createElement('a');
@@ -75,11 +55,8 @@ const MessagesPage = () => {
     document.body.removeChild(link);
     setToastMessage("Downloaded");
   };
-
-  // Set reply (WhatsApp style)
   const handleSetReply = (message) => {
     const senderName = (message.sender?._id || message.sender) === myUserId ? "You" : (otherUser?.name || "User");
-
     let content = message.text || "";
     if (message.file) {
       if (message.file.mimeType?.startsWith('image/')) {
@@ -90,53 +67,40 @@ const MessagesPage = () => {
         content = message.file.name || "Attachment";
       }
     }
-
     setReplyTo({
       messageId: message._id,
       content: content,
       senderName,
       isMe: (message.sender?._id || message.sender) === myUserId
     });
-
-    // Focus input
     setTimeout(() => {
       document.querySelector('input[placeholder="Type a message..."]')?.focus();
     }, 100);
   };
   const scrollToOriginalMessage = (messageId) => {
     const messageElement = messageRefs.current[messageId];
-
     if (!messageElement) return;
-
     messageElement.scrollIntoView({
       behavior: 'smooth',
       block: 'center'
     });
-
-    // Animation re-trigger fix
     setHighlightedMessageId(null);
-
     setTimeout(() => {
       setHighlightedMessageId(messageId);
     }, 100);
-
     setTimeout(() => {
       setHighlightedMessageId(null);
     }, 2200);
   };
-
-
   const formatMessageDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-
     if (date.toDateString() === today.toDateString()) return "Today";
     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
     return date.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
   };
-
   const getUnreadCount = (chat) => {
     if (!chat) return 0;
     const uc = chat.unreadCount;
@@ -153,7 +117,6 @@ const MessagesPage = () => {
     }
     return 0;
   };
-
   const formatLastSeen = (dateString) => {
     if (!dateString) return "unknown";
     const d = new Date(dateString);
@@ -166,12 +129,10 @@ const MessagesPage = () => {
     if (hr < 24) return `${hr}h ago`;
     return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
-
   const isRecentlyOnline = (user) => {
     if (!user) return false;
     return !!user.isOnline;
   };
-
   const getUniqueChats = (allChats) => {
     const uniqueMap = new Map();
     allChats.forEach(chat => {
@@ -186,7 +147,6 @@ const MessagesPage = () => {
     });
     return Array.from(uniqueMap.values());
   };
-
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -194,6 +154,7 @@ const MessagesPage = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
 
   useEffect(() => {
     if (!myUserId) return;
@@ -209,23 +170,22 @@ const MessagesPage = () => {
       const uniqueChats = getUniqueChats(normalized);
       setChats(uniqueChats);
     };
-   if (!chatService.socket?.connected) {
-  chatService.connectSocket(myUserId);
-}
+    if (!socket?.connected) {
+
+    }
     const timer = setTimeout(() => { loadInitialData(); }, 100);
-
-    const handleNewMessage = (newMsg) => {
+    /*===============================================================================
+    Handel New Massegeg
+    ===============================================================================
+    */
+    const handleNewMessageNew = (newMsg) => {
       console.log('📨 MessagesPage.handleNewMessage called with:', { msgId: newMsg._id, chat: newMsg.chat });
-
       const msgChatId = newMsg.chat?._id || newMsg.chat;
       const isFromOther = (newMsg.sender?._id || newMsg.sender) !== myUserId;
       const currentId = activeChatIdRef.current;
       const currentActiveChat = activeChatRef.current;
-
-      const isSameChatById = currentId && msgChatId &&
-        currentId.toString() === msgChatId.toString();
-      const isSameChatByRef = currentActiveChat && msgChatId &&
-        currentActiveChat._id?.toString() === msgChatId.toString();
+      const isSameChatById = currentId && msgChatId && currentId.toString() === msgChatId.toString();
+      const isSameChatByRef = currentActiveChat && msgChatId && currentActiveChat._id?.toString() === msgChatId.toString();
       const isSameChat = isSameChatById || isSameChatByRef;
 
       console.log('📨 handleNewMessage:', {
@@ -286,8 +246,8 @@ const MessagesPage = () => {
               ...c,
               unreadCount: (c.unreadCount || []).map(u => (u.userId || u._id || u.id) === myUserId ? { ...u, count: 0 } : u)
             }) : c));
-            chatService.markAsRead?.(msgChatId, myUserId);
-            chatService.markMessageSeen?.(newMsg._id, msgChatId, myUserId);
+            emit('markAsRead', { chatId: msgChatId, userId: myUserId });
+            emit('messageSeen', { messageId: newMsg._id, chatId: msgChatId, userId: myUserId });
           } catch (err) {
             console.warn('markAsRead/markMessageSeen failed', err);
           }
@@ -296,11 +256,11 @@ const MessagesPage = () => {
         console.log('❌ Message is for different chat, not adding to messages');
       }
     };
-
-    console.log('📡 MessagesPage: Registering messageReceived listener');
-    chatService.onMessageReceived?.(handleNewMessage);
-
-    chatService.onSidebarUpdate?.((updatedChat) => {
+    /*===============================================================================
+    Handel SideBar Upadtes
+    ===============================================================================
+    */
+    const handleSidebarUpdate = (updatedChat) => {
       console.log('📲 onSidebarUpdate received:', updatedChat._id, 'unreadCount:', updatedChat.unreadCount);
       setChats(prev => {
         const filtered = prev.filter(c => c._id.toString() !== updatedChat._id.toString());
@@ -311,23 +271,28 @@ const MessagesPage = () => {
         setActiveChat(updatedChat);
         activeChatRef.current = updatedChat;
       }
-    });
-
-    chatService.onChatCreated?.((newChat) => {
+    };
+    /*===============================================================================
+    Handel chat creation
+    ===============================================================================
+    */
+    const handleChatCreated = (newChat) => {
       console.log('🆕 New chat created:', newChat._id);
       setChats(prev => {
         const exists = prev.find(c => c._id === newChat._id);
         if (exists) return prev;
         return [{ ...newChat, isNew: true }, ...prev];
       });
-    });
-
+    };
+    /*===============================================================================
+    Check online status
+    ===============================================================================
+    */
     const handleStatusChange = ({ userId, status, lastSeen }) => {
       setChats(prev => prev.map(chat => ({
         ...chat,
         participants: chat.participants.map(p => (p._id || p) === userId ? { ...p, isOnline: status === 'online', lastSeen } : p)
       })));
-
       setActiveChat(prev => {
         if (!prev) return prev;
         if (!prev.participants.some(p => (p._id || p) === userId)) return prev;
@@ -339,21 +304,26 @@ const MessagesPage = () => {
         return updated;
       });
     };
-    chatService.onUserStatusChanged?.(handleStatusChange);
-
-    chatService.onMessageSeen?.(({ messageId, chatId, seenBy }) => {
+    /*===============================================================================
+    Handel message seen
+    ===============================================================================
+    */
+    const handleMessageSeen = ({ messageId, chatId, seenBy }) => {
       setMessages(prev => prev.map(m => m._id === messageId ? { ...m, seen: true } : m));
       setChats(prev => prev.map(c => c._id?.toString() === chatId?.toString() ? ({
         ...c,
         lastMessage: c.lastMessage && (c.lastMessage._id === messageId || c.lastMessage === messageId) ? { ...c.lastMessage, seen: true } : c.lastMessage
       }) : c));
-    });
-
-    chatService.onChatCleared?.(() => {
+    };
+    /*===============================================================================
+    Handel clear chat
+    ===============================================================================
+    */
+    const handleChatCleared = () => {
       setMessages([]);
-    });
+    };
 
-    chatService.onMessageUpdated?.((updatedMsg) => {
+    const handleMessageUpdated = (updatedMsg) => {
       try {
         setMessages(prev => prev.map(m => m._id === updatedMsg._id ? { ...m, ...updatedMsg } : m));
         setChats(prev => prev.map(c => c._id?.toString() === (updatedMsg.chat?._id || updatedMsg.chat)?.toString() ? ({
@@ -361,64 +331,80 @@ const MessagesPage = () => {
           lastMessage: c.lastMessage && (c.lastMessage._id === updatedMsg._id || c.lastMessage === updatedMsg._id) ? { ...c.lastMessage, ...updatedMsg } : c.lastMessage
         }) : c));
       } catch (err) { console.error('handle messageUpdated', err); }
-    });
+    };
 
-    chatService.onChatDeleted?.(({ chatId }) => {
+    /*===============================================================================
+    Handel delete chat
+    ===============================================================================
+    */
+    const handleChatDeleted = ({ chatId }) => {
       if (activeChat?._id === chatId) {
         setActiveChat(null);
       }
       setChats(prev => prev.filter(c => c._id !== chatId));
-    });
+    };
 
-    chatService.onChatMuted?.(() => {
+    const handleChatMuted = () => {
       // UI will re-render to show muted state
-    });
+    };
 
-    chatService.onUnreadCountUpdated?.(({ chatId, count }) => {
+    const handleUnreadCountUpdated = ({ chatId, count }) => {
       setChats(prev => prev.map(c =>
         c._id === chatId
           ? { ...c, unreadCount: c.unreadCount?.map(u => (u.userId || u._id) === myUserId ? { ...u, count } : u) || [{ userId: myUserId, count }] }
           : c
       ));
-    });
+    };
+
+    on('messageReceived', handleNewMessageNew);
+    on('sidebarUpdate', handleSidebarUpdate);
+    on('chatCreated', handleChatCreated);
+    on('userStatusChanged', handleStatusChange);
+    on('messageSeen', handleMessageSeen);
+    on('chatCleared', handleChatCleared);
+    on('messageUpdated', handleMessageUpdated);
+    on('chatDeleted', handleChatDeleted);
+    on('chatMuted', handleChatMuted);
+    on('unreadCountUpdated', handleUnreadCountUpdated);
 
     return () => {
       clearTimeout(timer);
-      chatService.removeMessageListener?.();
-      chatService.removeStatusListener?.();
-      chatService.removeMessageSeenListener?.();
-      chatService.removeMessageUpdatedListener?.();
-      chatService.removeSidebarUpdateListener?.();
-      chatService.removeChatCreatedListener?.();
+      off('messageReceived', handleNewMessageNew);
+      off('sidebarUpdate', handleSidebarUpdate);
+      off('chatCreated', handleChatCreated);
+      off('userStatusChanged', handleStatusChange);
+      off('messageSeen', handleMessageSeen);
+      off('chatCleared', handleChatCleared);
+      off('messageUpdated', handleMessageUpdated);
+      off('chatDeleted', handleChatDeleted);
+      off('chatMuted', handleChatMuted);
+      off('unreadCountUpdated', handleUnreadCountUpdated);
+
     };
-  }, [myUserId]);
+  }, [myUserId, socket, on, off, emit, activeChat]);
 
   useEffect(() => {
     if (activeChat?._id) {
       activeChatIdRef.current = activeChat._id;
       activeChatRef.current = activeChat;
-
       console.log('🔄 Active chat updated:', activeChat._id, 'loading history...');
-
       setTimeout(() => {
-        chatService.joinChat?.(activeChat._id, myUserId);
+        emit('joinChat', { chatId: activeChat._id, userId: myUserId }); // Replaced chatService.joinChat
       }, 100);
-
       chatService.getChatHistory(activeChat._id).then(data => {
         setMessages(data);
         console.log('💬 Chat history loaded:', data.length, 'messages');
-
         try {
           const unreadNow = getUnreadCount(activeChat) || 0;
           if (unreadNow > 0) {
             setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, unreadCount: (c.unreadCount || []).map(u => (u.userId || u._id || u.id) === myUserId ? { ...u, count: 0 } : u) } : c));
             setTimeout(() => {
-              chatService.markAsRead?.(activeChat._id, myUserId);
+              emit('markAsRead', { chatId: activeChat._id, userId: myUserId });
               data.forEach(msg => {
                 try {
                   const isFromOther = (msg.sender?._id || msg.sender) !== myUserId;
                   if (isFromOther && !msg.seen) {
-                    chatService.markMessageSeen?.(msg._id, activeChat._id, myUserId);
+                    emit('messageSeen', { messageId: msg._id, chatId: activeChat._id, userId: myUserId });
                   }
                 } catch (err) {
                   console.error('emit messageSeen for old message failed', err);
@@ -433,34 +419,27 @@ const MessagesPage = () => {
         console.error('Error loading chat history:', err);
       });
     }
-  }, [activeChat?._id, myUserId]);
+  }, [activeChat?._id, myUserId, socket, emit]);
 
   useEffect(() => {
     if (!location.state?.chatId) return;
     if (chats.length === 0) return;
-
     const targetChat = chats.find(c => c._id === location.state.chatId);
     if (targetChat) {
       setActiveChat(prev => prev?._id === targetChat._id ? prev : targetChat);
     }
-
     window.history.replaceState({}, document.title, window.location.pathname);
-
   }, [location.state?.chatId, chats]);
-
   const { userId } = useParams();
-
   useEffect(() => {
     if (!userId) return;
     if (chats.length === 0) return;
     if (activeChat) return;
-
     const existing = chats.find(c => c.participants.some(p => (p._id || p) === userId));
     if (existing) {
       setActiveChat(existing);
       return;
     }
-
     (async () => {
       try {
         const resp = await chatService.createOrGetChat({ otherUserId: userId });
@@ -477,10 +456,8 @@ const MessagesPage = () => {
       }
     })();
   }, [userId, chats.length, activeChat]);
-
   const handleSend = async (overrideText = null) => {
     const textToProcess = (typeof overrideText === 'string') ? overrideText : inputText.trim();
-
     if (pendingFile && activeChat) {
       try {
         const tempId = "temp-file-" + Date.now();
@@ -493,7 +470,6 @@ const MessagesPage = () => {
           uploading: true,
           file: { name: pendingFile.name, size: pendingFile.size }
         };
-
         setMessages(prev => [...prev, tempMsg]);
         const fileMeta = await chatService.sendFile(activeChat._id, myUserId, pendingFile);
         setMessages(prev => prev.map(m => m._id === tempId ? { ...m, isTemp: false, uploading: false, file: fileMeta } : m));
@@ -506,11 +482,9 @@ const MessagesPage = () => {
         return;
       }
     }
-
     if (!textToProcess || !activeChat) return;
-
     if (editingMessage && !overrideText) {
-      chatService.editMessage?.(editingMessage.id, textToProcess, activeChat._id, myUserId);
+      emit('editMessage', { messageId: editingMessage.id, newText: textToProcess, chatId: activeChat._id, userId: myUserId });
       setMessages(prev => prev.map(m =>
         m._id === editingMessage.id ? { ...m, text: textToProcess, isEdited: true, updatedAt: new Date().toISOString() } : m
       ));
@@ -526,36 +500,30 @@ const MessagesPage = () => {
         replyTo: replyTo ? { messageId: replyTo.messageId } : null
       };
       setMessages(prev => [...prev, newMessage]);
-      chatService.sendMessage(activeChat._id, myUserId, textToProcess, replyTo ? replyTo.messageId : null);
+      emit('sendMessage', { chatId: activeChat._id, senderId: myUserId, text: textToProcess, replyTo: replyTo ? replyTo.messageId : null });
       setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: newMessage } : c));
     }
     if (!overrideText) setInputText("");
     setShowEmojiPicker(false);
-    setReplyTo(null); // Clear reply after send
+    setReplyTo(null);
   };
-
-
   const handleVideoCallAction = (type) => {
     const meetingId = Math.random().toString(36).substring(7);
     const link = type === 'zoom'
       ? `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`
       : `https://meet.google.com/new`;
-
     const messageBody = `Let's have a video call on ${type === 'zoom' ? 'Zoom' : 'Google Meet'}. Join here: ${link}`;
     handleSend(messageBody);
     window.open(link, '_blank');
   };
-
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setPendingFile(file);
     e.target.value = null;
   };
-
   const finalDeleteExecute = async () => {
-    chatService.deleteMessage(deleteTarget.msgId, activeChat._id, tempDeleteMode, myUserId);
+    emit('deleteMessage', { messageId: deleteTarget.msgId, chatId: activeChat._id, type: tempDeleteMode, userId: myUserId });
     if (tempDeleteMode === 'me') {
       setMessages(prev => prev.filter(m => m._id !== deleteTarget.msgId));
     } else {
@@ -563,9 +531,7 @@ const MessagesPage = () => {
     }
     setDeleteStep('none');
   };
-
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
   useEffect(() => {
     const handler = () => {
       setOpenSidebarMenuId(null);
@@ -574,9 +540,7 @@ const MessagesPage = () => {
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
-
   const otherUser = activeChat?.participants.find(p => (p._id || p) !== myUserId);
-
   const renderMessageText = (text) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, i) => {
@@ -586,7 +550,6 @@ const MessagesPage = () => {
       return part;
     });
   };
-
   return (
     <div className="relative flex h-[calc(100vh-80px)] w-full bg-[#102216] text-white overflow-hidden">
       <style>
@@ -605,7 +568,6 @@ const MessagesPage = () => {
       transform: scale(1);
     }
   }
-
   .message-highlight {
     animation: messageFlash 1.2s ease-in-out;
     border-left: 4px solid #13ec5b !important;
@@ -614,8 +576,6 @@ const MessagesPage = () => {
   }
 `}
       </style>
-
-
       <style>
         {`
           .EmojiPickerReact .epr-body::-webkit-scrollbar { display: none !important; }
@@ -625,13 +585,11 @@ const MessagesPage = () => {
         `}
       </style>
 
-      {/* Download toast */}
       {toastMessage && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-[#13ec5b] text-black px-6 py-3 rounded-full shadow-lg z-50 font-medium">
           {toastMessage}
         </div>
       )}
-
       {deleteStep !== 'none' && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#193322] border border-[#23482f] w-full max-w-[320px] rounded-3xl p-6 shadow-2xl">
@@ -657,7 +615,6 @@ const MessagesPage = () => {
           </div>
         </div>
       )}
-
       {!isMobile || !activeChat ? (
         <aside className={`border-r border-[#23482f] flex flex-col bg-[#102216] ${isMobile ? 'w-full' : 'w-80'}`}>
           <div className="p-5 border-b border-[#23482f]">
@@ -672,40 +629,35 @@ const MessagesPage = () => {
               const p = chat.participants.find(u => (u._id || u) !== myUserId);
               const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
               const unread = getUnreadCount(chat) || 0;
-
               return (
                 <div key={chat._id} className="relative group/item">
                   {openSidebarMenuId === chat._id && (
                     <div className="fixed inset-0 z-20" onClick={() => setOpenSidebarMenuId(null)} />
                   )}
-
                   <div
                     onClick={() => {
                       setActiveChat(chat);
                       activeChatIdRef.current = chat._id;
                       activeChatRef.current = chat;
-
                       if (chat.isNew) {
                         setChats(prev => prev.map(c => c._id === chat._id ? { ...c, isNew: false } : c));
                       }
-                      chatService.joinChat?.(chat._id, myUserId);
-
-                      if (scrollRef.current) {
-                        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-                      }
+                      emit('joinChat', { chatId: chat._id, userId: myUserId });
+                      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
                     }}
                     className={`flex items-center gap-3 p-4 cursor-pointer border-b border-[#1a3322] transition-all ${chat.isNew ? 'bg-[#13ec5b]/15 border-l-4 border-[#13ec5b]' : activeChat?._id === chat._id ? 'bg-[#13ec5b]/10 border-r-4 border-[#13ec5b]' : (unread ? 'bg-[#072814] border-l-4 border-[#13ec5b]' : 'hover:bg-white/5')}`}
                   >
                     <div className="relative">
                       <img src={p?.profileImage || `https://ui-avatars.com/api/?name=${p?.name}&bg=13ec5b&color=000`} className={`h-11 w-11 rounded-full border border-[#23482f] ${unread ? 'ring-2 ring-[#13ec5b]/40' : ''}`} alt="" />
-                      {unread > 0 && (
-                        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#13ec5b] animate-pulse border border-transparent"></span>
+                      {unread > 0 && !chat.mutedBy?.includes(myUserId) && (
+                        <span className="text-[9px] font-bold bg-[#13ec5b] text-black px-1.5 py-0.5 rounded-full flex-shrink-0">
+                          {unread}
+                        </span>
                       )}
                       {chat.mutedBy?.includes(myUserId) && (
                         <div className="absolute -bottom-1 -right-1 bg-[#92c9a4] text-[#102216] rounded-full w-4 h-4 flex items-center justify-center font-bold"><BellOff size={10} /></div>
                       )}
                     </div>
-
                     <div className="flex-1 truncate">
                       <div className="flex justify-between items-center gap-1">
                         <div className="flex items-center gap-2">
@@ -724,12 +676,10 @@ const MessagesPage = () => {
                         {isMeLast ? 'You: ' : ''}{chat.lastMessage?.text || "Chat now"}
                       </p>
                     </div>
-
                     <div className="relative flex-shrink-0">
                       <button onClick={(e) => { e.stopPropagation(); setOpenSidebarMenuId(prev => prev === (chat._id) ? null : chat._id); }} className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
                         <MoreVertical size={16} />
                       </button>
-
                       {openSidebarMenuId === chat._id && (
                         <div onClick={(e) => e.stopPropagation()} className="absolute right-0 top-10 w-40 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl z-50 overflow-hidden">
                           <button
@@ -771,14 +721,13 @@ const MessagesPage = () => {
                             <span className="material-symbols-outlined text-sm">person</span>
                             View Profile
                           </button>
-
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               const isMuted = chat.mutedBy?.includes(myUserId);
                               setChats(prev => prev.map(c => c._id === chat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
                               if (activeChat?._id === chat._id) setActiveChat(prev => prev ? { ...prev, mutedBy: (isMuted ? prev.mutedBy?.filter(id => id !== myUserId) : [...(prev.mutedBy || []), myUserId]) } : prev);
-                              chatService.muteChat(chat._id, myUserId, !isMuted);
+                              emit('muteChat', { chatId: chat._id, userId: myUserId, isMuted: !isMuted });
                               setOpenSidebarMenuId(null);
                             }}
                             className="w-full text-left px-4 py-2.5 text-[11px] hover:bg-white/5 border-t border-[#23482f] flex items-center gap-2"
@@ -786,7 +735,6 @@ const MessagesPage = () => {
                             {chat.mutedBy?.includes(myUserId) ? <Bell size={16} /> : <BellOff size={16} />}
                             <span>{chat.mutedBy?.includes(myUserId) ? 'Unmute' : 'Mute'}</span>
                           </button>
-
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -798,7 +746,6 @@ const MessagesPage = () => {
                             <Trash2 size={14} />
                             <span>Clear Chat</span>
                           </button>
-
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -820,7 +767,6 @@ const MessagesPage = () => {
           </div>
         </aside>
       ) : null}
-
       {!isMobile || activeChat ? (
         <main className={`flex-1 flex flex-col bg-[#0d1a11] ${isMobile ? 'w-full' : ''}`}>
           {activeChat ? (
@@ -848,14 +794,12 @@ const MessagesPage = () => {
                     </p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-4">
-                  {getUnreadCount(activeChatFromList) > 0 && (
+                  {getUnreadCount(activeChatFromList) > 0 && !activeChat?.mutedBy?.includes(myUserId) && (
                     <div className="px-3 py-1 bg-[#13ec5b]/20 border border-[#13ec5b] rounded-full text-[10px] font-bold text-[#13ec5b]">
                       {getUnreadCount(activeChatFromList)} unread
                     </div>
                   )}
-
                   <div className="relative">
                     <button onClick={(e) => { e.stopPropagation(); setShowHeaderMenu(prev => !prev); }} className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
                       <MoreVertical size={24} />
@@ -864,14 +808,38 @@ const MessagesPage = () => {
                       <div onClick={(e) => e.stopPropagation()} className="absolute right-0 top-10 w-48 bg-[#193322] border border-[#23482f] rounded-xl shadow-2xl opacity-100 visible transition-all duration-300 z-50 overflow-hidden">
                         <button onClick={() => {
                           const isMuted = activeChat?.mutedBy?.includes(myUserId);
-                          setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, mutedBy: isMuted ? (c.mutedBy || []).filter(id => id !== myUserId) : [...(c.mutedBy || []), myUserId] } : c));
-                          if (activeChat) setActiveChat(prev => prev ? { ...prev, mutedBy: isMuted ? prev.mutedBy?.filter(id => id !== myUserId) : [...(prev.mutedBy || []), myUserId] } : prev);
-                          chatService.muteChat(activeChat._id, myUserId, !isMuted);
+                          setChats(prev => prev.map(c =>
+                            c._id === activeChat._id
+                              ? {
+                                ...c,
+                                mutedBy: isMuted
+                                  ? (c.mutedBy || []).filter(id => String(id) !== String(myUserId))
+                                  : [...(c.mutedBy || []), String(myUserId)]
+                              }
+                              : c
+                          ));
+
+                          setActiveChat(prev => prev ? {
+                            ...prev,
+                            mutedBy: isMuted
+                              ? prev.mutedBy?.filter(id => String(id) !== String(myUserId))
+                              : [...(prev.mutedBy || []), String(myUserId)]
+                          } : prev);
+
+                          emit('muteChat', {
+                            chatId: activeChat._id,
+                            userId: myUserId,
+                            isMuted: !isMuted
+                          });
+
                           setShowHeaderMenu(false);
                         }} className="w-full text-left px-4 py-2 text-xs hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
-                          {activeChat?.mutedBy?.includes(myUserId) ? <><Bell size={16} /><span>Unmute</span></> : <><BellOff size={16} /><span>Mute</span></>}
+                          {activeChat?.mutedBy?.includes(myUserId) ? (
+                            <><Bell size={16} /><span>Unmute</span></>
+                          ) : (
+                            <><BellOff size={16} /><span>Mute</span></>
+                          )}
                         </button>
-
                         <button onClick={() => { setChatConfirm({ isOpen: true, type: 'clear', chatId: activeChat?._id }); setShowHeaderMenu(false); }} className="w-full text-left px-4 py-2 text-xs text-[#92c9a4] hover:bg-white/5 border-b border-[#23482f] flex items-center gap-2">
                           <Trash2 size={14} />
                           <span>Clear Chat</span>
@@ -890,11 +858,9 @@ const MessagesPage = () => {
                           <span className="material-symbols-outlined text-base">photo_library</span>
                           <span>Media</span>
                         </button>
-
                       </div>
                     )}
                   </div>
-
                   <div className="relative group">
                     <button className="p-2 text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
                       <Video size={24} />
@@ -912,7 +878,6 @@ const MessagesPage = () => {
                   </div>
                 </div>
               </header>
-
               <ConfirmModal
                 isOpen={chatConfirm.isOpen}
                 title={chatConfirm.type === 'delete' ? 'Delete Chat' : 'Clear Chat'}
@@ -925,10 +890,10 @@ const MessagesPage = () => {
                     const cid = chatConfirm.chatId || activeChat?._id;
                     if (!cid) return;
                     if (chatConfirm.type === 'clear') {
-                      await chatService.clearChat(cid, myUserId);
+                      emit('clearChat', { chatId: cid, userId: myUserId });
                       if (activeChat?._id === cid) setMessages([]);
                     } else if (chatConfirm.type === 'delete') {
-                      await chatService.deleteChat(cid, myUserId);
+                      emit('deleteChat', { chatId: cid, userId: myUserId });
                       setChats(prev => prev.filter(c => c._id !== cid));
                       if (activeChat?._id === cid) setActiveChat(null);
                     }
@@ -941,7 +906,6 @@ const MessagesPage = () => {
                   }
                 }}
               />
-
               <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
                 {messages.map((m, idx) => {
                   const isMe = (m.sender?._id || m.sender) === myUserId;
@@ -951,12 +915,10 @@ const MessagesPage = () => {
                   const isImage = m.file && m.file.mimeType?.startsWith('image/');
                   const isPdf = m.file && m.file.mimeType === 'application/pdf';
 
-                  // For attachment, show the message if it has text, else file name
                   let messageContent = m.text || "";
                   if (m.file && !m.text) {
                     messageContent = m.file.name || "Attachment";
                   }
-
                   return (
                     <React.Fragment key={m._id || idx}>
                       {showDateHeader && (
@@ -989,11 +951,9 @@ const MessagesPage = () => {
                                 }`}
                             >
 
-                              {/* Quoted reply */}
-
                               {m.replyTo && (
                                 <div
-                                  onClick={() => scrollToOriginalMessage(m.replyTo._id)}  // ← yahan replyTo._id use karo (populated ID)
+                                  onClick={() => scrollToOriginalMessage(m.replyTo._id)}
                                   className="border-l-4 border-[#13ec5b] pl-3 mb-2 text-xs bg-black/20 rounded-r cursor-pointer hover:bg-black/30 transition-all"
                                 >
                                   <p className="font-semibold text-[#13ec5b]">
@@ -1004,10 +964,6 @@ const MessagesPage = () => {
                                   </p>
                                 </div>
                               )}
-
-
-
-
                               {m.file ? (
                                 <>
                                   {isImage ? (
@@ -1062,7 +1018,6 @@ const MessagesPage = () => {
                 })}
                 <div ref={scrollRef} />
               </div>
-
               <div className="p-4 bg-[#112217] border-t border-[#23482f]">
                 {editingMessage && (
                   <div className="flex items-center justify-between bg-[#193322] px-4 py-1 mb-2 rounded border-l-4 border-[#13ec5b]">
@@ -1071,7 +1026,6 @@ const MessagesPage = () => {
                   </div>
                 )}
 
-                {/* Reply preview */}
                 {replyTo && (
                   <div className="bg-[#193322] border-l-4 border-[#13ec5b] px-4 py-2.5 mb-2 rounded-r-xl flex items-start gap-3 relative">
                     <div className="flex-1">
@@ -1086,7 +1040,6 @@ const MessagesPage = () => {
                     </button>
                   </div>
                 )}
-
                 {pendingFile && (
                   <div className="flex items-center gap-3 bg-[#193322] border border-[#23482f] p-3 rounded-xl mb-2">
                     {pendingFile.type.startsWith('image/') ? (
@@ -1105,15 +1058,12 @@ const MessagesPage = () => {
                     </button>
                   </div>
                 )}
-
                 <div className="flex items-center gap-3 bg-[#193322] rounded-2xl px-4 py-2 border border-[#23482f] relative">
                   <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-[#92c9a4] hover:text-[#13ec5b]"><Smile size={22} /></button>
-
                   <button onClick={() => fileInputRef.current.click()} className="text-[#92c9a4] hover:text-[#13ec5b] transition-colors">
                     <Paperclip size={20} />
                   </button>
                   <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-
                   <input value={inputText} onChange={(e) => {
                     setInputText(e.target.value);
                     if (showEmojiPicker && e.target.value.length > 0) {
@@ -1126,14 +1076,12 @@ const MessagesPage = () => {
                         setShowEmojiPicker(false);
                       }
                     }} placeholder="Type a message..." className="flex-1 bg-transparent outline-none text-sm" />
-
                   <button onClick={() => {
                     handleSend();
                     setShowEmojiPicker(false);
                   }} className="bg-[#13ec5b] p-2 rounded-lg text-black transition-transform active:scale-90">
                     {editingMessage ? <Check size={18} /> : <Send size={18} />}
                   </button>
-
                   {showEmojiPicker && (
                     <div className="absolute bottom-16 left-0 z-50">
                       <EmojiPicker onEmojiClick={(e) => {
@@ -1153,8 +1101,7 @@ const MessagesPage = () => {
         </main>
       ) : null}
     </div>
-    
-);
-};
 
+  );
+};
 export default MessagesPage;
