@@ -101,12 +101,6 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} 
     }
   }, [location.pathname, setActiveChatId]);
 
-  // 4. Requests count fetch logic
-  // 4. Requests count fetch AND Real-time listener
-  // 4. Requests count fetch AND Real-time listener
-  // 4. Requests count fetch AND Real-time listener
-  // 4. Requests count fetch AND Real-time listener (Instagram Style)
-  // 4. Requests count fetch AND Real-time listener (Robust Version)
 useEffect(() => {
   if (!socket || !myId) return;
 

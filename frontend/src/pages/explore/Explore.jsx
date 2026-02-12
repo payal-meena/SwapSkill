@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext,useMemo } from 'react';
 import ExploreNavbar from '../../components/explore/ExploreNavbar';
 import SkillCard from '../../components/explore/SkillCard';
 import api from '../../services/api';
@@ -22,56 +22,80 @@ const Explore = () => {
     setToast({ ...toast, isVisible: false });
   };
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const mentorRes = await api.get("/explore");
-      const allMentors = mentorRes.data;
+ const fetchData = async () => {
+  try {
+    setLoading(true);
 
-      const requestRes = await requestService.getMyRequests();
-      const myRequests = requestRes.requests || [];
-      const currentUserId = requestRes.currentUser;
+    // 🚀 Run all APIs in parallel
+    const [mentorRes, requestRes, blockedRes] = await Promise.all([
+      api.get("/explore"),
+      requestService.getMyRequests(),
+      blockService.getBlockedUsers().catch(() => ({ blockedUsers: [] }))
+    ]);
 
-      // Get blocked users list
-      let blockedUserIds = [];
-      try {
-        const blockedRes = await blockService.getBlockedUsers();
-        if (blockedRes.blockedUsers) {
-          blockedUserIds = blockedRes.blockedUsers.map(u => u._id || u);
-        }
-      } catch (err) {
-        console.log('Could not fetch blocked users list');
+    const allMentors = mentorRes.data || [];
+    const myRequests = requestRes?.requests || [];
+    const currentUserId = requestRes?.currentUser;
+
+    // 🔥 Convert blocked list to Set (faster than includes)
+    const blockedUserIds = new Set(
+      (blockedRes?.blockedUsers || []).map(u => u._id || u)
+    );
+
+    // 🔥 Convert requests to Map for O(1) lookup
+    const requestMap = new Map();
+
+    myRequests.forEach(req => {
+      if (req.status === "cancelled") return;
+
+      const otherUserId =
+        req.receiver?._id === currentUserId
+          ? req.requester?._id
+          : req.receiver?._id;
+
+      if (otherUserId) {
+        requestMap.set(otherUserId, req);
       }
+    });
 
-      const mentorsWithStatus = allMentors
-        .filter(mentor => mentor._id !== currentUserId && !blockedUserIds.includes(mentor._id))
-        .map(mentor => {
-          const foundRequest = myRequests.find(req => 
-            (req.receiver?._id === mentor._id || req.requester?._id === mentor._id) &&
-            req.status !== 'cancelled'
-          );
-          // If request is rejected, treat it as 'none' so user can send request again
-          const status = foundRequest ? foundRequest.status : 'none';
+    const mentorsWithStatus = allMentors
+      .filter(mentor =>
+        mentor._id !== currentUserId &&
+        !blockedUserIds.has(mentor._id)
+      )
+      .map(mentor => {
+        const foundRequest = requestMap.get(mentor._id);
 
-          return {
-            ...mentor,
-            requestId: foundRequest?._id || null,
-            connectionStatus: status === 'rejected' ? 'none' : status
-          };
-        })
-        .sort((a, b) => {
-          const contentA = (a.offeredSkills?.length || 0) + (a.wantedSkills?.length || 0);
-          const contentB = (b.offeredSkills?.length || 0) + (b.wantedSkills?.length || 0);
-          return contentA - contentB;
-        });
+        const status = foundRequest ? foundRequest.status : "none";
 
-      setMentors(mentorsWithStatus);
-    } catch (err) {
-      console.error("Error fetching mentors:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        return {
+          ...mentor,
+          requestId: foundRequest?._id || null,
+          connectionStatus:
+            status === "rejected" ? "none" : status
+        };
+      })
+      .sort((a, b) => {
+        const contentA =
+          (a.offeredSkills?.length || 0) +
+          (a.wantedSkills?.length || 0);
+
+        const contentB =
+          (b.offeredSkills?.length || 0) +
+          (b.wantedSkills?.length || 0);
+
+        return contentA - contentB;
+      });
+
+    setMentors(mentorsWithStatus);
+
+  } catch (err) {
+    console.error("Error fetching mentors:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchData();
@@ -117,7 +141,9 @@ const Explore = () => {
   }, [socketCtx]);
 
   // --- FILTERING LOGIC ---
-  const filteredMentors = mentors.filter((mentor) => {
+const filteredMentors = React.useMemo(() => {
+  return mentors.filter((mentor) => {
+
     const searchLower = searchTerm.toLowerCase();
     
     // Search filter
@@ -173,7 +199,7 @@ const Explore = () => {
       );
 
     return matchesSearch && matchesExperience && matchesSkills;
-  });
+  })});
 
   const handleConnect = async (mentorId) => {
     try {
