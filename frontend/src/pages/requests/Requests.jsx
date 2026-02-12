@@ -107,7 +107,7 @@ const Requests = () => {
     /* Background updated to rgb(17, 34, 23) */
     <div className="min-h-screen flex flex-col bg-[#112217] text-slate-200 font-['Lexend']">
      
-      <main className="flex-1 p-4 sm:p-8 md:p-10 max-w-5xl mx-auto w-full">
+      <main className="flex-1 p-4 sm:p-8 md:p-10 max-w-7xl mx-auto w-full">
         <div className="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
