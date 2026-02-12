@@ -29,7 +29,7 @@ const ExploreProfile = () => {
 
   const [offeredSkillsState, setOfferedSkillsState] = useState(profileData?.offeredSkills || []);
   const [wantedSkillsState, setWantedSkillsState] = useState(profileData?.wantedSkills || []);
-  const [requestStatus, setRequestStatus] = useState('none'); 
+  const [requestStatus, setRequestStatus] = useState(profileData?.connectionStatus || 'none'); 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });

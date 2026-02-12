@@ -130,8 +130,8 @@ const MyConnection = () => {
                       <span className="hidden xs:inline">Message</span>
                     </button>
                     <button 
-                      onClick={() => navigate('/explore-profile', { state: user })}
-                      className="px-2.5 sm:px-3 lg:px-4 py-2 sm:py-2.5 lg:py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg sm:rounded-xl transition-all flex-shrink-0"
+                      onClick={() => navigate('/explore-profile', { state: { ...user, img: user.profileImage } })}
+                      className="px-3 sm:px-4 py-2 sm:py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all flex-shrink-0"
                     >
                       <span className="material-symbols-outlined !text-base sm:!text-lg">visibility</span>
                     </button>

@@ -6,14 +6,54 @@ import { requestService } from "../../services/requestService";
 import Toast from "../../components/common/Toast";
 import { SocketContext } from "../../context/SocketContext";
 
+// --- Compact Responsive Modal ---
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60 animate-in fade-in duration-200">
+      <div className="bg-[#1a2e21] border border-[#2d4a35] w-full max-w-[340px] sm:max-w-md rounded-2xl p-5 shadow-2xl">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-3">
+            <span className="material-symbols-outlined text-red-500 text-2xl">delete_sweep</span>
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+          <p className="text-slate-400 text-sm leading-relaxed mb-6">
+            {message}
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-[#23372a] transition-all"
+          >
+            Go Back
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition-all active:scale-95"
+          >
+            Cancel it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Requests = () => {
   const [activeTab, setActiveTab] = useState("received");
   const [requests, setRequests] = useState([]);
   const [currentUser, setCurrentUser] = useState("");
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
+  const [toast, setToast] = useState({ isVisible: false, message: "", type: "info" });
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [requestToCancel, setRequestToCancel] = useState(null);
 
-  const showToast = (message, type = 'info') => {
+  const showToast = (message, type = "info") => {
     setToast({ isVisible: true, message, type });
   };
 
@@ -32,32 +72,30 @@ const Requests = () => {
 
     const handler = (updatedRequest) => {
       try {
-        // Ensure populated objects exist
-        const r = typeof updatedRequest.toObject === 'function' ? updatedRequest.toObject() : updatedRequest;
+        const r = typeof updatedRequest.toObject === "function"
+            ? updatedRequest.toObject()
+            : updatedRequest;
 
-        const isRelevant = (r.requester && r.requester._id && r.requester._id.toString() === currentUser.toString()) ||
-                           (r.receiver && r.receiver._id && r.receiver._id.toString() === currentUser.toString());
+        const isRelevant =
+          (r.requester?._id?.toString() === currentUser.toString()) ||
+          (r.receiver?._id?.toString() === currentUser.toString());
 
         if (!isRelevant) return;
 
-        setRequests(prev => {
-          const exists = prev.find(p => p._id === r._id);
+        setRequests((prev) => {
+          const exists = prev.find((p) => p._id === r._id);
           if (exists) {
-            return prev.map(p => p._id === r._id ? r : p);
+            return prev.map((p) => (p._id === r._id ? r : p));
           }
-          // new request, prepend
           return [r, ...prev];
         });
       } catch (err) {
-        console.error('Error handling requestUpdated socket event', err);
+        console.error("Error handling socket event", err);
       }
     };
 
-    socketCtx.on('requestUpdated', handler);
-
-    return () => {
-      socketCtx.off('requestUpdated', handler);
-    };
+    socketCtx.on("requestUpdated", handler);
+    return () => socketCtx.off("requestUpdated", handler);
   }, [socketCtx, currentUser]);
 
   const fetchRequests = async () => {
@@ -73,72 +111,80 @@ const Requests = () => {
     }
   };
 
-  const handleWithdraw = async (id) => {
-    if (!window.confirm("Are you sure you want to cancel this request?")) return;
+  const handleWithdrawClick = (id) => {
+    setRequestToCancel(id);
+    setIsModalOpen(true);
+  };
+
+  const confirmWithdraw = async () => {
+    const id = requestToCancel;
+    setIsModalOpen(false);
+    setRequestToCancel(null);
 
     const previousRequests = [...requests];
-    setRequests(prev => prev.filter(req => req._id !== id));
+    setRequests((prev) => prev.filter((req) => req._id !== id));
+
     try {
       const res = await requestService.withdrawRequest(id);
       if (!res.success) {
         setRequests(previousRequests);
-        showToast("Could not cancel request.", 'error');
+        showToast("Could not cancel request.", "error");
       } else {
-        showToast("Request cancelled successfully", 'success');
+        showToast("Request cancelled successfully", "success");
       }
     } catch (err) {
       console.error("Withdraw failed", err);
       fetchRequests();
-      showToast("Something went wrong. Please try again.", 'error');
+      showToast("Something went wrong.", "error");
     }
   };
 
-  const receivedRequests = requests.filter((r) => 
-    r.receiver?._id?.toString() === currentUser?.toString() && 
-    r.status !== 'cancelled' 
+  const receivedRequests = requests.filter(
+    (r) => r.receiver?._id?.toString() === currentUser?.toString() && r.status !== "cancelled"
   );
 
-  const sentRequests = requests.filter((r) => 
-    r.requester?._id?.toString() === currentUser?.toString() && 
-    r.status !== 'cancelled' 
+  const sentRequests = requests.filter(
+    (r) => r.requester?._id?.toString() === currentUser?.toString() && r.status !== "cancelled"
   );
 
   return (
-    /* Background updated to rgb(17, 34, 23) */
     <div className="min-h-screen flex flex-col bg-[#112217] text-slate-200 font-['Lexend']">
-     
-      <main className="flex-1 p-4 sm:p-8 md:p-10 max-w-7xl mx-auto w-full">
-        <div className="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-12 max-w-5xl mx-auto w-full">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+            <h2 className="text-3xl font-black text-white tracking-tight">
               Swap <span className="text-[#13ec5b]">Hub</span>
             </h2>
-            <p className="text-slate-400 font-medium mt-1 text-sm">Manage your incoming and outgoing requests</p>
+            <p className="text-slate-400 font-medium mt-1 text-sm">
+              Manage your swap status
+            </p>
           </div>
-          
-          {/* Tab Container color lightened slightly for contrast */}
-          <div className="flex gap-1 sm:gap-2 bg-[#1a2e21] p-1 rounded-xl border border-[#2d4a35]">
-            <button 
-              onClick={() => setActiveTab("received")} 
-              className={`px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"}`}
+
+          <div className="flex gap-2 bg-[#1a2e21] p-1 rounded-xl border border-[#2d4a35]">
+            <button
+              onClick={() => setActiveTab("received")}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex-1 ${
+                activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"
+              }`}
             >
-              Received ({receivedRequests.filter(r => r.status === 'pending').length})
+              Received ({receivedRequests.filter(r => r.status === "pending").length})
             </button>
-            <button 
-              onClick={() => setActiveTab("sent")} 
-              className={`px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"}`}
+            <button
+              onClick={() => setActiveTab("sent")}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex-1 ${
+                activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"
+              }`}
             >
-              Sent ({sentRequests.filter(r => r.status === 'pending').length})
+              Sent ({sentRequests.filter(r => r.status === "pending").length})
             </button>
           </div>
         </div>
 
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-4">
           {loading ? (
-            <div className="space-y-3 sm:space-y-4 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                /* Skeleton updated */
-                <div key={i} className="h-28 sm:h-32 bg-[#1a2e21] rounded-3xl border border-[#2d4a35]" />
+            <div className="space-y-4 animate-pulse">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-28 bg-[#1a2e21] rounded-2xl border border-[#2d4a35]" />
               ))}
             </div>
           ) : activeTab === "received" ? (
@@ -146,18 +192,32 @@ const Requests = () => {
               receivedRequests.map((req) => (
                 <IncomingRequestCard key={req._id} request={req} refresh={fetchRequests} />
               ))
-            ) : <EmptyState message="No incoming requests yet." />
+            ) : (
+              <EmptyState message="No incoming requests." />
+            )
+          ) : sentRequests.length > 0 ? (
+            sentRequests.map((req) => (
+              <SentRequestStatus
+                key={req._id}
+                request={req}
+                onWithdraw={handleWithdrawClick}
+              />
+            ))
           ) : (
-            sentRequests.length > 0 ? (
-              sentRequests.map((req) => (
-                <SentRequestStatus key={req._id} request={req} onWithdraw={handleWithdraw} />
-              ))
-            ) : <EmptyState message="You haven't sent any requests." />
+            <EmptyState message="No sent requests." />
           )}
         </div>
       </main>
-      
-      <Toast 
+
+      <ConfirmModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={confirmWithdraw}
+        title="Cancel Request?"
+        message="Are you sure? This will permanently remove the request."
+      />
+
+      <Toast
         message={toast.message}
         type={toast.type}
         isVisible={toast.isVisible}
@@ -168,10 +228,9 @@ const Requests = () => {
 };
 
 const EmptyState = ({ message }) => (
-  /* Empty state box colors updated to match theme */
-  <div className="text-center py-20 bg-[#1a2e21] border border-dashed border-[#2d4a35] rounded-[3rem] flex flex-col items-center">
-    <span className="material-symbols-outlined text-5xl text-slate-500 mb-4">inbox</span>
-    <p className="text-slate-400 font-medium">{message}</p>
+  <div className="text-center py-12 bg-[#1a2e21] border border-dashed border-[#2d4a35] rounded-2xl flex flex-col items-center justify-center">
+    <span className="material-symbols-outlined text-4xl text-slate-600 mb-3">inbox</span>
+    <p className="text-slate-500 text-sm">{message}</p>
   </div>
 );
 
