@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PendingRequests from '../../components/requests/PendingRequests';
 import { skillService } from '../../services/skillService';
@@ -9,11 +9,11 @@ import Avatar from '../../components/common/Avatar';
 
 const StatCard = ({ label, value, trend, icon, onClick }) => {
   const isPositive = trend.includes('+');
-  
+
   return (
     <button onClick={onClick} className="group relative flex flex-col gap-2 rounded-[2rem] p-4 sm:p-8 bg-[#1a2e21] border border-[#13ec5b]/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:border-[#13ec5b]/40 transition-all duration-500 overflow-hidden text-left">
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#13ec5b]/5 blur-3xl group-hover:bg-[#13ec5b]/10 transition-all" />
-      
+
       <div className="flex justify-between items-start relative z-10">
         <div className="p-2 sm:p-3 bg-[#13ec5b]/10 rounded-2xl text-[#13ec5b]">
           <span className="material-symbols-outlined !text-2xl sm:!text-3xl">{icon}</span>
@@ -31,7 +31,7 @@ const StatCard = ({ label, value, trend, icon, onClick }) => {
           {value}
         </p>
       </div>
-      
+
       <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#13ec5b] group-hover:w-full transition-all duration-700" />
     </button>
   );
@@ -46,90 +46,77 @@ const Dashboard = () => {
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   const [lastChat, setLastChat] = useState(null);
 
-  const token = localStorage.getItem('token');
-  let myId = null;
-
-  if (token) {
+  const getCurrentUserId = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
     try {
-      myId = JSON.parse(window.atob(token.split('.')[1])).id;
-    } catch { }
-  }
-
+      return JSON.parse(window.atob(token.split('.')[1])).id;
+    } catch (err) {
+      return null;
+    }
+  };
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // 🔥 Run main APIs in parallel
-        const [skillsRes, wantedRes, reqRes, chatsData] = await Promise.all([
-          skillService.getMySkills(),
-          skillService.getMyWantedSkills(),
-          requestService.getMyRequests(),
-          chatService.getMyChats()
-        ]);
+        const skillsRes = await skillService.getMySkills();
+        if (skillsRes?.success) setOfferedCount(skillsRes.skills?.length || 0);
 
-        // Skills Offered
-        if (skillsRes?.success) {
-          setOfferedCount(skillsRes.skills?.length || 0);
-        }
+        const wantedRes = await skillService.getMyWantedSkills();
+        if (wantedRes?.success) setWantedCount(wantedRes.skills?.length || 0);
 
-        // Skills Wanted
-        if (wantedRes?.success) {
-          setWantedCount(wantedRes.skills?.length || 0);
-        }
-
-        // Requests + Connections
+        const reqRes = await requestService.getMyRequests();
         if (reqRes) {
-          const acceptedRequests = (reqRes.requests || []).filter(
-            r => r.status === 'accepted' || r.status === 'completed'
-          );
-
+          const acceptedRequests = (reqRes.requests || []).filter(r => r.status === 'accepted' || r.status === 'completed');
           setAcceptedRequestsCount(acceptedRequests.length);
 
           const currentUserId = reqRes.currentUser;
           const otherMap = {};
-
           acceptedRequests.forEach(r => {
-            const other =
-              r.requester &&
-                r.requester._id?.toString() === currentUserId?.toString()
-                ? r.receiver
-                : r.requester;
-
+            const other = (r.requester && r.requester._id?.toString() === currentUserId?.toString()) ? r.receiver : r.requester;
             const id = other?._id || other?.id;
             if (!id) return;
-
             if (!otherMap[id]) {
               otherMap[id] = {
                 id,
                 name: other?.name || other?.username || 'Unknown',
-                img:
-                  other?.profileImage ||
-                  other?.avatar ||
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${other?.name || id
-                  }`,
+                img: other?.profileImage || other?.avatar || null,
                 rating: other?.rating || 0,
                 reviews: other?.reviews || 0,
-                socials: other?.socials || {},
-                connectionStatus: r.status,
-                requestId: r._id,
-                offeredSkills: [],   // 👈 No extra API calls now
-                wantedSkills: []
+                socials: other?.socials || {}
               };
             }
           });
 
-          setConnections(Object.values(otherMap));
+          const ids = Object.keys(otherMap);
+          const usersWithSkills = await Promise.all(ids.map(async (uid) => {
+            try {
+              const skillsRes = await skillService.getUserSkills(uid);
+              const offered = skillsRes?.offered || skillsRes?.skills || skillsRes?.offeredSkills || [];
+              const wanted = skillsRes?.wanted || skillsRes?.wantedSkills || [];
+              return {
+                ...otherMap[uid],
+                offeredSkills: offered,
+                wantedSkills: wanted
+              };
+            } catch (err) {
+              return { ...otherMap[uid], offeredSkills: [], wantedSkills: [] };
+            }
+          }));
+
+          setConnections(usersWithSkills);
         }
 
-        // Last Chat
-        if (Array.isArray(chatsData) && chatsData.length > 0) {
-          const sortedChats = [...chatsData].sort(
-            (a, b) =>
-              new Date(b.lastMessage?.createdAt || b.updatedAt) -
-              new Date(a.lastMessage?.createdAt || a.updatedAt)
-          );
-
-          setLastChat(sortedChats[0]);
+        try {
+          const chatsData = await chatService.getMyChats();
+          if (chatsData && Array.isArray(chatsData) && chatsData.length > 0) {
+            const sortedChats = chatsData.sort((a, b) => 
+              new Date(b.lastMessage?.createdAt || b.updatedAt) - new Date(a.lastMessage?.createdAt || a.updatedAt)
+            );
+            setLastChat(sortedChats[0]);
+          }
+        } catch (err) {
+          console.error('Error loading last chat', err);
         }
       } catch (err) {
         console.error('Error loading dashboard stats', err);
@@ -139,12 +126,14 @@ const Dashboard = () => {
     loadStats();
   }, []);
 
+  const myId = getCurrentUserId();
+  const otherUser = lastChat?.participants?.find(p => (p._id || p) !== myId);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#112217] font-['Lexend'] text-white">
       <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
         <div className="p-4 sm:p-8 lg:p-12 max-w-[1400px] mx-auto w-full">
-          
+
           <div className="mb-8 sm:mb-10">
             <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white">
               User <span className="text-[#13ec5b]">Dashboard</span>
@@ -179,7 +168,7 @@ const Dashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-12">
-            
+
             <div className="lg:col-span-2 flex flex-col gap-6 sm:gap-8">
               <div className="border-b border-[#13ec5b]/10 pb-4">
                 <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">Last Discussion</h2>
@@ -191,7 +180,7 @@ const Dashboard = () => {
                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-6 hover:border-[#13ec5b]/40 transition-all">
                     <div className="flex items-center gap-4 mb-4">
                       {(() => {
-                        
+
                         const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
                         return (
                           <>
@@ -212,8 +201,8 @@ const Dashboard = () => {
                     </div>
                     <button
                       onClick={() => {
-                       
-                        
+
+
                         const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
                         navigate(`/messages/${otherUser?._id || otherUser}`);
                       }}
@@ -256,23 +245,25 @@ const Dashboard = () => {
                 {connections.map((u) => (
                   <div key={u.id} className="flex items-center justify-between bg-[#071711] p-3 rounded-lg border border-white/5">
                     <div className="flex items-center gap-4">
-                      {u.img ? (
-                        <img src={u.img} alt={u.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#13ec5b]" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-[#13ec5b] border-2 border-[#13ec5b] flex items-center justify-center text-[#05160e] font-black text-xl uppercase">
-                          {u.name.charAt(0)}
-                        </div>
-                      )}
+                      <Avatar
+                        src={u.img}
+                        name={u.name}
+                        size="w-12 h-12"
+                        textSize="text-lg"
+                        className="border-2 border-[#13ec5b]"
+                      />
                       <div>
                         <div className="font-bold text-white">{u.name}</div>
-                        <div className="text-sm text-slate-400">{u.offeredSkills?.length || 0} offered · {u.wantedSkills?.length || 0} learning</div>
+                        <div className="text-sm text-slate-400">
+                          {u.offeredSkills?.length || 0} offered · {u.wantedSkills?.length || 0} learning
+                        </div>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => {
                           const profileData = {
-                            id: u.id,
                             name: u.name,
                             img: u.img,
                             rating: u.rating,
