@@ -10,7 +10,7 @@ const skillSchema = new mongoose.Schema(
 
     level: {
       type: String,
-      enum: ["Beginner", "Intermediate", "Expert"],
+      enum: ["Beginner", "Intermediate", "Advanced"],
       required: true,
     },
 

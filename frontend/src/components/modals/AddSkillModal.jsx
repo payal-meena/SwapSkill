@@ -40,6 +40,7 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
     try {
       setLoading(true);
       
+      console.log('Submitting skill data:', formData);
       await skillService.addSkill(formData);
       
       setFormData({
@@ -60,6 +61,7 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
       setLoading(false);
     }
   };
+  
   if (!isOpen) return null;
 
   return (
