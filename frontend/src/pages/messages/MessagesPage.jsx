@@ -26,7 +26,7 @@ const MessagesPage = () => {
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
   // Top pe states mein add karo
-  const [fullScreenImage, setFullScreenImage] = useState(null); 
+  const [fullScreenImage, setFullScreenImage] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [replyTo, setReplyTo] = useState(null);
   const { socket, on, off, emit, myUserId } = useContext(SocketContext);
@@ -511,8 +511,8 @@ const MessagesPage = () => {
         emit('sendMessage', {
           chatId: activeChat._id,
           senderId: myUserId,
-          text: "",                    
-          file: fileMeta,              
+          text: "",
+          file: fileMeta,
           tempId: tempId,
           replyTo: replyTo ? replyTo.messageId : null
         });
@@ -539,19 +539,31 @@ const MessagesPage = () => {
         m._id === editingMessage.id ? { ...m, text: textToProcess, isEdited: true, updatedAt: new Date().toISOString() } : m
       ));
       setEditingMessage(null);
-    } else {
-      const tempId = "temp-" + Date.now();
+    }
+    else {
+      const tempId = "temp-text-" + Date.now(); // ← tempId add karo (unique banaye)
       const newMessage = {
-        _id: tempId,
+        _id: tempId,                  // tempId ko _id mein use karo
         sender: myUserId,
         text: textToProcess,
         createdAt: new Date().toISOString(),
         isTemp: true,
         replyTo: replyTo ? { messageId: replyTo.messageId } : null
       };
+
       setMessages(prev => [...prev, newMessage]);
-      emit('sendMessage', { chatId: activeChat._id, senderId: myUserId, text: textToProcess, replyTo: replyTo ? replyTo.messageId : null });
-      setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: newMessage } : c));
+
+      emit('sendMessage', {
+        chatId: activeChat._id,
+        senderId: myUserId,
+        text: textToProcess,
+        replyTo: replyTo ? replyTo.messageId : null,
+        tempId: tempId                // ← yahan tempId bhej do
+      });
+
+      setChats(prev => prev.map(c =>
+        c._id === activeChat._id ? { ...c, lastMessage: newMessage } : c
+      ));
     }
     if (!overrideText) setInputText("");
     setShowEmojiPicker(false);
@@ -590,8 +602,8 @@ const MessagesPage = () => {
             ...m,
             text: "This message was deleted",
             isDeleted: true,
-            file: null,           
-            fileUrl: null         
+            file: null,
+            fileUrl: null
           }
           : m
       ));
