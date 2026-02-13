@@ -64,41 +64,46 @@ sendMessage: (chatId, senderId, text, replyToId = null, tempId = null) => {
   socket.emit('sendMessage', payload);
 },
 
-  sendFile: async (chatId, senderId, file) => {
-    if (!file) throw new Error('No file provided');
-    try {
-      const res = await uploadFile(file);
-      const fileUrl = res?.url || res?.path || res?.data?.url || res?.data?.path;
-      
-      if (!fileUrl) {
-        throw new Error('File upload failed - no URL returned');
-      }
-      
-      const fileMeta = { 
-        url: fileUrl, 
-        name: file.name, 
-        mimeType: file.type, 
-        size: file.size 
-      };
-      
-      if (socket && socket.connected) {
-        socket.emit('sendMessage', { 
-          chatId, 
-          senderId, 
-          text: file.name,
-          file: fileMeta 
-        });
-        console.log('📁 File message emitted:', file.name);
-      } else {
-        console.warn('⚠️ Socket not connected, file message may not be sent');
-      }
-      
-      return fileMeta;
-    } catch (err) {
-      console.error('File send error:', err);
-      throw err;
+sendFile: async (chatId, senderId, file, tempId = null) => {
+  if (!file) throw new Error('No file provided');
+
+  try {
+    // Upload to Cloudinary via your existing /api/uploads route
+    const res = await uploadFile(file);
+    const fileUrl = res?.url || res?.path || res?.secure_url || res?.data?.url;
+
+    if (!fileUrl) {
+      throw new Error('File upload failed - no URL returned');
     }
-  },
+
+    const fileMeta = {
+      url: fileUrl,
+      name: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      size: file.size
+    };
+
+    // Use same tempId that frontend created (very important)
+    const finalTempId = tempId || `temp-file-${Date.now()}`;
+
+    if (socket && socket.connected) {
+      socket.emit('sendMessage', {
+        chatId,
+        senderId,
+        text: '',                    // clean rakho
+        file: fileMeta,
+        tempId: finalTempId          // ← yeh line sabse zaroori hai
+      });
+      console.log('📤 File sent via socket with URL:', fileUrl);
+    }
+
+    return { ...fileMeta, tempId: finalTempId };
+
+  } catch (err) {
+    console.error('File send error:', err);
+    throw err;
+  }
+},
   deleteMessage: (messageId, chatId, type, userId) => {
     socket.emit("deleteMessage", { messageId, chatId, type, userId });
   },
@@ -169,9 +174,17 @@ sendMessage: (chatId, senderId, text, replyToId = null, tempId = null) => {
 export const uploadFile = async (file) => {
   const form = new FormData();
   form.append('file', file);
-  
-  const res = await api.post('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-  return res.data;
+
+  try {
+    const res = await api.post('/uploads', form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    console.log("Backend upload response:", res.data); // ← yeh add kar
+    return res.data;
+  } catch (err) {
+    console.error("Upload API failed:", err.response?.data || err.message);
+    throw err;
+  }
 };
 
 // Convenience: send a message that contains a file (url + meta)

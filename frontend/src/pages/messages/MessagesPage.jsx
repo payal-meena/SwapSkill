@@ -217,28 +217,34 @@ const MessagesPage = () => {
 
       if (isSameChat) {
         console.log('✅ MessagesPage: Adding message to active chat');
-        setMessages(prev => {
-          if (prev.find(m => m._id === newMsg._id)) {
-            console.log('⚠️ Message already exists, skipping');
-            return prev;
-          }
-          if (newMsg.file) {
-            const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.file?.name);
-            const next = [...filtered, newMsg];
-            setTimeout(() => {
-              if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-            }, 30);
-            console.log('✅ File message added, total messages:', next.length);
-            return next;
-          }
-          const filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.text);
-          const next = [...filtered, newMsg];
-          setTimeout(() => {
-            if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-          }, 30);
-          console.log('✅ Text message added, total messages:', next.length);
-          return next;
-        });
+       setMessages(prev => {
+  // Pehle check karo message pehle se hai ya nahi
+  if (prev.find(m => m._id === newMsg._id)) {
+    console.log('Duplicate message skipped:', newMsg._id);
+    return prev;
+  }
+
+  let filtered = prev;
+
+  // Sabse reliable: tempId se remove karo (agar backend ne bheja hai)
+  if (newMsg.tempId) {
+    filtered = prev.filter(m => m._id !== newMsg.tempId);
+  } 
+  // Fallback: agar tempId nahi mila to file name se try karo
+  else if (newMsg.file) {
+    filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.file?.name);
+  }
+
+  const next = [...filtered, newMsg];
+
+  // Auto scroll
+  setTimeout(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, 30);
+
+  console.log('New message added:', newMsg._id, 'tempId was:', newMsg.tempId);
+  return next;
+});
 
         if (isFromOther) {
           try {
@@ -461,6 +467,7 @@ const MessagesPage = () => {
     if (pendingFile && activeChat) {
       try {
         const tempId = "temp-file-" + Date.now();
+
         const tempMsg = {
           _id: tempId,
           sender: myUserId,
@@ -470,17 +477,27 @@ const MessagesPage = () => {
           uploading: true,
           file: { name: pendingFile.name, size: pendingFile.size }
         };
+
         setMessages(prev => [...prev, tempMsg]);
-        const fileMeta = await chatService.sendFile(activeChat._id, myUserId, pendingFile);
-        setMessages(prev => prev.map(m => m._id === tempId ? { ...m, isTemp: false, uploading: false, file: fileMeta } : m));
-        setChats(prev => prev.map(c => c._id === activeChat._id ? { ...c, lastMessage: fileMeta, lastMessageAt: new Date().toISOString() } : c));
+
+        // ←←← tempId pass kar rahe hain
+        const fileMeta = await chatService.sendFile(activeChat._id, myUserId, pendingFile, tempId);
+
+        // Local update (real message aane se pehle bhi UI clean ho jayega)
+        setMessages(prev => prev.map(m =>
+          m._id === tempId
+            ? { ...m, isTemp: false, uploading: false, file: fileMeta, text: '' }
+            : m
+        ));
+
         setPendingFile(null);
+
       } catch (err) {
-        console.error('File send failed', err);
+        console.error('File send failed:', err);
+        setToastMessage("Photo send nahi hui");
         setPendingFile(null);
-        alert('File send failed');
-        return;
       }
+      return; // text skip
     }
     if (!textToProcess || !activeChat) return;
     if (editingMessage && !overrideText) {
