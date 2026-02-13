@@ -44,7 +44,7 @@ const addSkill = async (req, res) => {
       skill
     });
   } catch (error) {
-    console.error('Error adding skill:', error);
+    
     res.status(500).json({
       success: false,
       message: error.message || "Internal server error"
@@ -127,7 +127,7 @@ const addWantedSkill = async (req, res) => {
       skill: wantedSkill
     });
   } catch (error) {
-    console.error('Error adding wanted skill:', error);
+    
     res.status(500).json({
       success: false,
       message: error.message || "Internal server error"
@@ -215,7 +215,7 @@ const editOfferedSkill = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error updating skill:", error);
+    
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -242,7 +242,7 @@ const editWantedSkill = async(req, res)=>{
 
   }
   catch(error){
-    console.error("Error updating wanted skill:", error);
+    
     res.status(500).json({ success: false, message: error.message });
 
   }
