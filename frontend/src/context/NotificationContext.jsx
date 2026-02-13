@@ -21,13 +21,6 @@ export const NotificationProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       fetchNotifications();
-      
-      // Aggressive polling - har 5 seconds
-      const pollInterval = setInterval(() => {
-        fetchNotifications();
-      }, 5000);
-      
-      return () => clearInterval(pollInterval);
     }
   }, []);
 
