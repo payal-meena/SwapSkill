@@ -40,16 +40,8 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
     try {
       setLoading(true);
       
-      // Check for duplicate before adding
-      const canAdd = onSkillAdded(formData.skillName);
-      if (!canAdd) {
-        setLoading(false);
-        return;
-      }
-      
       await skillService.addSkill(formData);
-
-      // Reset form
+      
       setFormData({
         skillName: '',
         category: '',
@@ -58,6 +50,8 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
         type: '',
         description: ''
       });
+      
+      onSkillAdded(formData.skillName);
 
     } catch (error) {
       console.error('Error adding skill:', error);

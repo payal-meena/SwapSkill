@@ -77,16 +77,6 @@ const MySkills = () => {
   const handleAddWantedSkill = async () => {
     if (!skillName.trim()) return;
     
-    // Check for duplicate skill
-    const isDuplicate = wantedSkills.some(skill => 
-      skill.title.toLowerCase() === skillName.trim().toLowerCase()
-    );
-    
-    if (isDuplicate) {
-      showToast('This skill already exists!', 'warning');
-      return;
-    }
-    
     try {
       const skillData = {
         skillName: skillName.trim(),
@@ -94,7 +84,7 @@ const MySkills = () => {
         description: description.trim()
       };
       await skillService.addWantedSkill(skillData);
-      fetchMyWantedSkills();
+      await fetchMyWantedSkills();
       setIsWantedModalOpen(false);
       setSkillName('');
       setDescription('');
@@ -145,20 +135,9 @@ const MySkills = () => {
   };
 
   const handleSkillAdded = (skillName) => {
-    // Check for duplicate skill in offered skills
-    const isDuplicate = offeredSkills.some(skill => 
-      skill.title.toLowerCase() === skillName.toLowerCase()
-    );
-    
-    if (isDuplicate) {
-      showToast('This Skill already exists!', 'warning');
-      return false;
-    }
-    
     fetchMySkills();
     setIsAddModalOpen(false);
     showToast('Skill successfully added!', 'success');
-    return true;
   };
 
   const handleDeleteSkillClick = (skillId, skillName) => {
