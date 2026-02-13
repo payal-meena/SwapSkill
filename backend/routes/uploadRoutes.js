@@ -5,6 +5,6 @@ const uploadAny = require('../middleware/uploadAnyMiddleware');
 const { uploadFile } = require('../controllers/uploadController');
 
 // POST /api/uploads - field name: file
-router.post('/', protect, uploadAny.single('file'), uploadFile);
+router.post('/', uploadAny.single('file'), uploadFile);
 
 module.exports = router;
