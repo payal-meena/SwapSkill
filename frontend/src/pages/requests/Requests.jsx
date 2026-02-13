@@ -149,7 +149,7 @@ const Requests = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#112217] text-slate-200 font-['Lexend']">
-      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-12 max-w-5xl mx-auto w-full">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-12 max-w-7xl mx-auto w-full">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
             <h2 className="text-3xl font-black text-white tracking-tight">

@@ -6,6 +6,7 @@ import { skillService } from '../../services/skillService';
 import { requestService } from '../../services/requestService';
 import { chatService } from '../../services/chatService';
 import Avatar from '../../components/common/Avatar';
+import { useMemo } from 'react';
 
 const StatCard = ({ label, value, trend, icon, onClick }) => {
   const isPositive = trend.includes('+');
@@ -46,88 +47,145 @@ const Dashboard = () => {
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   const [lastChat, setLastChat] = useState(null);
 
-  const getCurrentUserId = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
+  const myId = useMemo(() => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split('.')[1])).id;
+  } catch {
+    return null;
+  }
+}, []);
+const otherUser = useMemo(() => {
+  return lastChat?.participants?.find(
+    p => (p._id || p) !== myId
+  );
+}, [lastChat, myId]);
+
+
+ useEffect(() => {
+  const loadStats = async () => {
     try {
-      return JSON.parse(window.atob(token.split('.')[1])).id;
+      // 🚀 Run all main APIs in parallel
+      const [
+        skillsRes,
+        wantedRes,
+        reqRes,
+        chatsData
+      ] = await Promise.all([
+        skillService.getMySkills(),
+        skillService.getMyWantedSkills(),
+        requestService.getMyRequests(),
+        chatService.getMyChats()
+      ]);
+
+      // ✅ Skills Offered
+      if (skillsRes?.success) {
+        setOfferedCount(skillsRes.skills?.length || 0);
+      }
+
+      // ✅ Skills Wanted
+      if (wantedRes?.success) {
+        setWantedCount(wantedRes.skills?.length || 0);
+      }
+
+      // ✅ Requests & Connections
+      if (reqRes?.requests) {
+        const acceptedRequests = reqRes.requests.filter(
+          r => r.status === 'accepted' || r.status === 'completed'
+        );
+
+        setAcceptedRequestsCount(acceptedRequests.length);
+
+        const currentUserId = reqRes.currentUser;
+        const otherMap = {};
+
+        acceptedRequests.forEach(r => {
+          const isRequester =
+            r.requester?._id?.toString() === currentUserId?.toString();
+
+          const other = isRequester ? r.receiver : r.requester;
+          const id = other?._id || other?.id;
+
+          if (!id) return;
+
+          if (!otherMap[id]) {
+            otherMap[id] = {
+              id,
+              name: other?.name || other?.username || 'Unknown',
+              img: other?.profileImage || other?.avatar || null,
+              rating: other?.rating || 0,
+              reviews: other?.reviews || 0,
+              socials: other?.socials || {}
+            };
+          }
+        });
+
+        const ids = Object.keys(otherMap);
+
+        // 🚀 Fetch all users skills in parallel safely
+        const skillsResults = await Promise.allSettled(
+          ids.map(uid => skillService.getUserSkills(uid))
+        );
+
+        const usersWithSkills = ids.map((uid, index) => {
+          const result = skillsResults[index];
+
+          if (result.status === 'fulfilled') {
+            const skillsRes = result.value;
+            return {
+              ...otherMap[uid],
+              offeredSkills:
+                skillsRes?.offered ||
+                skillsRes?.skills ||
+                skillsRes?.offeredSkills ||
+                [],
+              wantedSkills:
+                skillsRes?.wanted ||
+                skillsRes?.wantedSkills ||
+                []
+            };
+          }
+
+          return {
+            ...otherMap[uid],
+            offeredSkills: [],
+            wantedSkills: []
+          };
+        });
+
+        setConnections(usersWithSkills);
+      }
+
+      // ✅ Latest Chat (No full sorting)
+      if (Array.isArray(chatsData) && chatsData.length > 0) {
+        const latestChat = chatsData.reduce((latest, chat) => {
+          const chatDate = new Date(
+            chat.lastMessage?.createdAt || chat.updatedAt
+          );
+
+          if (!latest) return chat;
+
+          const latestDate = new Date(
+            latest.lastMessage?.createdAt || latest.updatedAt
+          );
+
+          return chatDate > latestDate ? chat : latest;
+        }, null);
+
+        setLastChat(latestChat);
+      }
+
     } catch (err) {
-      return null;
+      console.error('Error loading dashboard stats', err);
     }
   };
 
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const skillsRes = await skillService.getMySkills();
-        if (skillsRes?.success) setOfferedCount(skillsRes.skills?.length || 0);
+  loadStats();
+}, []);
 
-        const wantedRes = await skillService.getMyWantedSkills();
-        if (wantedRes?.success) setWantedCount(wantedRes.skills?.length || 0);
 
-        const reqRes = await requestService.getMyRequests();
-        if (reqRes) {
-          const acceptedRequests = (reqRes.requests || []).filter(r => r.status === 'accepted' || r.status === 'completed');
-          setAcceptedRequestsCount(acceptedRequests.length);
-
-          const currentUserId = reqRes.currentUser;
-          const otherMap = {};
-          acceptedRequests.forEach(r => {
-            const other = (r.requester && r.requester._id?.toString() === currentUserId?.toString()) ? r.receiver : r.requester;
-            const id = other?._id || other?.id;
-            if (!id) return;
-            if (!otherMap[id]) {
-              otherMap[id] = {
-                id,
-                name: other?.name || other?.username || 'Unknown',
-                img: other?.profileImage || other?.avatar || null,
-                rating: other?.rating || 0,
-                reviews: other?.reviews || 0,
-                socials: other?.socials || {}
-              };
-            }
-          });
-
-          const ids = Object.keys(otherMap);
-          const usersWithSkills = await Promise.all(ids.map(async (uid) => {
-            try {
-              const skillsRes = await skillService.getUserSkills(uid);
-              const offered = skillsRes?.offered || skillsRes?.skills || skillsRes?.offeredSkills || [];
-              const wanted = skillsRes?.wanted || skillsRes?.wantedSkills || [];
-              return {
-                ...otherMap[uid],
-                offeredSkills: offered,
-                wantedSkills: wanted
-              };
-            } catch (err) {
-              return { ...otherMap[uid], offeredSkills: [], wantedSkills: [] };
-            }
-          }));
-
-          setConnections(usersWithSkills);
-        }
-
-        try {
-          const chatsData = await chatService.getMyChats();
-          if (chatsData && Array.isArray(chatsData) && chatsData.length > 0) {
-            const sortedChats = chatsData.sort((a, b) => 
-              new Date(b.lastMessage?.createdAt || b.updatedAt) - new Date(a.lastMessage?.createdAt || a.updatedAt)
-            );
-            setLastChat(sortedChats[0]);
-          }
-        } catch (err) {
-          console.error('Error loading last chat', err);
-        }
-      } catch (err) {
-        console.error('Error loading dashboard stats', err);
-      }
-    };
-
-    loadStats();
-  }, []);
-
-  const myId = getCurrentUserId();
-  const otherUser = lastChat?.participants?.find(p => (p._id || p) !== myId);
+  
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#112217] font-['Lexend'] text-white">
@@ -180,8 +238,6 @@ const Dashboard = () => {
                   <div className="bg-[#1a2e21] border border-[#13ec5b]/10 rounded-[2rem] p-6 hover:border-[#13ec5b]/40 transition-all">
                     <div className="flex items-center gap-4 mb-4">
                       {(() => {
-
-                        const otherUser = lastChat.participants?.find(p => (p._id || p) !== myId);
                         return (
                           <>
                             <Avatar

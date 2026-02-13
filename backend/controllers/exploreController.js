@@ -3,7 +3,6 @@ const User = require("../models/User");
 const Skill = require("../models/skillsOffered");
 const SkillsToLearn = require("../models/skillsToLearn");
 
-// backend/controllers/exploreController.js
 
 const getAllMentors = async (req, res) => {
   try {

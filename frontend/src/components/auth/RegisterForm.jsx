@@ -13,9 +13,24 @@ const RegisterForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/users/signup', { name, email, password });
+      const response = await api.post('/users/signup', { name, email, password });
+
+      localStorage.setItem("token", response.data.token);
+
+      if (response.data.role) {
+        localStorage.setItem("role", response.data.role);
+      }
+
+      if (response.data.userId || response.data._id) {
+        localStorage.setItem("userId", response.data.userId || response.data._id);
+      }
+
       setMessage("Registration successful ✅");
-      navigate("/dashboard"); 
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 500);
+
     } catch (error) {
       setMessage(error.response?.data?.message || "Registration failed ❌");
     }
@@ -27,9 +42,9 @@ const RegisterForm = () => {
         <label className="text-white/40 text-[10px] uppercase font-bold mb-1 ml-1 group-focus-within:text-primary transition-colors text-left">
           Full Name
         </label>
-        <input 
-          className="w-full bg-transparent border-0 border-b border-white/10 text-white py-3 px-1 text-sm focus:ring-0 focus:outline-none focus:border-primary transition-all duration-300" 
-          placeholder="John Doe" 
+        <input
+          className="w-full bg-transparent border-0 border-b border-white/10 text-white py-3 px-1 text-sm focus:ring-0 focus:outline-none focus:border-primary transition-all duration-300"
+          placeholder="John Doe"
           type="text"
           required
           onChange={(e) => setName(e.target.value)}
@@ -40,9 +55,9 @@ const RegisterForm = () => {
         <label className="text-white/40 text-[10px] uppercase font-bold mb-1 ml-1 group-focus-within:text-primary transition-colors text-left">
           Email Address
         </label>
-        <input 
-          className="w-full bg-transparent border-0 border-b border-white/10 text-white py-3 px-1 text-sm focus:ring-0 focus:outline-none focus:border-primary transition-all duration-300" 
-          placeholder="alex@example.com" 
+        <input
+          className="w-full bg-transparent border-0 border-b border-white/10 text-white py-3 px-1 text-sm focus:ring-0 focus:outline-none focus:border-primary transition-all duration-300"
+          placeholder="alex@example.com"
           type="email"
           required
           onChange={(e) => setEmail(e.target.value)}
@@ -54,15 +69,15 @@ const RegisterForm = () => {
           Password
         </label>
         <div className="relative">
-          <input 
-            className="w-full bg-transparent border-0 border-b border-white/10 text-white py-3 px-1 text-sm focus:ring-0 focus:outline-none focus:border-primary transition-all duration-300" 
-            placeholder="••••••••" 
-            type={showPassword ? "text" : "password"} 
+          <input
+            className="w-full bg-transparent border-0 border-b border-white/10 text-white py-3 px-1 text-sm focus:ring-0 focus:outline-none focus:border-primary transition-all duration-300"
+            placeholder="••••••••"
+            type={showPassword ? "text" : "password"}
             required
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button 
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-primary transition-colors" 
+          <button
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-primary transition-colors"
             type="button"
             onClick={() => setShowPassword(!showPassword)}
           >

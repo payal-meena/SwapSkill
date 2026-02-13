@@ -119,23 +119,21 @@ module.exports = (io) => {
         const otherParticipant = updatedChat.participants.find(p => p._id.toString() !== senderId.toString());
         if (otherParticipant) {
           try {
-            const msgPreview = file ? `📁 ${file.name}` : text.substring(0, 50);
-            await Notification.create({
-              userId: senderId,
-              type: 'message',
-              title: 'New Message',
-              message: `New message: ${msgPreview}${text.length > 50 ? '...' : ''}`,
-              receiverId: otherParticipant._id,
-              senderId: senderId,
-              relatedId: message._id,
-              priority: 'normal'
-            });
+            const sender = await User.findById(senderId).select('name profileImage');
+            const senderName = sender?.name || 'Someone';
+            
+            // Count unread messages from this sender
+            const unreadEntry = chat.unreadCount.find(u => u.userId.toString() === otherParticipant._id.toString());
+            const unreadCount = unreadEntry?.count || 1;
 
-            // Emit real-time notification
+            // Emit grouped notification
             io.to(otherParticipant._id.toString()).emit('newNotification', {
               type: 'message',
-              title: 'New Message',
-              message: file ? `📁 ${file.name} sent` : `Message received`,
+              senderId: senderId.toString(),
+              senderName: senderName,
+              senderImage: sender?.profileImage,
+              messageCount: unreadCount,
+              chatId: chatId.toString(),
               createdAt: new Date()
             });
           } catch (notifError) {
@@ -322,17 +320,29 @@ module.exports = (io) => {
 
     // Mute/Unmute chat
     socket.on('muteChat', async ({ chatId, userId, isMuted }) => {
-      try {
-        const update = isMuted
-          ? { $addToSet: { mutedBy: userId } }
-          : { $pull: { mutedBy: userId } };
-        await Chat.findByIdAndUpdate(chatId, update);
-        io.to(userId).emit('chatMuted', { chatId, isMuted });
-        console.log(`Chat ${chatId} ${isMuted ? 'muted' : 'unmuted'} by ${userId}`);
-      } catch (err) {
-        console.error('muteChat error:', err);
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat) return;
+
+    let updatedMutedBy = chat.mutedBy || [];
+
+    if (isMuted) {
+      if (!updatedMutedBy.includes(userId)) {
+        updatedMutedBy.push(userId);
       }
-    });
+    } else {
+      updatedMutedBy = updatedMutedBy.filter(id => id.toString() !== userId.toString());
+    }
+
+    chat.mutedBy = updatedMutedBy;
+    await chat.save();
+
+    // Broadcast to room
+    io.to(chatId).emit('chatMuted', { chatId, userId, isMuted });
+  } catch (err) {
+    console.error('muteChat error:', err);
+  }
+});
 
     // Update unread count
     socket.on('updateUnreadCount', async ({ chatId, userId, increment }) => {

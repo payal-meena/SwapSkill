@@ -37,16 +37,18 @@ const NotificationModal = ({ isOpen, onClose }) => {
   };
 
   const removeGroupedNotification = (senderId) => {
-    setGroupedNotifications(prev => {
-      const updated = { ...prev };
-      delete updated[senderId];
-      return updated;
-    });
+    if (setGroupedNotifications) {
+      setGroupedNotifications(prev => {
+        const updated = { ...prev };
+        delete updated[senderId];
+        return updated;
+      });
+    }
   };
 
   const allNotifications = [
-    ...Object.values(groupedNotifications),
-    ...notifications
+    ...Object.values(groupedNotifications || {}),
+    ...(notifications || [])
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
@@ -87,8 +89,8 @@ const NotificationModal = ({ isOpen, onClose }) => {
           ) : (
             allNotifications.map((notif) => (
               <div 
-                key={notif._id || notif.senderId} 
-                onClick={() => notif._id && handleMarkSingleRead(notif._id)}
+                key={notif._id} 
+                onClick={() => handleMarkSingleRead(notif._id)}
                 className={`px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${!notif.isRead ? 'bg-[#13ec5b]/5' : ''}`}
               >
                 {!notif.isRead && (
@@ -97,15 +99,11 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
                 <div className="flex gap-2 sm:gap-2.5 lg:gap-3">
                   <div className="flex-shrink-0">
-                    {notif.senderImage || notif.sender?.profilePicture ? (
-                      <img alt={notif.senderName || notif.sender?.name} className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg object-cover border border-white/10" src={notif.senderImage || notif.sender.profilePicture} />
+                    {notif.sender?.profilePicture ? (
+                      <img alt={notif.sender?.name} className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg object-cover border border-white/10" src={notif.sender.profilePicture} />
                     ) : (
                       <div className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg bg-[#13ec5b33] text-[#13ec5b]">
-                        {notif.type === 'message' ? (
-                          <span className="material-symbols-outlined text-base sm:text-lg lg:text-xl">chat</span>
-                        ) : (
-                          <span className="material-symbols-outlined text-base sm:text-lg lg:text-xl">notifications</span>
-                        )}
+                        <span className="material-symbols-outlined text-base sm:text-lg lg:text-xl">notifications</span>
                       </div>
                     )}
                   </div>
@@ -116,14 +114,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 flex-shrink-0">
                         <span className="text-white/40 text-[8px] sm:text-[9px] lg:text-[10px] hidden xs:inline">{new Date(notif.createdAt).toLocaleString()}</span>
                         <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if (notif.senderId) {
-                              removeGroupedNotification(notif.senderId);
-                            } else {
-                              removeNotification(notif._id);
-                            }
-                          }}
+                          onClick={(e) => { e.stopPropagation(); removeNotification(notif._id); }}
                           className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all p-0.5"
                         >
                           <span className="material-symbols-outlined text-[10px] sm:text-xs">close</span>
@@ -131,16 +122,8 @@ const NotificationModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                     <p className="text-white text-[11px] sm:text-xs lg:text-sm font-medium mb-1 leading-snug break-words">
-                      {(notif.senderName || notif.sender?.name) && (
-                        <span className="text-white mr-1">{notif.senderName || notif.sender.name}</span>
-                      )}
-                      {notif.type === 'message' && notif.messageCount ? (
-                        <span className="text-white/60 font-normal">
-                          {notif.messageCount} new {notif.messageCount === 1 ? 'message' : 'messages'}
-                        </span>
-                      ) : (
-                        <span className="text-white/60 font-normal">{notif.message}</span>
-                      )}
+                      {notif.sender?.name && <span className="text-white mr-1">{notif.sender.name}</span>}
+                      <span className="text-white/60 font-normal">{notif.message}</span>
                     </p>
                     
                     {notif.type === 'request' && (
