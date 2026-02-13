@@ -7,6 +7,8 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { SocketContext } from '../../context/SocketContext';
 import { useChat } from '../../context/ChatContext';
+import ChatMediaModal from '../../components/modals/ChatMediaModal';
+import ImageViewerModal from '../../components/modals/ImageViewerModal';
 
 const MessagesPage = () => {
   const { chats, setChats, refreshChats } = useChat();
@@ -23,8 +25,9 @@ const MessagesPage = () => {
   const [openSidebarMenuId, setOpenSidebarMenuId] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [chatConfirm, setChatConfirm] = useState({ isOpen: false, type: null, chatId: null });
+  // Top pe states mein add karo
+  const [fullScreenImage, setFullScreenImage] = useState(null); 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [showMediaView, setShowMediaView] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const { socket, on, off, emit, myUserId } = useContext(SocketContext);
   const [toastMessage, setToastMessage] = useState("");
@@ -35,6 +38,8 @@ const MessagesPage = () => {
   const activeChatIdRef = useRef(null);
   const activeChatRef = useRef(null);
   const messageRefs = useRef({});
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [mediaItems, setMediaItems] = useState([]);
   const activeChatFromList = React.useMemo(() => {
     if (!activeChat) return null;
     return chats.find(c => c._id === activeChat._id) || activeChat;
@@ -45,15 +50,32 @@ const MessagesPage = () => {
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
-  const handleDownload = (url, fileName) => {
-    if (!url) return;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName || 'download';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setToastMessage("Downloaded");
+  const handleDownload = async (url, fileName) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName || 'download';
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      setToastMessage("Downloading...");
+    } catch (err) {
+      console.error('Download error:', err);
+      setToastMessage("Download failed 😔 Try right-click → Save image as");
+
+      // Fallback: direct open
+      window.open(url, '_blank');
+    }
   };
   const handleSetReply = (message) => {
     const senderName = (message.sender?._id || message.sender) === myUserId ? "You" : (otherUser?.name || "User");
@@ -217,34 +239,38 @@ const MessagesPage = () => {
 
       if (isSameChat) {
         console.log('✅ MessagesPage: Adding message to active chat');
-       setMessages(prev => {
-  // Pehle check karo message pehle se hai ya nahi
-  if (prev.find(m => m._id === newMsg._id)) {
-    console.log('Duplicate message skipped:', newMsg._id);
-    return prev;
-  }
+        setMessages(prev => {
+          console.log('New message received via socket:', newMsg._id, 'tempId:', newMsg.tempId);
 
-  let filtered = prev;
+          if (prev.find(m => m._id === newMsg._id)) {
+            console.log('Duplicate real message skipped:', newMsg._id);
+            return prev;
+          }
 
-  // Sabse reliable: tempId se remove karo (agar backend ne bheja hai)
-  if (newMsg.tempId) {
-    filtered = prev.filter(m => m._id !== newMsg.tempId);
-  } 
-  // Fallback: agar tempId nahi mila to file name se try karo
-  else if (newMsg.file) {
-    filtered = prev.filter(m => !m.isTemp || m.text !== newMsg.file?.name);
-  }
+          let filtered = prev;
 
-  const next = [...filtered, newMsg];
+          // Temp remove - multiple ways try kar
+          if (newMsg.tempId) {
+            filtered = prev.filter(m => m._id !== newMsg.tempId);
+            console.log('Removed temp using tempId:', newMsg.tempId, 'filtered count:', filtered.length);
+          }
+          // Fallback: file name se (agar tempId miss ho)
+          else if (newMsg.file && newMsg.file.name) {
+            filtered = prev.filter(m =>
+              !(m.isTemp && m.file && m.file.name === newMsg.file.name)
+            );
+            console.log('Removed temp using file name:', newMsg.file.name);
+          }
 
-  // Auto scroll
-  setTimeout(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, 30);
+          const next = [...filtered, newMsg];
+          console.log('Added real message, total now:', next.length);
 
-  console.log('New message added:', newMsg._id, 'tempId was:', newMsg.tempId);
-  return next;
-});
+          setTimeout(() => {
+            scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+
+          return next;
+        });
 
         if (isFromOther) {
           try {
@@ -471,7 +497,7 @@ const MessagesPage = () => {
         const tempMsg = {
           _id: tempId,
           sender: myUserId,
-          text: pendingFile.name,
+          text: pendingFile.name || "Photo",
           createdAt: new Date().toISOString(),
           isTemp: true,
           uploading: true,
@@ -480,13 +506,20 @@ const MessagesPage = () => {
 
         setMessages(prev => [...prev, tempMsg]);
 
-        // ←←← tempId pass kar rahe hain
         const fileMeta = await chatService.sendFile(activeChat._id, myUserId, pendingFile, tempId);
 
-        // Local update (real message aane se pehle bhi UI clean ho jayega)
+        emit('sendMessage', {
+          chatId: activeChat._id,
+          senderId: myUserId,
+          text: "",                    
+          file: fileMeta,              
+          tempId: tempId,
+          replyTo: replyTo ? replyTo.messageId : null
+        });
+
         setMessages(prev => prev.map(m =>
           m._id === tempId
-            ? { ...m, isTemp: false, uploading: false, file: fileMeta, text: '' }
+            ? { ...m, isTemp: false, uploading: false, file: fileMeta, text: "" }
             : m
         ));
 
@@ -494,10 +527,10 @@ const MessagesPage = () => {
 
       } catch (err) {
         console.error('File send failed:', err);
-        setToastMessage("Photo send nahi hui");
+        setToastMessage("Image send nahi hui 😔");
         setPendingFile(null);
       }
-      return; // text skip
+      // return;
     }
     if (!textToProcess || !activeChat) return;
     if (editingMessage && !overrideText) {
@@ -540,12 +573,30 @@ const MessagesPage = () => {
     e.target.value = null;
   };
   const finalDeleteExecute = async () => {
-    emit('deleteMessage', { messageId: deleteTarget.msgId, chatId: activeChat._id, type: tempDeleteMode, userId: myUserId });
+    emit('deleteMessage', {
+      messageId: deleteTarget.msgId,
+      chatId: activeChat._id,
+      type: tempDeleteMode,
+      userId: myUserId
+    });
+
     if (tempDeleteMode === 'me') {
       setMessages(prev => prev.filter(m => m._id !== deleteTarget.msgId));
-    } else {
-      setMessages(prev => prev.map(m => m._id === deleteTarget.msgId ? { ...m, text: "This message was deleted", isDeleted: true } : m));
     }
+    else {
+      setMessages(prev => prev.map(m =>
+        m._id === deleteTarget.msgId
+          ? {
+            ...m,
+            text: "This message was deleted",
+            isDeleted: true,
+            file: null,           
+            fileUrl: null         
+          }
+          : m
+      ));
+    }
+
     setDeleteStep('none');
   };
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -867,7 +918,24 @@ const MessagesPage = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setShowMediaView(true);
+                            // Active chat ke messages se media filter karo
+                            const allMedia = messages
+                              .filter(m => m.file && !m.isDeleted) // sirf files jo delete nahi hue
+                              .map(m => ({
+                                id: m._id,
+                                type: m.file.mimeType?.startsWith('image/') ? 'image' :
+                                  m.file.mimeType === 'application/pdf' ? 'pdf' : 'file',
+                                url: m.file.url,
+                                name: m.file.name || (m.file.mimeType?.startsWith('image/') ? 'Photo' : 'File'),
+                                sender: m.sender?._id === myUserId ? 'You' : otherUser?.name || 'User',
+                                senderId: m.sender?._id || m.sender,
+                                createdAt: m.createdAt,
+                                isMe: m.sender?._id === myUserId
+                              }))
+                              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // newest first
+
+                            setMediaItems(allMedia);
+                            setShowMediaModal(true);
                             setShowHeaderMenu(false);
                           }}
                           className="w-full text-left px-4 py-2 text-xs hover:bg-[#13ec5b]/10 flex items-center gap-2 border-b border-[#23482f]"
@@ -922,6 +990,17 @@ const MessagesPage = () => {
                     setOpenSidebarMenuId(null);
                   }
                 }}
+              />
+              <ChatMediaModal
+                isOpen={showMediaModal}
+                onClose={() => setShowMediaModal(false)}
+                mediaItems={mediaItems}
+                handleDownload={handleDownload}
+              />
+              <ImageViewerModal
+                isOpen={!!fullScreenImage}
+                onClose={() => setFullScreenImage(null)}
+                image={fullScreenImage}
               />
               <div className="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar">
                 {messages.map((m, idx) => {
@@ -984,32 +1063,84 @@ const MessagesPage = () => {
                               {m.file ? (
                                 <>
                                   {isImage ? (
-                                    <div className="relative group/image">
-                                      <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="block">
-                                        <img src={m.file.url} alt={m.file.name} className="max-w-[220px] rounded-xl border border-[#23482f]" />
-                                      </a>
-                                      <button
-                                        onClick={() => handleDownload(m.file.url, m.file.name)}
-                                        className="absolute bottom-2 right-2 bg-black/60 hover:bg-black/80 p-2 rounded-full text-white opacity-0 group-hover/image:opacity-100 transition"
-                                        title="Download image"
+                                    <div className="relative group/image max-w-[320px] sm:max-w-[380px] md:max-w-[420px]">
+                                      <a
+                                        href="#"
+                                        onClick={(e) => {
+                                          e.preventDefault(); // default link behavior stop
+                                          setFullScreenImage({
+                                            url: m.file.url,
+                                            name: m.file.name || `image-${Date.now()}.jpg`
+                                          });
+                                        }}
+                                        className="block rounded-xl overflow-hidden shadow-md cursor-pointer"
                                       >
-                                        <Download size={16} />
+                                        <img
+                                          src={m.file.url}
+                                          alt={m.file.name || "Image"}
+                                          className="w-full h-auto rounded-xl object-cover max-h-[500px] transition-transform group-hover/image:scale-[1.02]"
+                                          loading="lazy"
+                                        />
+                                      </a>
+
+                                      {/* Download button bottom-right */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation(); // image click trigger na ho
+                                          handleDownload(m.file.url, m.file.name || `image-${Date.now()}.jpg`);
+                                        }}
+                                        className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/80 p-2.5 rounded-full text-white opacity-0 group-hover/image:opacity-100 transition-all shadow-lg"
+                                        title="Download"
+                                      >
+                                        <Download size={18} />
                                       </button>
+
+                                      {/* Tap to view overlay */}
+                                      <div
+                                        className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setFullScreenImage({
+                                            url: m.file.url,
+                                            name: m.file.name || `image-${Date.now()}.jpg`
+                                          });
+                                        }}
+                                      >
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition">
+                                          <span className="bg-black/50 p-3 rounded-full text-white text-sm">Tap to view</span>
+                                        </div>
+                                      </div>
                                     </div>
                                   ) : isPdf ? (
-                                    <div className="flex items-center gap-3 bg-[#112217] p-3 rounded-xl border border-[#23482f]">
-                                      <div className="text-red-500 text-2xl font-bold">PDF</div>
-                                      <div className="flex-1">
-                                        <p className="text-sm font-medium truncate">{m.file.name}</p>
-                                        {m.file.size && <p className="text-xs text-[#92c9a4]">{(m.file.size / 1024 / 1024).toFixed(1)} MB</p>}
+                                    <div className="bg-[#1a2c22] rounded-xl overflow-hidden shadow-md max-w-[340px] border border-[#23482f]">
+                                      <div className="p-4 flex items-center gap-4">
+                                        <div className="bg-red-600/20 p-3 rounded-lg">
+                                          <span className="text-red-500 text-3xl font-bold">PDF</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-white truncate">{m.file.name || "Document.pdf"}</p>
+                                          {m.file.size && (
+                                            <p className="text-xs text-[#92c9a4] mt-1">
+                                              {(m.file.size / 1024 / 1024).toFixed(1)} MB • PDF
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
-                                      <button
-                                        onClick={() => handleDownload(m.file.url, m.file.name)}
-                                        className="p-2 hover:bg-white/10 rounded-full text-[#92c9a4] hover:text-white transition"
-                                        title="Download PDF"
-                                      >
-                                        <Download size={20} />
-                                      </button>
+
+                                      <div className="flex border-t border-[#23482f]">
+                                        <button
+                                          onClick={() => window.open(m.file.url, '_blank')}
+                                          className="flex-1 py-3 text-[#13ec5b] hover:bg-[#13ec5b]/10 transition font-medium"
+                                        >
+                                          Open
+                                        </button>
+                                        <button
+                                          onClick={() => handleDownload(m.file.url, m.file.name || "document.pdf")}
+                                          className="flex-1 py-3 text-[#13ec5b] hover:bg-[#13ec5b]/10 transition font-medium border-l border-[#23482f]"
+                                        >
+                                          Download
+                                        </button>
+                                      </div>
                                     </div>
                                   ) : (
                                     <a href={m.file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline break-all hover:text-blue-200 text-sm">
@@ -1117,6 +1248,9 @@ const MessagesPage = () => {
           )}
         </main>
       ) : null}
+
+
+
     </div>
 
   );

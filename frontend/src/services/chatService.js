@@ -68,13 +68,10 @@ sendFile: async (chatId, senderId, file, tempId = null) => {
   if (!file) throw new Error('No file provided');
 
   try {
-    // Upload to Cloudinary via your existing /api/uploads route
     const res = await uploadFile(file);
     const fileUrl = res?.url || res?.path || res?.secure_url || res?.data?.url;
 
-    if (!fileUrl) {
-      throw new Error('File upload failed - no URL returned');
-    }
+    if (!fileUrl) throw new Error('No URL from upload');
 
     const fileMeta = {
       url: fileUrl,
@@ -83,22 +80,20 @@ sendFile: async (chatId, senderId, file, tempId = null) => {
       size: file.size
     };
 
-    // Use same tempId that frontend created (very important)
     const finalTempId = tempId || `temp-file-${Date.now()}`;
 
-    if (socket && socket.connected) {
+    if (socket?.connected) {
       socket.emit('sendMessage', {
         chatId,
         senderId,
-        text: '',                    // clean rakho
+        text: file.name || '',  // file name dikhao
         file: fileMeta,
-        tempId: finalTempId          // ← yeh line sabse zaroori hai
+        tempId: finalTempId      // ← Yeh line sabse zaroori hai
       });
-      console.log('📤 File sent via socket with URL:', fileUrl);
+      console.log('File sent with tempId:', finalTempId);
     }
 
     return { ...fileMeta, tempId: finalTempId };
-
   } catch (err) {
     console.error('File send error:', err);
     throw err;

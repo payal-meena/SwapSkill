@@ -155,6 +155,7 @@ module.exports = (io) => {
           if (message.sender.toString() !== userId.toString()) return;
           message.isDeleted = true;
           message.text = "This message was deleted";
+          message.file = null;
           await message.save();
           io.to(chatId).emit("messageDeleted", { messageId, type: "everyone" });
         } else if (type === "me") {
