@@ -17,7 +17,7 @@ const UserNavbar = ({ userName, onMenuClick }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch notifications on mount
+    
     fetchNotifications();
   }, []);
 
@@ -56,7 +56,6 @@ const UserNavbar = ({ userName, onMenuClick }) => {
       backdrop-blur-md
       font-['Lexend']
     ">
-      {/* LEFT */}
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           onClick={onMenuClick}
@@ -85,7 +84,6 @@ const UserNavbar = ({ userName, onMenuClick }) => {
         </h2>
       </div>
 
-      {/* RIGHT */}
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Notifications */}
         <div className="relative">
