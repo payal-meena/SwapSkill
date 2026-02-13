@@ -7,7 +7,7 @@ const Notification = require("../models/notification");
 module.exports = (io) => {
   io.on("connection", async (socket) => {
     const userId = socket.handshake.query.userId;
-    console.log("User connected:", socket.id);
+    
 
     if (userId && userId !== "null") {
       socket.join(userId || userId.toString());
@@ -24,7 +24,7 @@ module.exports = (io) => {
         socket.join(chatId.toString());
         // Check if user is a participant (handle both string and ObjectId)
         socket.join(userId.toString());
-        console.log(`✅ ${userId} joined chat ${chatId}`);
+        
 
       } catch (err) {
         console.error("JoinChat Error:", err);
@@ -61,7 +61,7 @@ module.exports = (io) => {
 
         // Create message in database
         let message = await Message.create(payload);
-        console.log('💾 Message created:', message._id, 'with file:', !!file);
+        
 
         // Populate sender info
         message = await Message.findById(message._id).populate("sender", "name profileImage").populate({
@@ -78,12 +78,12 @@ module.exports = (io) => {
         const messageObj = message.toObject ? message.toObject() : message;
         messageObj.chat = chatId;
 
-        console.log(`📤 Emitting message ${messageObj._id} to chat room`);
+        
         if (tempId) messageObj.tempId = tempId;
 
         // Emit to everyone in the chat room
         io.to(chatId.toString()).emit("messageReceived", messageObj);
-        console.log(`✉️ Message emitted to chat room ${chatId}:`, messageObj._id);
+        
 
 
         const otherParticipantId = chat.participants.find(p => p.toString() !== senderId.toString());
@@ -95,7 +95,7 @@ module.exports = (io) => {
             chat.unreadCount.push({ userId: otherParticipantId, count: 1 });
           }
           await chat.save();
-          console.log(`📬 Unread count incremented for user ${otherParticipantId} in chat ${chatId}`);
+        
         }
 
         // Sidebar update ke liye poora chat populate karo
@@ -288,7 +288,7 @@ module.exports = (io) => {
         }
         socket.emit('chatCleared', { chatId, userId });
 
-        console.log(`✅ Chat ${chatId} hidden for user ${userId}`);
+      
       } catch (err) {
         console.error('clearChat error:', err);
       }
@@ -312,7 +312,7 @@ module.exports = (io) => {
         // 3. Sirf us user ko emit karein
         socket.emit('chatDeleted', { chatId });
 
-        console.log(`🗑️ Chat ${chatId} hidden from list for user ${userId}`);
+        
       } catch (err) {
         console.error('deleteChat error:', err);
       }
@@ -389,7 +389,7 @@ module.exports = (io) => {
           timestamp: new Date()
         });
 
-        console.log(`📡 Real-time request alert sent to: ${receiverId}`);
+      
       } catch (err) {
         console.error("Request Socket Error:", err);
       }
