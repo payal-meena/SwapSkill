@@ -53,15 +53,7 @@ const SentRequestStatus = ({ request, onWithdraw }) => {
       // 3. Navigate karte waqt URL mein requestId bhi pass karo
 
       if (res && res._id) {
-        navigate(`/messages/${requester._id}?requestId=${_id}`, {
-
-          state: {
-            chatId: res._id,
-            userName: requester.name,
-            userImage: requester.profileImage
-          }
-
-        });
+        navigate(`/messages/${requester._id}`);
 
       }
 
