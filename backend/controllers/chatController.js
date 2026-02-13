@@ -30,7 +30,7 @@ exports.createOrGetChat = async (req, res) => {
 
     res.status(200).json(chat);
   } catch (error) {
-    console.error("Chat Error:", error); // Terminal mein error dekhne ke liye
+  
     res.status(500).json({ message: error.message });
   }
 };
@@ -93,7 +93,7 @@ exports.getMyChats = async (req, res) => {
 
     res.status(200).json(chats);
   } catch (error) {
-    console.error("getMyChats Error:", error);
+  
     res.status(500).json({ message: error.message });
   }
 };

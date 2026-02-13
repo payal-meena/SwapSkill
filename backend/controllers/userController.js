@@ -52,25 +52,16 @@ const updatePassword = async (req, res) => {
 
 const updateProfileImage = async (req, res) => {
   try {
-    console.log('=== Profile Image Upload Debug ===');
-    console.log('User ID:', req.user);
-    console.log('File received:', req.file ? 'Yes' : 'No');
-    console.log('Request body:', req.body);
+  
     
     const userId = req.user;
 
     if (!req.file) {
-      console.log('❌ No file received');
+    
       return res.status(400).json({ message: "Image file is required" });
     }
 
-    console.log('✅ File details:', {
-      filename: req.file.filename,
-      path: req.file.path,
-      size: req.file.size,
-      mimetype: req.file.mimetype
-    });
-
+   
     const user = await User.findByIdAndUpdate(
       userId,
       { profileImage: req.file.path },
@@ -78,12 +69,11 @@ const updateProfileImage = async (req, res) => {
     ).select("-password");
 
     if (!user) {
-      console.log('❌ User not found');
+      
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log('✅ Profile image updated successfully');
-    console.log('New image URL:', req.file.path);
+   
 
     res.json({
       success: true,
@@ -92,7 +82,7 @@ const updateProfileImage = async (req, res) => {
       user,
     });
   } catch (error) {
-    console.error("❌ Profile image update error:", error);
+    
     res.status(500).json({ 
       message: "Failed to update profile image",
       error: error.message 
@@ -147,7 +137,7 @@ const getPublicProfile = async (req, res) => {
     res.status(200).json(user);
 
   } catch (error) {
-    console.error("Error in getPublicProfile:", error);
+    
     
     if (error.kind === 'ObjectId') {
       return res.status(400).json({ message: "Invalid User ID format" });
@@ -186,7 +176,7 @@ const  profileImageRemove = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Delete profile image error:", error);
+    
     res.status(500).json({
       success: false,
       message: "Failed to delete profile image"

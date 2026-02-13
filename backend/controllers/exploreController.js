@@ -38,7 +38,7 @@ const getAllMentors = async (req, res) => {
 
     res.status(200).json(mentors);
   } catch (error) {
-    console.error("Explore fetch error:", error);
+    
     res.status(500).json({ message: "Failed to fetch mentors" });
   }
 };

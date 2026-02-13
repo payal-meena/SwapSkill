@@ -5,8 +5,7 @@ const User = require("../models/User");
 
 
 const sendRequest = async (req, res) => {
-  // console.log("SCHEMA FIELDS =", Object.keys(Request.schema.paths));
-  console.log("🔥 SEND REQUEST API HIT 🔥");
+  
 
 
   try {
@@ -52,13 +51,12 @@ const sendRequest = async (req, res) => {
       receiver,
       isSeen: false
     };
-    // console.log("SAVED REQUEST =", request);
-    // Only add skills if present
+  
     if (offeredSkill) requestData.offeredSkill = offeredSkill;
     if (requestedSkill) requestData.requestedSkill = requestedSkill;
 
     const request = await Request.create(requestData);
-    console.log("SAVED REQUEST =", request);
+    
 
 
     // Send notification to receiver
@@ -84,7 +82,7 @@ const sendRequest = async (req, res) => {
         });
       }
     } catch (notifError) {
-      console.log('Error sending notification:', notifError);
+      
     }
 
     // Emit request update to both parties so frontend can refresh without reload
@@ -114,7 +112,7 @@ const sendRequest = async (req, res) => {
         req.io.to(receiverRoom).emit('newIncomingRequest', populated);
       }
     } catch (emitErr) {
-      console.log('Error emitting request update:', emitErr);
+      
     }
 
     res.status(201).json({
@@ -249,7 +247,7 @@ const acceptRequest = async (req, res) => {
           .populate('lastMessage');
       }
     } catch (chatErr) {
-      console.log('Error creating/finding chat:', chatErr);
+      
     }
 
     // Send notification to requester
@@ -275,7 +273,7 @@ const acceptRequest = async (req, res) => {
         });
       }
     } catch (notifError) {
-      console.log('Error sending notification:', notifError);
+      
     }
 
     // Emit new chat created event to both users
