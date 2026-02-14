@@ -46,10 +46,22 @@ const NotificationModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const allNotifications = [
-    ...Object.values(groupedNotifications || {}),
-    ...(notifications || [])
-  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+const allNotifications = [
+  // Real DB notifications (requests, system, connection accepted, etc.)
+  ...(notifications || []).map(notif => ({
+    ...notif,
+    // Fix sender object shape — very important!
+    sender: notif.senderId ? {
+      name: notif.senderId.name,
+      profilePicture: notif.senderId.profilePicture
+    } : null,
+    // Ensure consistent fields
+    senderName: notif.senderId?.name,
+    senderImage: notif.senderId?.profilePicture,
+  })),
+  // Grouped message notifications (from socket)
+  ...Object.values(groupedNotifications || {})
+].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <>
@@ -89,7 +101,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
           ) : (
             allNotifications.map((notif) => (
               <div 
-                key={notif._id} 
+               key={notif._id || `${notif.type}-${notif.senderId || 'unknown'}-${notif.createdAt}`}
                 onClick={() => handleMarkSingleRead(notif._id)}
                 className={`px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${!notif.isRead ? 'bg-[#13ec5b]/5' : ''}`}
               >

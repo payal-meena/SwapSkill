@@ -85,6 +85,7 @@ export const SocketProvider = ({ children }) => {
     setMyUserId(userId);
     const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
       query: { userId },
+      
     });
     setSocket(newSocket);
     // Cleanup on unmount
