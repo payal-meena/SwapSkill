@@ -18,66 +18,83 @@ export const NotificationProvider = ({ children }) => {
   const [groupedNotifications, setGroupedNotifications] = useState({});
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+  const token = localStorage.getItem('token');
+  if (token) {
+    fetchNotifications();
+
+    // Polling - har 10 sec (ya 5 sec agar chahta hai)
+    const pollInterval = setInterval(() => {
       fetchNotifications();
+    }, 10000);  // 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }
+}, []);
+
+useEffect(() => {
+  const userId = localStorage.getItem('userId');
+  if (!userId) return;
+
+  chatService.connectSocket(userId);
+
+  const setupListener = () => {
+    const socket = chatService.socket;
+    if (!socket) {
+      setTimeout(setupListener, 1000);
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) return;
+    socket.on('newNotification', (notification) => {
+      console.log('🔔 Notification received (final working):', notification);
 
-    chatService.connectSocket(userId);
-    
-    const setupListener = () => {
-      const socket = chatService.socket;
-      if (!socket) {
-        setTimeout(setupListener, 1000);
-        return;
+      // 1. Message ke liye grouped update (purane jaisa)
+      if (notification.type === 'message') {
+        const senderIdKey = notification.senderId?._id?.toString() || notification.senderId || 'unknown';
+        const senderName = notification.senderId?.name || 'Someone';
+        const senderImage = notification.senderId?.profilePicture || '';
+
+        setGroupedNotifications(prev => ({
+          ...prev,
+          [senderIdKey]: {
+            _id: senderIdKey,
+            senderId: senderIdKey,
+            sender: { name: senderName, profilePicture: senderImage },
+            message: notification.message || `${senderName} sent you a message`,
+            messageCount: (prev[senderIdKey]?.messageCount || 0) + 1,
+            chatId: notification.redirectUrl?.split('/').pop() || '',
+            createdAt: notification.createdAt || new Date().toISOString(),
+            type: 'message',
+            isRead: false
+          }
+        }));
+      } else {
+        // Baki notifications direct add
+        setNotifications(prev => [{ ...notification, sender: notification.senderId || null }, ...prev]);
       }
 
-      socket.on('newNotification', (notification) => {
-        console.log('🔔 Notification received:', notification);
-        
-        if (notification.type === 'message') {
-          setGroupedNotifications(prev => ({
-            ...prev,
-            [notification.senderId]: {
-              _id: notification.senderId,
-              senderId: notification.senderId,
-              sender: { name: notification.senderName, profilePicture: notification.senderImage },
-              message: `${notification.messageCount} new message${notification.messageCount > 1 ? 's' : ''}`,
-              messageCount: notification.messageCount,
-              chatId: notification.chatId,
-              createdAt: notification.createdAt,
-              type: 'message',
-              isRead: false
-            }
-          }));
-        } else {
-          setNotifications(prev => [{ ...notification, sender: notification.senderId || null }, ...prev]);
-        }
-        setUnreadCount(prev => prev + 1);
-        fetchNotifications();
-      });
-    };
+      // 2. Unread count badhao
+      setUnreadCount(prev => prev + 1);
 
-    setupListener();
+      // 3. Yeh purane version ki magic thi — har notification pe full refresh
+      fetchNotifications();  // ← bina refresh ke bell + modal update karne ka secret
 
-    return () => {
-      const socket = chatService.socket;
-      if (socket) socket.off('newNotification');
-    };
-  }, []);
+    });
+  };
 
+  setupListener();
+
+  return () => {
+    const socket = chatService.socket;
+    if (socket) socket.off('newNotification');
+  };
+}, []);
   const fetchNotifications = async () => {
-      const token = localStorage.getItem('token');
-  
-  // Agar token nahi hai to silently return karo
-  if (!token) {
-    return;
-  }
+    const token = localStorage.getItem('token');
+
+    // Agar token nahi hai to silently return karo
+    if (!token) {
+      return;
+    }
     try {
       const data = await notificationService.getNotifications();
       setNotifications(data.notifications || []);
@@ -90,7 +107,7 @@ export const NotificationProvider = ({ children }) => {
   const markAsRead = async (notificationId) => {
     try {
       await notificationService.markAsRead(notificationId);
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));

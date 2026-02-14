@@ -28,8 +28,8 @@ const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
       to={to}
       onClick={onClick}
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer relative ${isActive
-          ? 'bg-[#13ec5b] text-[#102216] shadow-[0_4px_15px_rgba(19,236,91,0.2)]'
-          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#23482f] dark:hover:text-white'
+        ? 'bg-[#13ec5b] text-[#102216] shadow-[0_4px_15px_rgba(19,236,91,0.2)]'
+        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#23482f] dark:hover:text-white'
         }`}
     >
       <span className="material-symbols-outlined text-[22px]">{icon}</span>
@@ -45,13 +45,13 @@ const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
   );
 };
 
-const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} }) => {
+const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => { } }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { chats, setActiveChatId,activeChatId, myUserId } = useChat();
+  const { chats, setActiveChatId, activeChatId, myUserId } = useChat();
   const myId = myUserId || getMyIdFromToken();
   const { socket } = useContext(SocketContext);
 
@@ -99,50 +99,42 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} 
     }
   }, [location.pathname, setActiveChatId]);
 
-  useEffect(() => {
+useEffect(() => {
     if (!socket || !myId) return;
 
+    console.log("✅ Sidebar → Request listeners attached (clean version)");
+
+    const handleNewIncoming = (data) => {
+      console.log("🔔 New incoming request received:", data);
+      // Hamesha +1 karo — ye sabse reliable hai new request ke liye
+      setIncomingRequestCount((prev) => prev + 1);
+    };
+
     const handleRequestUpdated = (data) => {
-      const receiverId = (data?.receiver?._id || data?.receiver)?.toString();
-      if (receiverId === myId) {
-        const count = data.totalPending ?? 0;
-        setIncomingRequestCount(count); // direct update from socket
+      console.log("📊 requestUpdated received:", data);
+      if (data.totalPending !== undefined) {
+        setIncomingRequestCount(Number(data.totalPending));
       }
     };
 
+    const handleRequestSeen = (data) => {
+      console.log("👀 requestSeen received:", data);
+      if (data.totalPending !== undefined) {
+        setIncomingRequestCount(Number(data.totalPending));
+      }
+    };
+
+    // Listeners attach
+    socket.on("newIncomingRequest", handleNewIncoming);
     socket.on("requestUpdated", handleRequestUpdated);
-    socket.on("requestSeen", handleRequestUpdated);
-
-    // New real-time unread update for messages badge
-    const handleNewMessage = (newMsg) => {
-      // Update unread count in sidebar without refresh
-      const msgChatId = newMsg.chat?._id || newMsg.chat;
-      const isFromOther = (newMsg.sender?._id || newMsg.sender) !== myId;
-      const isActive = activeChatId === msgChatId;  // ← state use karo
-      if (isFromOther && !isActive) {
-        // Increment totalUnread by updating chats state
-        setChats(prev => prev.map(chat => {
-          if (chat._id !== msgChatId) return chat;
-          let unread = getUnreadCount(chat) || 0;
-          unread += 1;
-          return {
-            ...chat,
-            unreadCount: Array.isArray(chat.unreadCount)
-              ? chat.unreadCount.map(u => (u.userId || u._id || u.id) === myId ? { ...u, count: unread } : u)
-              : unread
-          };
-        }));
-      }
-    };
-
-    socket.on("messageReceived", handleNewMessage);
+    socket.on("requestSeen", handleRequestSeen);
 
     return () => {
+      socket.off("newIncomingRequest", handleNewIncoming);
       socket.off("requestUpdated", handleRequestUpdated);
-      socket.off("requestSeen", handleRequestUpdated);
-      socket.off("messageReceived", handleNewMessage);
+      socket.off("requestSeen", handleRequestSeen);
     };
-  }, [socket,activeChatId, myId, getUnreadCount]);
+  }, [socket, myId]);
 
   useEffect(() => {
     const fetchPendingRequests = async () => {
@@ -163,7 +155,7 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => {} 
     };
 
     fetchPendingRequests();
-  }, [myId, location.pathname]);
+  }, [myId]);
 
 
   useEffect(() => {

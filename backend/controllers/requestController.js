@@ -2,16 +2,10 @@ const Request = require("../models/Request");
 const Notification = require("../models/notification");
 const Chat = require("../models/Chat");
 const User = require("../models/User");
-
-
 const sendRequest = async (req, res) => {
-  
-
-
   try {
     const { receiver, offeredSkill, requestedSkill } = req.body;
     const requester = req.user;
-
     // Receiver mandatory
     if (!receiver) {
       return res.status(400).json({
@@ -51,12 +45,12 @@ const sendRequest = async (req, res) => {
       receiver,
       isSeen: false
     };
-  
+
     if (offeredSkill) requestData.offeredSkill = offeredSkill;
     if (requestedSkill) requestData.requestedSkill = requestedSkill;
 
     const request = await Request.create(requestData);
-    
+
 
 
     // Send notification to receiver
@@ -82,37 +76,44 @@ const sendRequest = async (req, res) => {
         });
       }
     } catch (notifError) {
-      
+
     }
 
     // Emit request update to both parties so frontend can refresh without reload
     try {
       if (req.io) {
-        const receiverRoom = receiver._id ? receiver._id.toString() : receiver.toString();
-        const requesterRoom = requester._id ? requester._id.toString() : requester.toString();
-
         const populated = await Request.findById(request._id)
           .populate("requester", "name email profileImage")
           .populate("receiver", "name email profileImage");
 
-        const totalPendingForReceiver = await Request.countDocuments({
+        // For receiver → full info + correct count
+        const receiverPending = await Request.countDocuments({
           receiver: receiver,
           status: "pending",
-          isSeen: false
-        });
-        req.io.to(receiverRoom).emit('requestUpdated', {
-          request: populated,
-          totalPending: totalPendingForReceiver
+          isSeen: false,
         });
 
-        req.io.to(requesterRoom).emit('requestUpdated', {
+        req.io.to(receiver.toString()).emit("newIncomingRequest", populated);
+        req.io.to(receiver.toString()).emit("requestUpdated", {
           request: populated,
-          totalPending: totalPendingForReceiver
+          totalPending: receiverPending,
+          event: "new-request",           // optional hint
         });
-        req.io.to(receiverRoom).emit('newIncomingRequest', populated);
+
+        // For sender → just confirmation, count = 0 or their own pending
+        const senderPending = await Request.countDocuments({
+          requester: requester,
+          status: "pending",
+        });
+
+        req.io.to(requester.toString()).emit("requestUpdated", {
+          request: populated,
+          totalPending: 0,                // sender doesn't get badge for outgoing
+          event: "request-sent",
+        });
       }
     } catch (emitErr) {
-      
+
     }
 
     res.status(201).json({
@@ -247,7 +248,7 @@ const acceptRequest = async (req, res) => {
           .populate('lastMessage');
       }
     } catch (chatErr) {
-      
+
     }
 
     // Send notification to requester
@@ -273,7 +274,7 @@ const acceptRequest = async (req, res) => {
         });
       }
     } catch (notifError) {
-      
+
     }
 
     // Emit new chat created event to both users
@@ -304,8 +305,19 @@ const acceptRequest = async (req, res) => {
           .populate("requester", "name email profileImage")
           .populate("receiver", "name email profileImage");
 
-        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
-        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+        const totalPendingForReceiver = await Request.countDocuments({
+          receiver: request.receiver,
+          status: "pending",
+          isSeen: false
+        });
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', {
+          request: populated,
+          totalPending: totalPendingForReceiver
+        });
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', {
+          request: populated,
+          totalPending: 0
+        });
       }
     } catch (emitErr) {
       console.log('Error emitting request update (accept):', emitErr);
@@ -357,9 +369,14 @@ const withdrawRequest = async (req, res) => {
         const populated = await Request.findById(request._id)
           .populate("requester", "name email profileImage")
           .populate("receiver", "name email profileImage");
+        const totalPendingForReceiver = await Request.countDocuments({
+          receiver: request.receiver,
+          status: "pending",
+          isSeen: false
+        });
 
-        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
-        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', { request: populated, totalPending: 0 });
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', { request: populated, totalPending: totalPendingForReceiver });
       }
     } catch (emitErr) {
       console.log('Error emitting request update (withdraw):', emitErr);
@@ -420,9 +437,14 @@ const unfriendUser = async (req, res) => {
         const populated = await Request.findById(request._id)
           .populate("requester", "name email profileImage")
           .populate("receiver", "name email profileImage");
+        const totalPendingForReceiver = await Request.countDocuments({
+          receiver: request.receiver,
+          status: "pending",
+          isSeen: false
+        });
 
-        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
-        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', { request: populated, totalPending: 0 });
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', { request: populated, totalPending: totalPendingForReceiver });
       }
     } catch (emitErr) {
       console.log('Error emitting request update (unfriend):', emitErr);
@@ -468,9 +490,14 @@ const rejectRequest = async (req, res) => {
         const populated = await Request.findById(request._id)
           .populate("requester", "name email profileImage")
           .populate("receiver", "name email profileImage");
+        const totalPendingForReceiver = await Request.countDocuments({
+          receiver: request.receiver,
+          status: "pending",
+          isSeen: false
+        });
 
-        req.io.to(populated.requester._id.toString()).emit('requestUpdated', populated);
-        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', populated);
+        req.io.to(populated.requester._id.toString()).emit('requestUpdated', { request: populated, totalPending: 0 });
+        req.io.to(populated.receiver._id.toString()).emit('requestUpdated', { request: populated, totalPending: totalPendingForReceiver });
       }
     } catch (emitErr) {
       console.log('Error emitting request update (reject):', emitErr);
