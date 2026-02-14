@@ -28,15 +28,19 @@ export const NotificationProvider = ({ children }) => {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
 
+    console.log('🔌 NotificationContext: Connecting socket for', userId);
     chatService.connectSocket(userId);
     
     const setupListener = () => {
       const socket = chatService.socket;
       if (!socket) {
+        console.log('⏳ Socket not ready, retrying...');
         setTimeout(setupListener, 1000);
         return;
       }
 
+      console.log('✅ NotificationContext: Socket ready, adding listener');
+      
       socket.on('newNotification', (notification) => {
         console.log('🔔 Notification received:', notification);
         
