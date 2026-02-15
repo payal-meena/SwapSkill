@@ -87,7 +87,10 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded, existingSkills = [] }) =
       console.log("✅ RESPONSE:", response);
 
       if (response.success) {
-        // 🧹 reset form
+        // Call parent callback first
+        onSkillAdded(skillData.skillName);
+        
+        // Reset form
         setSkillData({
           skillName: '',
           category: '',
@@ -99,6 +102,7 @@ const ExpertisePage = ({ isOpen, onClose, onSkillAdded, existingSkills = [] }) =
         setPreview(null);
         setStep(1);
 
+        // Close modal after callback
         onClose();
       }
 

@@ -153,7 +153,6 @@ const AddSkillModal = ({ isOpen, onClose, onSkillAdded }) => {
                       className="peer sr-only"
                       name="level"
                       type="radio"
-
                       value={level}
                       checked={formData.level === level}
                       onChange={handleInputChange}
