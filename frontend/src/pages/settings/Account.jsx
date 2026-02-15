@@ -164,9 +164,9 @@ const Account = () => {
       
       <div className="mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 lg:gap-4">
         <button
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate(-1)}
           className="p-1.5 sm:p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
-          title="Go back to profile"
+          title="Go back"
         >
           <ArrowLeft size={20} className="sm:w-6 sm:h-6 text-slate-900 dark:text-white" />
         </button>
