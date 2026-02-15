@@ -202,15 +202,15 @@ const allNotifications = [
                               onClose();
                             }
                           }}
-                          className="flex-1 border border-[#13ec5b4d] text-[#13ec5b] text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-lg hover:bg-[#13ec5b1a] transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                          className="flex-1 border border-[#13ec5b4d] text-[#13ec5b] text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-full hover:bg-[#13ec5b1a] transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
                         >
                           <span className="material-symbols-outlined text-[10px] sm:text-xs">reply</span> Reply
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleMarkSingleRead(notif._id); }}
-                          className="flex-1 border border-white/20 text-white/60 text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-lg hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                          className="flex-1 border border-white/20 text-white/60 text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-[10px] sm:text-xs">done</span> Mark read
+                          <span className="material-symbols-outlined text-[10px] sm:text-xs">done_all</span> Mark read
                         </button>
                       </div>
                     )}
