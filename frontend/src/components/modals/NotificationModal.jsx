@@ -78,13 +78,29 @@ const allNotifications = [
               </span>
             )}
           </div>
-          <button 
-            onClick={handleMarkAllRead}
-            className="text-[#13ec5b] text-[9px] sm:text-[10px] lg:text-xs font-semibold hover:text-[#13ec5bce] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
-          >
-            <span className="hidden sm:inline">Mark all read</span>
-            <span className="sm:hidden">Mark read</span>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button 
+              onClick={handleMarkAllRead}
+              className="text-[#13ec5b] text-[9px] sm:text-[10px] lg:text-xs font-semibold hover:text-[#13ec5bce] transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Mark all read</span>
+              <span className="sm:hidden">Mark read</span>
+            </button>
+            <span className="text-white/20">|</span>
+            <button 
+              onClick={async () => {
+                const allIds = [...notifications.map(n => n._id), ...Object.keys(groupedNotifications)];
+                for (const id of allIds) {
+                  await deleteNotification(id);
+                }
+                setGroupedNotifications({});
+              }}
+              className="text-red-400 text-[9px] sm:text-[10px] lg:text-xs font-semibold hover:text-red-300 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Clear all</span>
+              <span className="sm:hidden">Clear</span>
+            </button>
+          </div>
         </div>
 
         <div className="max-h-[calc(100vh-180px)] sm:max-h-[420px] lg:max-h-[480px] overflow-y-auto scrollbar-hide">
