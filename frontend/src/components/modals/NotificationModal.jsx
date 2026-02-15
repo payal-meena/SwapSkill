@@ -105,9 +105,6 @@ const allNotifications = [
                 onClick={() => handleMarkSingleRead(notif._id)}
                 className={`px-3 sm:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-4 border-b border-white/5 hover:bg-white/5 transition-colors relative cursor-pointer group ${!notif.isRead ? 'bg-[#13ec5b]/5' : ''}`}
               >
-                {!notif.isRead && (
-                  <div className="absolute right-3 sm:right-4 lg:right-5 top-3 sm:top-4 lg:top-5 h-1.5 sm:h-2 w-1.5 sm:w-2 rounded-full bg-[#13ec5b] shadow-[0_0_6px_rgba(19,236,91,0.6)] sm:shadow-[0_0_8px_rgba(19,236,91,0.6)]"></div>
-                )}
 
                 <div className="flex gap-2 sm:gap-2.5 lg:gap-3">
                   <div className="flex-shrink-0">
@@ -122,9 +119,31 @@ const allNotifications = [
 
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-0.5 sm:mb-1 gap-1 sm:gap-2">
-                      <span className="text-[#13ec5b] text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase tracking-wider">{notif.type}</span>
-                      <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 flex-shrink-0">
-                        <span className="text-white/40 text-[8px] sm:text-[9px] lg:text-[10px] hidden xs:inline">{new Date(notif.createdAt).toLocaleString()}</span>
+                      <div className="flex-1">
+                        {notif.sender?.name && (
+                          <p className="text-white text-xs sm:text-sm lg:text-base font-bold mb-0.5 leading-snug flex items-center gap-1.5">
+                            {notif.sender.name}
+                            {!notif.isRead && (
+                              <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#13ec5b] shadow-[0_0_6px_rgba(19,236,91,0.6)]"></span>
+                            )}
+                          </p>
+                        )}
+                        {notif.type === 'message' && (
+                          <p className="text-white/50 text-[10px] sm:text-xs font-normal leading-snug">
+                            sent you a message
+                          </p>
+                        )}
+                        {notif.type !== 'message' && (
+                          <p className="text-white/60 text-[11px] sm:text-xs lg:text-sm font-normal mt-1 leading-snug break-words">
+                            {(() => {
+                              const cleanMsg = notif.message?.replace(new RegExp(`^${notif.sender?.name}:\s*`), '') || notif.message;
+                              return cleanMsg || '';
+                            })()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="text-white/40 text-[8px] sm:text-[9px] lg:text-[10px]">{new Date(notif.createdAt).toLocaleString()}</span>
                         <button 
                           onClick={(e) => { e.stopPropagation(); removeNotification(notif._id); }}
                           className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all p-0.5"
@@ -133,10 +152,6 @@ const allNotifications = [
                         </button>
                       </div>
                     </div>
-                    <p className="text-white text-[11px] sm:text-xs lg:text-sm font-medium mb-1 leading-snug break-words">
-                      {notif.sender?.name && <span className="text-white mr-1">{notif.sender.name}</span>}
-                      <span className="text-white/60 font-normal">{notif.message}</span>
-                    </p>
                     
                     {notif.type === 'request' && (
                       <div className="flex gap-1.5 sm:gap-2 mt-2 sm:mt-2.5 lg:mt-3">
@@ -156,7 +171,7 @@ const allNotifications = [
                     )}
                     
                     {notif.type === 'message' && (
-                      <div className="mt-2 sm:mt-2.5 lg:mt-3">
+                      <div className="mt-2 sm:mt-2.5 lg:mt-3 flex gap-2">
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
@@ -171,9 +186,15 @@ const allNotifications = [
                               onClose();
                             }
                           }}
-                          className="w-full border border-[#13ec5b4d] text-[#13ec5b] text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-lg hover:bg-[#13ec5b1a] transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                          className="flex-1 border border-[#13ec5b4d] text-[#13ec5b] text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-lg hover:bg-[#13ec5b1a] transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
                         >
                           <span className="material-symbols-outlined text-[10px] sm:text-xs">reply</span> Reply
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleMarkSingleRead(notif._id); }}
+                          className="flex-1 border border-white/20 text-white/60 text-[10px] sm:text-[11px] lg:text-xs font-bold py-1.5 rounded-lg hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[10px] sm:text-xs">done</span> Mark read
                         </button>
                       </div>
                     )}

@@ -597,7 +597,7 @@ module.exports = (io) => {
             let preview = text || (file ? file.name : '') || '';
             preview = preview.trim();
             if (preview.length > 60) preview = preview.slice(0, 57) + '...';
-            const notifMessage = preview ? `${senderName}: ${preview}` : `${senderName} sent you a message`;
+            const notifMessage = preview || 'sent you a message';
 
             // Create persistent notification in DB
             const messageNotif = await Notification.create({
