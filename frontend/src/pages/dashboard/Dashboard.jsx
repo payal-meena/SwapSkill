@@ -95,8 +95,6 @@ const otherUser = useMemo(() => {
           r => r.status === 'accepted' || r.status === 'completed'
         );
 
-        setAcceptedRequestsCount(acceptedRequests.length);
-
         const currentUserId = reqRes.currentUser;
         const otherMap = {};
 
@@ -107,7 +105,7 @@ const otherUser = useMemo(() => {
           const other = isRequester ? r.receiver : r.requester;
           const id = other?._id || other?.id;
 
-          if (!id) return;
+          if (!id || id === currentUserId) return;
 
           if (!otherMap[id]) {
             otherMap[id] = {
@@ -122,6 +120,7 @@ const otherUser = useMemo(() => {
         });
 
         const ids = Object.keys(otherMap);
+        setAcceptedRequestsCount(ids.length);
 
         // 🚀 Fetch all users skills in parallel safely
         const skillsResults = await Promise.allSettled(
