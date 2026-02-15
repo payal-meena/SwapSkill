@@ -59,7 +59,7 @@ useEffect(() => {
             _id: senderIdKey,
             senderId: senderIdKey,
             sender: { name: senderName, profilePicture: senderImage },
-            message: notification.message || `${senderName} sent you a message`,
+            message: 'sent you a message',
             messageCount: (prev[senderIdKey]?.messageCount || 0) + 1,
             chatId: notification.redirectUrl?.split('/').pop() || '',
             createdAt: notification.createdAt || new Date().toISOString(),
