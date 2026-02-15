@@ -69,11 +69,13 @@ const getMySkills = async (req, res) => {
 const getUserSkills = async (req, res) => {
   try {
     const { userId } = req.params;
-    const skills = await Skill.find({ userId, isActive: true }).populate('userId', 'name email profileImage');
+    const offeredSkills = await Skill.find({ userId, isActive: true }).populate('userId', 'name email profileImage');
+    const wantedSkills = await SkillsToLearn.find({ userId, isActive: true });
 
     res.json({
       success: true,
-      skills
+      offered: offeredSkills,
+      wanted: wantedSkills
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
