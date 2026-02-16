@@ -503,6 +503,28 @@ module.exports = (io) => {
       console.error("[STATUS ERROR]", err);
     }
 
+    // --- JOIN CHAT ROOM ---
+    socket.on('joinChat', ({ chatId }) => {
+      try {
+        const roomName = chatId.toString();
+        socket.join(roomName);
+        console.log(`[JOIN CHAT] User ${userId} joined chat room: ${roomName}`);
+      } catch (err) {
+        console.error('[JOIN CHAT ERROR]', err);
+      }
+    });
+
+    // --- LEAVE CHAT ROOM ---
+    socket.on('leaveChat', ({ chatId }) => {
+      try {
+        const roomName = chatId.toString();
+        socket.leave(roomName);
+        console.log(`[LEAVE CHAT] User ${userId} left chat room: ${roomName}`);
+      } catch (err) {
+        console.error('[LEAVE CHAT ERROR]', err);
+      }
+    });
+
     // --- 2. Send Message (Real-time Fix) ---
     socket.on("sendMessage", async ({ chatId, senderId, text, file, replyTo, tempId }) => {
       try {

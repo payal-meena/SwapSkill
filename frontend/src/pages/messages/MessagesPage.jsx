@@ -38,6 +38,7 @@ const MessagesPage = () => {
   const activeChatIdRef = useRef(null);
   const activeChatRef = useRef(null);
   const messageRefs = useRef({});
+  const restorationAttemptedRef = useRef(false); // Track if we've already tried to restore
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [mediaItems, setMediaItems] = useState([]);
   const activeChatFromList = React.useMemo(() => {
@@ -174,7 +175,21 @@ const MessagesPage = () => {
       setIsMobile(window.innerWidth < 768);
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // When page becomes visible again (tab switch), reset restoration flag
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        restorationAttemptedRef.current = false;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Reset restoration flag when component mounts
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      restorationAttemptedRef.current = false;
+    };
   }, []);
 
 
@@ -450,6 +465,11 @@ const MessagesPage = () => {
       }).catch(err => {
         console.error('Error loading chat history:', err);
       });
+
+      // Cleanup: leave chat when component unmounts or switches chat
+      return () => {
+        emit('leaveChat', { chatId: activeChat._id });
+      };
     }
   }, [activeChat?._id, myUserId, socket, emit]);
 
@@ -462,6 +482,59 @@ const MessagesPage = () => {
     }
     window.history.replaceState({}, document.title, window.location.pathname);
   }, [location.state?.chatId, chats]);
+
+  // Restore last active chat from localStorage (run AFTER chats are loaded)
+  useEffect(() => {
+    // Only attempt restoration once per mount and when activeChat is empty
+    if (restorationAttemptedRef.current) return;
+    if (activeChat) return; // Already have an active chat
+    if (chats.length === 0) return; // No chats available yet
+    
+    restorationAttemptedRef.current = true;
+    
+    try {
+      const savedChatId = localStorage.getItem('lastActiveChatId');
+      if (savedChatId) {
+        const targetChat = chats.find(c => c._id === savedChatId);
+        if (targetChat && targetChat.participants && targetChat.participants.length > 0) {
+          // Chat exists and has valid participants - restore it
+          console.log('✅ Restoring last active chat:', targetChat._id);
+          setActiveChat(targetChat);
+          activeChatIdRef.current = targetChat._id;
+          activeChatRef.current = targetChat;
+        } else if (!targetChat) {
+          // Chat no longer exists - clear the bad saved ID
+          console.warn('❌ Saved chat not found in current list');
+          localStorage.removeItem('lastActiveChatId');
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to restore last active chat:', err);
+      localStorage.removeItem('lastActiveChatId');
+    }
+  }, [chats, activeChat]);
+
+  // Validate activeChat - if it's invalid, clear it
+  useEffect(() => {
+    if (activeChat) {
+      if (!activeChat.participants || activeChat.participants.length === 0) {
+        console.warn('Active chat has no valid participants, clearing...');
+        setActiveChat(null);
+        localStorage.removeItem('lastActiveChatId');
+      }
+    }
+  }, [activeChat]);
+
+  // Save active chat to localStorage when it changes
+  useEffect(() => {
+    if (activeChat?._id) {
+      localStorage.setItem('lastActiveChatId', activeChat._id);
+    } else if (!activeChat) {
+      // If no active chat, clear the saved ID
+      localStorage.removeItem('lastActiveChatId');
+    }
+  }, [activeChat?._id]);
+
   const { userId } = useParams();
   useEffect(() => {
     if (!userId) return;
@@ -705,8 +778,11 @@ const MessagesPage = () => {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto hide-scrollbar">
-            {chats.map((chat) => {
+            {chats
+              .filter(chat => chat.participants && chat.participants.length > 0)
+              .map((chat) => {
               const p = chat.participants.find(u => (u._id || u) !== myUserId);
+              if (!p) return null; // Skip if no valid participant found
               const isMeLast = chat.lastMessage?.sender === myUserId || chat.lastMessage?.sender?._id === myUserId;
               const unread = getUnreadCount(chat) || 0;
               return (
@@ -847,9 +923,9 @@ const MessagesPage = () => {
           </div>
         </aside>
       ) : null}
-      {!isMobile || activeChat ? (
+      {!isMobile || (activeChat && activeChat.participants && activeChat.participants.length > 0) ? (
         <main className={`flex-1 flex flex-col bg-[#0d1a11] ${isMobile ? 'w-full' : ''}`}>
-          {activeChat ? (
+          {activeChat && activeChat.participants && activeChat.participants.length > 0 ? (
             <>
               <header className="h-20 flex items-center justify-between px-8 bg-[#112217] border-b border-[#23482f]">
                 <div className="flex items-center gap-3">
