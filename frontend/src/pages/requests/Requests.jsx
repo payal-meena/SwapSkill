@@ -5,7 +5,7 @@ import SentRequestStatus from "../../components/requests/SentRequestStatus";
 import { requestService } from "../../services/requestService";
 import Toast from "../../components/common/Toast";
 import { SocketContext } from "../../context/SocketContext";
-
+import { useRequests } from '../../context/RequestContext';
 // --- Compact Responsive Modal ---
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
@@ -22,7 +22,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
             {message}
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           <button
             onClick={onClose}
@@ -48,7 +48,8 @@ const Requests = () => {
   const [currentUser, setCurrentUser] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: "", type: "info" });
-  
+  const { markAsSeen } = useRequests();
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [requestToCancel, setRequestToCancel] = useState(null);
@@ -60,7 +61,9 @@ const Requests = () => {
   const hideToast = () => {
     setToast({ ...toast, isVisible: false });
   };
-
+  useEffect(() => {
+    markAsSeen(); // jab page khulega tab count zero
+  }, []);
   useEffect(() => {
     fetchRequests();
   }, []);
@@ -73,8 +76,8 @@ const Requests = () => {
     const handler = (updatedRequest) => {
       try {
         const r = typeof updatedRequest.toObject === "function"
-            ? updatedRequest.toObject()
-            : updatedRequest;
+          ? updatedRequest.toObject()
+          : updatedRequest;
 
         const isRelevant =
           (r.requester?._id?.toString() === currentUser.toString()) ||
@@ -163,17 +166,15 @@ const Requests = () => {
           <div className="flex gap-2 bg-[#1a2e21] p-1 rounded-xl border border-[#2d4a35]">
             <button
               onClick={() => setActiveTab("received")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex-1 ${
-                activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex-1 ${activeTab === "received" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"
+                }`}
             >
               Received ({receivedRequests.filter(r => r.status === "pending").length})
             </button>
             <button
               onClick={() => setActiveTab("sent")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex-1 ${
-                activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex-1 ${activeTab === "sent" ? "bg-[#13ec5b] text-black shadow-lg" : "text-slate-400 hover:text-white"
+                }`}
             >
               Sent ({sentRequests.filter(r => r.status === "pending").length})
             </button>

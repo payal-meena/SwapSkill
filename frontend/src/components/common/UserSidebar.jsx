@@ -7,7 +7,7 @@ import { chatService } from '../../services/chatService';
 import { requestService } from '../../services/requestService';
 import { useChat } from '../../context/ChatContext';
 import { SocketContext } from '../../context/SocketContext';
-
+import { useRequests } from '../../context/RequestContext';
 const getMyIdFromToken = () => {
   const token = localStorage.getItem('token');
   if (!token) return null;
@@ -47,13 +47,14 @@ const NavItem = ({ icon, label, to, badgeCount = 0, onClick }) => {
 
 const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => { } }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
   const { chats, setActiveChatId, activeChatId, myUserId } = useChat();
   const myId = myUserId || getMyIdFromToken();
+  const { pendingCount, markAsSeen } = useRequests();
   const { socket } = useContext(SocketContext);
+
 
   // 1. Unread Count logic (Supports both Number and Array structure)
   const getUnreadCount = (chat) => {
@@ -81,10 +82,37 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => { }
     return 0;
   };
 
-  // 2. Real-time Total Unread
+  // 2. Real-time Total Unread Messages
   const totalUnread = useMemo(() => {
     return (chats || []).reduce((sum, c) => sum + getUnreadCount(c), 0);
   }, [chats, myId]);
+
+  // Real-time Request Count Update via Socket
+  useEffect(() => {
+    if (!socket) {
+      console.log("[UserSidebar] ⚠️  Socket not connected yet");
+      return;
+    }
+
+    console.log("[UserSidebar] ✅ Socket connected - attaching request listeners");
+
+    const handleRequestUpdated = (data) => {
+      console.log("[UserSidebar] 📨 requestUpdated event received:", data);
+    };
+
+    socket.on('requestUpdated', handleRequestUpdated);
+    socket.on('newIncomingRequest', handleRequestUpdated);
+    socket.on('requestSeen', handleRequestUpdated);
+
+    console.log("[UserSidebar] ✅ Request listeners attached");
+
+    return () => {
+      console.log("[UserSidebar] 🧹 Removing request listeners");
+      socket.off('requestUpdated', handleRequestUpdated);
+      socket.off('newIncomingRequest', handleRequestUpdated);
+      socket.off('requestSeen', handleRequestUpdated);
+    };
+  }, [socket]);
 
   // 3. WhatsApp Style Real-time Logic: Detect URL Change
   useEffect(() => {
@@ -99,55 +127,18 @@ const UserSidebar = ({ isMobileMenuOpen = false, setIsMobileMenuOpen = () => { }
     }
   }, [location.pathname, setActiveChatId]);
 
-useEffect(() => {
-    if (!socket || !myId) return;
-
-    console.log("✅ Sidebar → Request listeners attached (clean version)");
-
-    const handleNewIncoming = (data) => {
-      console.log("🔔 New incoming request received:", data);
-      // Hamesha +1 karo — ye sabse reliable hai new request ke liye
-      setIncomingRequestCount((prev) => prev + 1);
-    };
-
-    const handleRequestUpdated = (data) => {
-      console.log("📊 requestUpdated received:", data);
-      if (data.totalPending !== undefined) {
-        setIncomingRequestCount(Number(data.totalPending));
-      }
-    };
-
-    const handleRequestSeen = (data) => {
-      console.log("👀 requestSeen received:", data);
-      if (data.totalPending !== undefined) {
-        setIncomingRequestCount(Number(data.totalPending));
-      }
-    };
-
-    // Listeners attach
-    socket.on("newIncomingRequest", handleNewIncoming);
-    socket.on("requestUpdated", handleRequestUpdated);
-    socket.on("requestSeen", handleRequestSeen);
-
-    return () => {
-      socket.off("newIncomingRequest", handleNewIncoming);
-      socket.off("requestUpdated", handleRequestUpdated);
-      socket.off("requestSeen", handleRequestSeen);
-    };
-  }, [socket, myId]);
-
   useEffect(() => {
     const fetchPendingRequests = async () => {
       if (!myId) return;
 
       if (location.pathname === '/requests') {
-        setIncomingRequestCount(0);
+        markAsSeen();
         return;
       }
 
       try {
         const res = await requestService.getMyRequests();
-        setIncomingRequestCount(res.count); // backend ne already unseen pending count calculate kar diya
+        // RequestContext handles initial load
       } catch (err) {
         console.log("Error fetching requests:", err);
       }
@@ -155,7 +146,7 @@ useEffect(() => {
     };
 
     fetchPendingRequests();
-  }, [myId]);
+  }, [myId, location.pathname, markAsSeen]);
 
 
   useEffect(() => {
@@ -164,11 +155,10 @@ useEffect(() => {
 
       if (location.pathname === '/requests') {
         try {
-          // 🔹 1️⃣ Server ko mark as seen call karo
+          // Mark requests as seen on server
           await requestService.markRequestsAsSeen();
-
-          // 🔹 2️⃣ Local count zero kar do
-          setIncomingRequestCount(0);
+          // Local count will be reset by RequestContext through socket event
+          markAsSeen();
         } catch (err) {
           console.log("Error marking requests as seen:", err);
         }
@@ -177,13 +167,6 @@ useEffect(() => {
 
     markSeenAndResetCount();
   }, [myId, location.pathname]);
-
-  // 5. URL change hone par count reset logic (UX improvement)
-  useEffect(() => {
-    if (location.pathname === '/requests') {
-      setIncomingRequestCount(0);
-    }
-  }, [location.pathname]);
 
   const handleLogoutConfirm = () => {
     if (myId) chatService.logout(myId);
@@ -217,7 +200,7 @@ useEffect(() => {
           <NavItem to="/explore" icon="explore" label="Explore" />
           <NavItem to="/my-skills" icon="psychology" label="My Skills" />
           <NavItem to="/my-connection" icon="group" label="My Connection" />
-          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={incomingRequestCount} onClick={() => setIncomingRequestCount(0)} />
+          <NavItem to="/requests" icon="handshake" label="Requests" badgeCount={pendingCount} onClick={() => markAsSeen()} />
           <NavItem to="/messages/list" icon="chat_bubble" label="Messages" badgeCount={totalUnread} />
         </nav>
       </div>

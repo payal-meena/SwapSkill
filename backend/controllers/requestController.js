@@ -51,69 +51,41 @@ const sendRequest = async (req, res) => {
 
     const request = await Request.create(requestData);
 
+    // Notification creation aur emit (yeh sahi hai)
 
-
-    // Send notification to receiver
-    try {
-      await Notification.create({
-        userId: requester,
-        type: 'CONNECTION_REQUEST',
-        title: 'New Connection Request',
-        message: `Someone wants to connect with you for skill exchange!`,
-        receiverId: receiver,
-        senderId: requester,
-        relatedId: request._id,
-        priority: 'normal'
+    // Emit real-time updates
+    if (req.io) {
+      const receiverPending = await Request.countDocuments({
+        receiver,
+        status: "pending",
+        isSeen: false,
       });
 
-      // Emit real-time notification if socket is available
-      if (req.io) {
-        req.io.to(receiver.toString()).emit('newNotification', {
-          type: 'CONNECTION_REQUEST',
-          title: 'New Connection Request',
-          message: 'Someone wants to connect with you!',
-          createdAt: new Date()
-        });
-      }
-    } catch (notifError) {
+      const populated = await Request.findById(request._id)
+        .populate("requester", "name email profileImage")
+        .populate("receiver", "name email profileImage");
 
-    }
+      // 1. Receiver ko batao (naya request aaya + updated count)
+      req.io.to(receiver.toString()).emit("newIncomingRequest", {
+        request: populated,
+        totalPending: receiverPending
+      });
 
-    // Emit request update to both parties so frontend can refresh without reload
-    try {
-      if (req.io) {
-        const populated = await Request.findById(request._id)
-          .populate("requester", "name email profileImage")
-          .populate("receiver", "name email profileImage");
+      req.io.to(receiver.toString()).emit("requestUpdated", {
+        request: populated,
+        totalPending: receiverPending,
+        event: "new-request"
+      });
 
-        // For receiver → full info + correct count
-        const receiverPending = await Request.countDocuments({
-          receiver: receiver,
-          status: "pending",
-          isSeen: false,
-        });
+      // 2. Requester ko bhi batao (uske liye count 0 rahega)
+      req.io.to(requester.toString()).emit("requestUpdated", {
+        request: populated,
+        totalPending: 0,
+        event: "request-sent"
+      });
 
-        req.io.to(receiver.toString()).emit("newIncomingRequest", populated);
-        req.io.to(receiver.toString()).emit("requestUpdated", {
-          request: populated,
-          totalPending: receiverPending,
-          event: "new-request",           // optional hint
-        });
-
-        // For sender → just confirmation, count = 0 or their own pending
-        const senderPending = await Request.countDocuments({
-          requester: requester,
-          status: "pending",
-        });
-
-        req.io.to(requester.toString()).emit("requestUpdated", {
-          request: populated,
-          totalPending: 0,                // sender doesn't get badge for outgoing
-          event: "request-sent",
-        });
-      }
-    } catch (emitErr) {
-
+      console.log(`[sendRequest] Emitted to receiver ${receiver} | count ${receiverPending}`);
+      console.log(`[sendRequest] Emitted to requester ${requester} | count 0`);
     }
 
     res.status(201).json({
@@ -122,6 +94,7 @@ const sendRequest = async (req, res) => {
       request,
     });
   } catch (error) {
+    console.error("sendRequest error:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -131,38 +104,36 @@ const sendRequest = async (req, res) => {
 
 const markRequestsAsSeen = async (req, res) => {
   try {
-    const userId = req.user._id ? req.user._id.toString() : req.user.toString();
-
+    const userId = req.user._id?.toString() || req.user.toString();
 
     await Request.updateMany(
-      {
-        receiver: userId,
-        status: "pending",
-        isSeen: false,
-      },
+      { receiver: userId, status: "pending", isSeen: false },
       { $set: { isSeen: true } }
     );
 
-    // 🔄 realtime sidebar zero
     if (req.io) {
-      // Calculate new totalPending
-      const totalPendingForReceiver = await Request.countDocuments({
+      const totalPending = await Request.countDocuments({
         receiver: userId,
         status: "pending",
-        isSeen: false
+        isSeen: false,
       });
 
-      req.io.to(userId.toString()).emit("requestSeen", {
-        totalPending: totalPendingForReceiver
+      console.log(`[Seen] Emitting to ${userId} → totalPending now: ${totalPending}`);
+
+      // Messages jaisa forceful update bhejo
+      req.io.to(userId).emit("requestUpdated", {
+        totalPending,
+        event: "seen-all"   // optional tag for debugging
       });
+
+      // Ya agar tumhara frontend "requestSeen" sun raha to yeh bhi daal do
+      req.io.to(userId).emit("requestSeen", { totalPending });
     }
 
     res.status(200).json({ success: true });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

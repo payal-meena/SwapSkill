@@ -81,15 +81,33 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     const userId = getMyIdFromToken();
-    if (!userId) return;
+    if (!userId) {
+      console.log("[SocketProvider] ❌ No userId found from token");
+      return;
+    }
+    console.log("[SocketProvider] 🔑 userId from token:", userId);
     setMyUserId(userId);
+    
     const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
       query: { userId },
       
     });
+    
+    newSocket.on('connect', () => {
+      console.log("[SocketProvider] ✅ Socket connected!", newSocket.id);
+    });
+    
+    newSocket.on('disconnect', () => {
+      console.log("[SocketProvider] ❌ Socket disconnected!");
+    });
+    
     setSocket(newSocket);
+    
     // Cleanup on unmount
-    return () => newSocket.disconnect();
+    return () => {
+      console.log("[SocketProvider] 🧹 Cleaning up socket");
+      newSocket.disconnect();
+    };
   }, []);
 
   // 🔹 Helpers for easy use
